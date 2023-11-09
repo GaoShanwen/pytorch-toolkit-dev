@@ -12,7 +12,6 @@ build/
 develop-eggs/
 dist/
 downloads/
-dataset/
 eggs/
 .eggs/
 lib/
@@ -27,7 +26,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# output file
+# input files
+dataset/
+# output files
 output
 *.onnx
 *.csv

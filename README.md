@@ -15,6 +15,7 @@ building a multitask training platform based on Pytorch
 #### Install environment
 
 the environments before install timm (these are not need be installed if you don't need to transfer to the rknn model.)
+you can install these by this [document]().
 
 + make=4.2
 + gcc=8.2
@@ -26,7 +27,7 @@ the environments before install timm (these are not need be installed if you don
 
 ```bash
 <pytorch-cls-project> ~ $ # install timm and its environment(include rknn-tools2)
-<pytorch-cls-project> ~ $ git clone git@github.com:GaoShanwen/pytorch-toolkit-dev.git
+<pytorch-cls-project> ~ $ git clone https://github.com/GaoShanwen/pytorch-toolkit-dev.git
 <pytorch-cls-project> ~ $ git checkout timm-dev
 <pytorch-cls-project> ~ $ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu102
 ```
@@ -34,6 +35,8 @@ the environments before install timm (these are not need be installed if you don
 ### Training or validating owner data
 
 ```bash
+<pytorch-cls-project> ~ $ # build dataset for train and validate
+<pytorch-cls-project> ~ $ ln -s /data/exp-data dataset/
 <pytorch-cls-project> ~ $ # nohup train 4281 cls with 1k pretrain model; resize-256,crop-224,rand aa, re-0.2;
         OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 nohup python -m torch.distributed.launch --nproc_per_node=2 --master_port=40401 tools/train.py \
         --dataset txt_data --data-dir dataset/exp-data/zero_dataset --model mobilenetv3_redution_large_100 -b 256 --epochs 60 --decay-epochs 2.4 \
