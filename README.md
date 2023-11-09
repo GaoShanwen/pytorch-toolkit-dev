@@ -2,15 +2,17 @@
 
 building a multitask training platform based on Pytorch
 
-## Motivation
+## timm branch
+
+### Motivation
 
 1. Use SOTA AI-classfication toolkit.
 2. Minimize our project.
 3. Enhance codes' reusability.
 
-## Quick Start
+### Quick Start
 
-### Install environment
+#### Install environment
 
 the environments before install timm (these are not need be installed if you don't need to transfer to the rknn model.)
 
@@ -20,16 +22,16 @@ the environments before install timm (these are not need be installed if you don
 + python=3.8
 + rknn-tools2=1.5 py38
 
-### Install timm
+#### Install timm
 
 ```bash
 <pytorch-cls-project> ~ $ # install timm and its environment(include rknn-tools2)
-<pytorch-cls-project> ~ $ git clone git@codeup.aliyun.com:5f0439d16a575d7f23661379/ai/pytorch-cs-project.git
+<pytorch-cls-project> ~ $ git clone git@github.com:GaoShanwen/pytorch-toolkit-dev.git
 <pytorch-cls-project> ~ $ git checkout timm-dev
 <pytorch-cls-project> ~ $ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu102
 ```
 
-## Training or validating owner data
+### Training or validating owner data
 
 ```bash
 <pytorch-cls-project> ~ $ # nohup train 4281 cls with 1k pretrain model; resize-256,crop-224,rand aa, re-0.2;
@@ -53,7 +55,7 @@ the environments before install timm (these are not need be installed if you don
         python tools/eval_feats.py -g output/feats/mobilenet_large_100-train.npz -q output/feats/mobilenet_large_100-val.npz
 ```
 
-### Run model convert
+#### Run model convert
 
 ```bash
 <pytorch-cls-project> ~ $ # pth -> onnx
