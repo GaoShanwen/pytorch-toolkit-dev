@@ -15,7 +15,7 @@ building a multitask training platform based on Pytorch
 #### Install environment
 
 the environments before install timm (these are not need be installed if you don't need to transfer to the rknn model.)
-you can install these by this [document]().
+you can install these by this [document](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md).
 
 + make=4.2
 + gcc=8.2
@@ -58,7 +58,7 @@ you can install these by this [document]().
         python tools/eval_feats.py -g output/feats/mobilenet_large_100-train.npz -q output/feats/mobilenet_large_100-val.npz
 ```
 
-#### Run model convert
+### Run model convert
 
 ```bash
 <pytorch-cls-project> ~ $ # pth -> onnx
