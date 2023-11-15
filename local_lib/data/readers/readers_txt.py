@@ -35,7 +35,7 @@ def read_images_and_targets(
         A list of image and target tuples, class_to_idx mapping
     """
     # types = get_img_extensions(as_set=True) if not types else set(types)
-    cats_path = "dataset/exp-data/zero_dataset/save_cats.txt"
+    # cats_path = "dataset/exp-data/zero_dataset/save_cats.txt"
     if kwargs.get("cats_path", None):
         cats_path = kwargs["cats_path"]
     with open(cats_path, 'r') as f: save_cats = [line.strip('\n') for line in f.readlines()]
@@ -44,14 +44,13 @@ def read_images_and_targets(
         with open(pass_path, 'r') as f: 
             for line in f.readlines():
                 save_cats.remove(line.strip('\n'))
-    choose_cats = save_cats
     if kwargs.get("num_classes", None):
         num_classes = kwargs["num_classes"]
         save_cats = save_cats[:num_classes] if num_classes < len(save_cats) else save_cats
-        choose_cats = save_cats
-        if kwargs.get("num_choose", None):
-            num_choose = kwargs["num_choose"]
-            choose_cats = save_cats[num_classes-num_choose:]
+    choose_cats = save_cats
+    if kwargs.get("num_choose", None):
+        num_choose = kwargs["num_choose"]
+        choose_cats = save_cats[num_choose[0]:num_choose[1]]
     with open(anno_path, 'r') as f:
         lines = [line.strip().split(',') for line in f.readlines() if line.startswith("/data/AI-scales/images")]
     filenames, labels = zip(*[(filename, label) for filename, label in lines if label in choose_cats])

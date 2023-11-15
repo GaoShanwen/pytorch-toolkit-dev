@@ -60,8 +60,6 @@ parser.add_argument('--data-dir', metavar='DIR',
                     help='path to dataset (root dir)')
 parser.add_argument('--dataset', metavar='NAME', default='',
                     help='dataset type + name ("<type>/<name>") (default: ImageFolder or ImageTar if empty)')
-parser.add_argument('--cats-path', default='', type=str, metavar='PATH',
-                   help='path of dataset categories (default: none, current dir)')
 parser.add_argument('--infer-mode', default="val", type=str,
                     metavar='NAME', help='the dirs to inference.')
 parser.add_argument('--split', metavar='NAME', default='validation',
@@ -94,8 +92,10 @@ parser.add_argument('--interpolation', default='', type=str, metavar='NAME',
                     help='Image resize interpolation type (overrides model)')
 parser.add_argument('--num-classes', type=int, default=None,
                     help='Number classes in dataset')
-parser.add_argument('--num-choose', type=int, default=None,
-                    help='Number choose in dataset')
+parser.add_argument('--num-choose', type=int, nargs='+', default=None,
+                    help='Number choose in dataset, (start_index, end_index)')
+parser.add_argument('--start-batch', type=int, default=0,
+                    help='start batch')
 parser.add_argument('--class-map', default='', type=str, metavar='FILENAME',
                     help='path to class to idx mapping file (default: "")')
 parser.add_argument('--gp', default=None, type=str, metavar='POOL',
@@ -114,6 +114,10 @@ parser.add_argument('--no-prefetcher', action='store_true', default=False,
                     help='disable fast prefetcher')
 parser.add_argument('--pin-mem', action='store_true', default=False,
                     help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
+parser.add_argument('--cats-path', default='', type=str, metavar='PATH',
+                   help='path of dataset categories (default: none, current dir)')
+parser.add_argument('--pass-path', default='dataset/exp-data/zero_dataset/pass_cats.txt', type=str, metavar='PATH',
+                   help='path of pass categories (default: none, current dir)')
 parser.add_argument('--channels-last', action='store_true', default=False,
                     help='Use channels_last memory layout')
 parser.add_argument('--device', default='cuda', type=str,
@@ -165,8 +169,8 @@ parser.add_argument('--retry', default=False, action='store_true',
                     help='Enable batch size decay & retry for single model validation')
 
 
-def save_feat(feats, gts, idx, save_dir="./output/features"):
-    np.savez(f'{save_dir}/{idx:08d}.npz', feats=feats, gts=gts.numpy())
+def save_feat(feats, idx, save_dir="./output/features"):
+    np.savez(f'{save_dir}/{idx:08d}.npz', feats=feats)#, gts=gts.numpy())
 
 
 def init_feats_dir(save_dir="./output/features"):
@@ -179,18 +183,17 @@ def init_feats_dir(save_dir="./output/features"):
     os.makedirs(save_dir)
 
 
-def merge_feat_files(load_dir="./output/features", infer_mode='val'):
+def merge_feat_files(load_dir="./output/features", infer_mode='val', file_infos=None):
     files = sorted(os.listdir(load_dir))
     feats, gts = [], []
     for file_name in files:
         file_path = os.path.join(load_dir, file_name)
         data = np.load(file_path)
         feats.append(data["feats"])
-        gts.append(data["gts"])
-    # import pdb; pdb.set_trace()
     merge_feats = np.concatenate(feats)
-    merge_gts = np.concatenate(gts)
-    np.savez(f'{load_dir}-{infer_mode}.npz', feats=merge_feats, gts=merge_gts)
+    merge_fpaths, merge_gts = zip(*(file_infos))
+    merge_gts = np.array(merge_gts)
+    np.savez(f'{load_dir}-{infer_mode}.npz', feats=merge_feats, gts=merge_gts, fpaths=merge_fpaths)
 
 
 def extract(args):
@@ -315,6 +318,7 @@ def extract(args):
         num_classes=args.num_classes,
         num_choose=args.num_choose,
         cats_path=args.cats_path,
+        pass_path=args.pass_path,
     )
     _logger.info(f"load image number={len(dataset)}")
 
@@ -335,7 +339,7 @@ def extract(args):
         tf_preprocessing=args.tf_preprocessing,
     )
     pbar = tqdm.tqdm(total=len(loader))
-
+    
     model.eval()
     with torch.no_grad():
         # warmup, reduce variability of first batch time, especially for comparing torchscript vs non
@@ -345,9 +349,12 @@ def extract(args):
         with amp_autocast():
             model(input)
 
-        init_feats_dir(args.results_dir)
+        if not args.start_batch: init_feats_dir(args.results_dir)
         # end = time.time()
         for batch_idx, (input, target) in enumerate(loader):
+            if batch_idx<args.start_batch:
+                pbar.update(1)
+                continue
             if args.no_prefetcher:
                 target = target.to(device)
                 input = input.to(device)
@@ -359,12 +366,13 @@ def extract(args):
                 output = model(input)
                 # output = model.forward_features(input)
             # import pdb; pdb.set_trace()
-            save_feat(output.cpu().numpy(), target.cpu(), batch_idx, args.results_dir)
+            save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
             pbar.update(1)
             # tqdm.tqdm.write('finish task %i' % batch_idx)
 
     del pbar
-    merge_feat_files(args.results_dir, args.infer_mode)
+    img_files = dataset.reader.samples
+    merge_feat_files(args.results_dir, args.infer_mode, img_files)
     _logger.info(f'feat saved in {args.results_dir}-{args.infer_mode}.npz')
 
 
@@ -374,35 +382,6 @@ _NON_IN1K_FILTERS = ['*_in21k', '*_in22k', '*in12k', '*_dino', '*fcmae', '*seer'
 def main():
     setup_default_logging()
     args = parser.parse_args()
-    # model_cfgs = []
-    # model_names = []
-    # if os.path.isdir(args.checkpoint):
-    #     # validate all checkpoints in a path with same model
-    #     checkpoints = glob.glob(args.checkpoint + '/*.pth.tar')
-    #     checkpoints += glob.glob(args.checkpoint + '/*.pth')
-    #     # model_names = list_models(args.model)
-    #     # model_cfgs = [(args.model, c) for c in sorted(checkpoints, key=natural_key)]
-    # else:
-    #     if args.model == 'all':
-    #         # validate all models in a list of names with pretrained checkpoints
-    #         args.pretrained = True
-    #         model_names = list_models(
-    #             pretrained=True,
-    #             exclude_filters=_NON_IN1K_FILTERS,
-    #         )
-    #         model_cfgs = [(n, '') for n in model_names]
-    #     elif not is_model(args.model):
-    #         # model name doesn't exist, try as wildcard filter
-    #         model_names = list_models(
-    #             args.model,
-    #             pretrained=True,
-    #         )
-    #         model_cfgs = [(n, '') for n in model_names]
-
-    #     if not model_cfgs and os.path.isfile(args.model):
-    #         with open(args.model) as f:
-    #             model_names = [line.rstrip() for line in f]
-    #         model_cfgs = [(n, None) for n in model_names if n]
 
     extract(args)
 

@@ -32,7 +32,7 @@ def load_csv_file(label_file):
 
 
 def check_data(filenames):
-    for filename in tqdm.tqdm(filenames):
+    for filename in filenames:#tqdm.tqdm(filenames):
         if not os.path.exists(filename):
             print(filename)
         try:  
@@ -46,10 +46,10 @@ def check_data(filenames):
 
 
 def static_data(train_data, val_data, cat_map):
-    # save_cats, _ = zip(*collections.Counter(train_data).most_common()[:4281])#[:3000])
-    # print(len([id for id, _ in collections.Counter(val_data).items() if id in save_cats]))
-    # # for cat in save_cats:
-    # #     print(cat)
+    # save_cats, _ = zip(*collections.Counter(train_data).most_common())#[:4281])#[:3000])
+    # # print(len([id for id, _ in collections.Counter(val_data).items() if id in save_cats]))
+    # for cat in save_cats:
+    #     print(cat)
     train_counter = collections.Counter(train_data).most_common()#[:999]
     val_dict = dict(collections.Counter(val_data))
     # train_dict = dict(collections.Counter(train_data))
@@ -73,13 +73,14 @@ def static_data(train_data, val_data, cat_map):
 
 
 if __name__=="__main__":
-    load_train_path = "./dataset/exp-data/zero_dataset/train.txt"
+    # load_train_path = "./dataset/exp-data/zero_dataset/train.txt"
+    load_train_path = "./dataset/exp-data/removeredundancy/train.txt"
     train_files, train_labels = load_data(load_train_path)
-    load_val_path = "./dataset/exp-data/zero_dataset/val.txt"
+    # check_data(train_files)
+    # load_val_path = "./dataset/exp-data/zero_dataset/val.txt"
+    load_val_path = "./dataset/exp-data/removeredundancy/val.txt"
     val_files, val_labels = load_data(load_val_path)
-    # check_data(filenames)
+    # check_data(val_files)
     label_file = "./dataset/exp-data/zero_dataset/label_names.csv"
     label_map = load_csv_file(label_file)
     static_data(train_labels, val_labels, label_map)
-    # num = 9
-    # print(f"{num:03d}")

@@ -8,7 +8,7 @@
     ├── docs
     │   └── environment.md
     ├── output
-    │   └── 2023...
+    │   └── train # .pth model path
     ├── local_lib
     │   ├── data
     │   ├── models

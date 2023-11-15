@@ -45,6 +45,8 @@ you can install these by this [document](https://github.com/GaoShanwen/pytorch-t
         --pretrained --num-classes 4281 &
 <pytorch-cls-project> ~ $ OMP_U_THREADS=1 MKL_NUM_THREADS=1 ... --model mobilenetv3_redution_large_100.miil_in21k_ft_in1k
 <pytorch-cls-project> ~ $ OMP_U_THREADS=1 MKL_NUM_THREADS=1 ... --pass-path dataset/exp-data/zero_dataset/pass_cats2.txt --num-classes 4091
+<pytorch-cls-project> ~ $ OMP_U_THREADS=1 MKL_NUM_THREADS=1 ... --cats-path dataset/exp-data/zero_dataset/save_cats2.txt
+<pytorch-cls-project> ~ $ OMP_U_THREADS=1 MKL_NUM_THREADS=1 ... --model-kwargs reduction_dim=64
 
 <pytorch-cls-project> ~ $ # validate
         OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=7 python tools/validate.py --dataset txt_data --data-dir dataset/exp-data/zero_dataset \
@@ -67,10 +69,7 @@ you can install these by this [document](https://github.com/GaoShanwen/pytorch-t
         --checkpoint output/train/20231022-213614-mobilenetv3_redution_large_100-224/model_best.pth.tar 
 <pytorch-cls-project> ~ $ # onnx -> rknn; validate(onnx and rknn, if model is cls model) model
         python tools/scripts/onnx2rknn.py output/converted_model/rk3566-mobilenetv3-224.rknn \
-        --input output/converted_model/20231022-213614-mobilenetv3_redution_large_100-224.onnx \
-        --dataset txt_data --data-dir dataset/exp-data/zero_dataset --results-dir output/feats/mobilenet_large_100 \
-        --model mobilenetv3_redution_large_100 -b 1 -j 1 --img-size 224 --results-dir output/feats/mobilenet_large_100 \
-        --num-classes 4281 --mean 0.4850 0.4560 0.4060 --std 0.2290 0.2240 0.2250
+        --input output/converted_model/20231022-213614-mobilenetv3_redution_large_100-224.onnx
 <pytorch-cls-project> ~ $ # convert other
         ... output/converted_model/rk3566-regnety_016-224.rknn -m regnety_redution_016.tv2_in1k --results-dir output/feats/regnety_016 \
         --input output/converted_model/... --crop-pct 1.
