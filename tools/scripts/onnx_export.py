@@ -49,6 +49,10 @@ parser.add_argument('--checkpoint', default='', type=str, metavar='PATH',
                     help='path to checkpoint (default: none)')
 parser.add_argument('--reparam', default=False, action='store_true',
                     help='Reparameterize model')
+parser.add_argument('--use-ema', dest='use_ema', action='store_true',
+                    help='use ema version of weights if present')
+parser.add_argument('--run-test', action='store_true',
+                    help='use test to be sure onnx is same with pth model')
 parser.add_argument('--model-kwargs', nargs='*', default={}, action=utils.ParseKwargs)
 parser.add_argument('--training', default=False, action='store_true',
                     help='Export in training mode (default is eval)')
@@ -166,6 +170,8 @@ def main():
         **args.model_kwargs,
     )
 
+    timm.models.load_checkpoint(model, args.checkpoint, args.use_ema)
+
     if args.reparam:
         model = reparameterize_model(model)
     
@@ -177,11 +183,7 @@ def main():
             model.head.fc = nn.Identity() # 移除分类层
         else:
             raise f"not support {args.model} !"
-        # elif "haloregnetz" in args.model:
-        #     model.head.fc = nn.Identity() # 移除分类层
-        #     model = model.to('cpu')
-            # import pdb; pdb.set_trace()
-
+    
     onnx_export(
         model,
         args.output,
@@ -195,6 +197,27 @@ def main():
         input_size=(3, args.img_size, args.img_size),
         batch_size=args.batch_size,
     )
+
+    def run_test(model, onnx_path, image_path="1.jpg"):
+        import cv2
+        import numpy as np 
+        img = cv2.imread(image_path)
+        inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB); inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
+        x = np.array(inputs).astype(np.float32)/255.  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]  
+        x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化
+        input = x.transpose(2,0,1)[np.newaxis, ...]; input = torch.from_numpy(input).float()#.to(device)
+        output = model(input)
+        print('pth', output.detach().numpy())
+
+        import onnxruntime
+        sess_options = onnxruntime.SessionOptions()
+        sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+        session = onnxruntime.InferenceSession(onnx_path, sess_options)
+        input_name = session.get_inputs()[0].name
+        output2 = session.run([], {input_name: [x.transpose(2,0,1)]})
+        print('onnx', output2)
+    if args.run_test:
+        run_test(model, args.output)
     # export onnx (it is recommended to set the opset_version to 12)
     # model.eval()
     # x = torch.randn((args.batch_size, 3, args.img_size, args.img_size))

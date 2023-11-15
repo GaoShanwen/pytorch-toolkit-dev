@@ -19,4 +19,5 @@ fast-histogram==0.11
 ruamel.yaml==0.17.4
 grad-cam==1.4.8
 pandas==2.0.3
+pymysql==1.1.0
 opencv-python-headless

@@ -112,58 +112,6 @@ scripting_group.add_argument('--aot-autograd', default=False, action='store_true
                              help="Enable AOT Autograd support.")
 
 
-def evaliation(img_root, rknn, onnx_model, means=[0.4850, 0.4560, 0.4060], std=[0.2290, 0.2240, 0.2250]):
-    top1_rknn, top1_onnx = 0, 0
-    resize_width, resize_height = 256, 256
-    # 指定裁剪后的图像大小  
-    crop_height, crop_width = 224, 224
-    img_num = 0
-
-    ret = rknn.init_runtime()
-    if ret != 0:
-        print('init rknn failed!')
-        exit(ret)
-    sess_options = onnxruntime.SessionOptions()
-    sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
-    session = onnxruntime.InferenceSession(onnx_model, sess_options)
-    input_name = session.get_inputs()[0].name
-
-    for cat_index, cat in enumerate(sorted(os.listdir(img_root))):
-        img_dir = os.path.join(img_root, cat)
-        cat_rknn, cat_onnx = 0, 0
-        for img_name in os.listdir(img_dir):
-            img_path = os.path.join(img_dir, img_name)
-            img = cv2.imread(img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            resized_image = cv2.resize(img, (resize_width, resize_height), interpolation=cv2.INTER_CUBIC)
-            
-            # 计算裁剪的起始坐标  
-            x = (resize_width - crop_width) // 2  
-            y = (resize_height - crop_height) // 2  
-            
-            # 裁剪图像  
-            cropped_image = resized_image[y:y+crop_height, x:x+crop_width, :]
-            input = cropped_image[np.newaxis, ...]
-            cropped_image = cropped_image/255.
-            cropped_image = (cropped_image-means)/std
-            # resized_image = cv2.resize(img, (480, 480))
-            
-            # # Inference
-            # print('--> Running model')
-            rknn_output = rknn.inference(inputs=[input.astype(np.float32)])
-            output = session.run([], {input_name: [cropped_image.transpose((2,0,1))]})
-            onnx_output = output[0]
-            x = rknn_output[0]; output = np.exp(x)/np.sum(np.exp(x)); rknn_idx = np.argmax(output)
-            x = onnx_output[0]; output = np.exp(x)/np.sum(np.exp(x)); onnx_idx = np.argmax(output)
-            cat_rknn += rknn_idx == cat_index
-            cat_onnx += onnx_idx == cat_index
-            img_num += 1
-        top1_rknn += cat_rknn
-        top1_onnx += cat_onnx
-        print(f"{cat}-onnx_idx: {cat_onnx/len(os.listdir(img_dir))} | rknn_idx: {cat_rknn/len(os.listdir(img_dir))}")
-    print(f"onnx_top1: {top1_onnx}/{img_num}|{top1_onnx/img_num} | rknn_top1: {top1_rknn}/{img_num}|{top1_rknn/img_num}")
-
-
 def feat_extract(args, rknn):
     root_dir = args.data or args.data_dir
     # create model
@@ -286,17 +234,19 @@ if __name__ == '__main__':
         exit(ret)
     # feat_extract(args, rknn)
 
+    # img=cv2.imread("dataset/exp-data/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg")
+    img=cv2.imread("./dataset/1.jpg")
+    inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB); inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
+    x = np.array(inputs).astype(np.float32)/255.  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]  
+    x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化
+
     sess_options = onnxruntime.SessionOptions()
     sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
     session = onnxruntime.InferenceSession(args.input, sess_options)
     input_name = session.get_inputs()[0].name
-    img=cv2.imread("dataset/exp-data/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg")
-    inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)#; input = cv2.resize(img, (224, 224), interpolation=cv2.INTER_CUBIC)
-    output = rknn.inference(inputs=[inputs[np.newaxis, ...]], data_format='nhwc')
-    x = np.array(inputs).astype(np.float32)/255.  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]  
-    x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化
     output2 = session.run([], {input_name: [x.transpose(2,0,1)]})
-    print('rknn', output)
     print('onnx', output2)
-    # import pdb; pdb.set_trace()
+    
+    output = rknn.inference(inputs=[inputs[np.newaxis, ...]], data_format='nhwc')
+    print('rknn', output)
     rknn.release()
