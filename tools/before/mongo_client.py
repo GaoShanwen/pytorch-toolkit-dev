@@ -106,7 +106,7 @@ def main():
                             continue
                 except IOError:  
                     continue
-                f.write(f'{image_path}, {product_id}\n')
+                f.write(f'{image_path},{product_id}\n')
                 count += 1
             num_img = ImageSet.count_documents({'brand_id':brand_id}) #, 'type':1
             print(f'save num: {count}, origin num: {num_img}')

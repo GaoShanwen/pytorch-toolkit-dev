@@ -3,22 +3,34 @@
 ```bash
 <pytorch-toolkit-dev> <timm-dev>
     ├── dataset
-    │   ├── exp-data -> /data/exp-data
+    │   ├── 1.jpg
+    │   ├── exp-data # train/validate data
     │   └── README.md
     ├── docs
-    │   └── environment.md
-    ├── output
-    │   └── train # .pth model path
+    │   ├── environment.md
+    │   └── structure.md
     ├── local_lib
     │   ├── data
     │   ├── models
     │   └── utils
+    ├── output 
+    │   └── train # .pth model path
     ├── README.md
     ├── requirements.txt
     └── tools
+        ├── before
+        │   ├── check_data.py
+        │   ├── mongo_client.py
+        │   └── ready_det_data.py
+        ├── convert
+        │   ├── onnx2rknn.py
+        │   └── onnx_export.py
         ├── eval_feats.py
-        ├── feat_extract.py
-        ├── scripts
+        ├── post
+        │   ├── feat_extract.py
+        │   ├── feat_tools.py
+        │   └── write_mysql.py
         ├── train.py
-        └── validate.py
+        ├── validate.py
+        └── visualize
 ```

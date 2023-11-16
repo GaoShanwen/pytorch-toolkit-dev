@@ -21,17 +21,20 @@ def load_data(file_path):
     return feas, labels, fpaths
 
 
-def run_compute(p_label, query_label):
+def run_compute(p_label, query_label, do_output=False, k=5):
     tp1_num, tp5_num = 0, 0
     for (pred, gt) in zip(p_label, query_label):
         tp5_num += gt in pred
         tp1_num += gt == pred[0]
     # tp_num = np.where(p_label == query_label)[0].shape[0]
-    return tp1_num, tp5_num
+    if not do_output:
+        return tp1_num, tp5_num
+    print(f"top1-knn(k={k}): {tp1_num}/{query_label.shape[0]}|{tp1_num/query_label.shape[0]}")
+    print(f"top5-knn(k={k}): {tp5_num}/{query_label.shape[0]}|{tp5_num/query_label.shape[0]}")
 
 
 def compute_acc_by_cat(p_label, query_label, class_list):
-    top1_num, top5_num = run_compute(p_label, query_label)
+    top1_num, top5_num = run_compute(p_label, query_label, do_output=True)
     acc_map = {"all_data": {"top1_num": top1_num, "top1_acc": top1_num/query_label.shape[0], \
                             "top5_num": top5_num, "top5_acc": top5_num/query_label.shape[0], "data_num": query_label.shape[0]}}
     val_dict = dict(Counter(query_label))
@@ -50,11 +53,10 @@ def print_acc_map(acc_map, csv_name):
     # print(df)
 
 
-def save_keeps_file(gallery_files, labels, keeps, class_list, threshold):
+def save_keeps_file(labels, files, class_list, threshold):
     obj_files = f"train-th{threshold}.txt"
     with open(obj_files, 'w') as f:
-        for label_index, keep in zip(labels, keeps):
-            filename = gallery_files[keep]
+        for label_index, filename in zip(labels, files):
             label = class_list[label_index]
             f.write(f'{filename},{label}\n')
 
@@ -77,8 +79,8 @@ def choose_feats(matrix, labels, samilar_thresh=0.9, use_gpu=False):
     cats = list(set(labels))
     keeps = []
     for cat in tqdm.tqdm(cats):
-        cat_index = np.where(labels == cat)
-        choose_gallery = matrix[cat_index[0]]
+        cat_index = np.where(labels == cat)[0]
+        choose_gallery = matrix[cat_index]
         enable_gpu = use_gpu if choose_gallery.shape[0] <= 2048 else False
         index = create_index(choose_gallery, enable_gpu)
         g_g_dist, _ = index.search(choose_gallery, choose_gallery.shape[0])
@@ -86,7 +88,7 @@ def choose_feats(matrix, labels, samilar_thresh=0.9, use_gpu=False):
             (g_g_dist >= samilar_thresh) &
             (np.arange(g_g_dist.shape[1])[:, np.newaxis] < np.arange(g_g_dist.shape[0]))
         )[0]
-        keep = np.setdiff1d(cat_index[0], cat_index[0][masks])
+        keep = np.setdiff1d(cat_index, cat_index[masks])
         keeps += keep.tolist()
         del index
     return np.array(keeps)

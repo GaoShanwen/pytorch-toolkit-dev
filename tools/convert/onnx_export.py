@@ -200,7 +200,7 @@ def main():
 
     def run_test(model, onnx_path, image_path="1.jpg"):
         import cv2
-        import numpy as np 
+        import numpy as np
         img = cv2.imread(image_path)
         inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB); inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
         x = np.array(inputs).astype(np.float32)/255.  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]  

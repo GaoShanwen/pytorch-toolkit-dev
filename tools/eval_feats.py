@@ -7,14 +7,14 @@
 ######################################################
 import argparse
 import faiss
-import tqdm
 import numpy as np
 import pandas as pd
 
 import sys
 sys.path.append('./')
 
-from tools.scripts.feat_tools import load_data, run_compute, compute_acc_by_cat, choose_feats, print_acc_map, create_index, save_keeps_file
+from .post.write_mysql import save_keeps2mysql
+from .post.feat_tools import load_data, run_compute, compute_acc_by_cat, choose_feats, print_acc_map, create_index, save_keeps_file
 
 
 def parse_args():
@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument('-q', "--querys", type=str)
     parser.add_argument('--use-gpu', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
+    parser.add_argument('--save-sql', action='store_true', default=False)
     parser.add_argument("--threshold", type=float, default=0.9)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=5)
@@ -60,23 +61,22 @@ if __name__ == '__main__':
     with open('dataset/exp-data/removeredundancy/4091_cats.txt', 'r') as f: class_list = [line.strip('\n') for line in f.readlines()]
     acc_map = compute_acc_by_cat(p_label, query_label, class_list)
     print_acc_map(acc_map, 'eval_res.csv')
-    tp1_num, tp5_num = run_compute(p_label, query_label)
-    print(f"top1-knn(k={k}): {tp1_num}/{query_label.shape[0]}|{tp1_num/query_label.shape[0]}")
-    print(f"top5-knn(k={k}): {tp5_num}/{query_label.shape[0]}|{tp5_num/query_label.shape[0]}")
+    run_compute(p_label, query_label)
     del index
     
     keeps = choose_feats(gallery_feature, gallery_label, samilar_thresh=args.threshold, use_gpu=False)
-    save_keeps_file(gallery_files, gallery_label, gallery_label[keeps], class_list, args.threshold)
+    print(f"original data: {gallery_label.shape[0]}, after remove samilar data: {keeps.shape[0]}")
     new_g_feats = gallery_feature[keeps]
     new_g_label = gallery_label[keeps]
-    index = create_index(new_g_feats, use_gpu=args.use_gpu)
+    new_g_files = gallery_files[keeps]
+    if not args.save_sql:
+        save_keeps_file(new_g_label, new_g_files, class_list, args.threshold)
+        index = create_index(new_g_feats, use_gpu=args.use_gpu)
 
-    D, I = index.search(query_feature, k)
-    p_label = new_g_label[I]
-    acc_map = compute_acc_by_cat(p_label, query_label, class_list)
-    print_acc_map(acc_map, f'eval_res-{args.threshold}.csv')
-    tp1_num, tp5_num = run_compute(p_label, query_label)
-    print(f"original data: {gallery_label.shape[0]}, after remove samilar data: {new_g_label.shape[0]}")
-    print(f"top1-knn(k={k}): {tp1_num}/{query_label.shape[0]}|{tp1_num/query_label.shape[0]}")
-    print(f"top5-knn(k={k}): {tp5_num}/{query_label.shape[0]}|{tp5_num/query_label.shape[0]}")
-
+        D, I = index.search(query_feature, k)
+        p_label = new_g_label[I]
+        acc_map = compute_acc_by_cat(p_label, query_label, class_list)
+        print_acc_map(acc_map, f'eval_res-{args.threshold}.csv')
+        run_compute(p_label, query_label)
+    else:
+        save_keeps2mysql(new_g_feats, new_g_label, new_g_files, class_list)

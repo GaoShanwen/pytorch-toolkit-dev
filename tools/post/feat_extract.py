@@ -258,8 +258,6 @@ def extract(args):
 
     if args.checkpoint:
         load_checkpoint(model, args.checkpoint, args.use_ema)
-    # model.reset_classifier(0, '') # 删除分类层
-    # model.classifier = nn.Identity()
     if 'redution' in args.model:
         import torch.nn as nn
         if "mobilenetv3" in args.model:
@@ -321,7 +319,7 @@ def extract(args):
         pass_path=args.pass_path,
     )
     _logger.info(f"load image number={len(dataset)}")
-
+    
     crop_pct = 1.0 if test_time_pool else data_config['crop_pct']
     loader = create_loader(
         dataset,
@@ -350,7 +348,6 @@ def extract(args):
             model(input)
 
         if not args.start_batch: init_feats_dir(args.results_dir)
-        # end = time.time()
         for batch_idx, (input, target) in enumerate(loader):
             if batch_idx<args.start_batch:
                 pbar.update(1)
@@ -364,19 +361,13 @@ def extract(args):
             # compute output
             with amp_autocast():
                 output = model(input)
-                # output = model.forward_features(input)
-            # import pdb; pdb.set_trace()
             save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
             pbar.update(1)
-            # tqdm.tqdm.write('finish task %i' % batch_idx)
 
     del pbar
     img_files = dataset.reader.samples
     merge_feat_files(args.results_dir, args.infer_mode, img_files)
     _logger.info(f'feat saved in {args.results_dir}-{args.infer_mode}.npz')
-
-
-_NON_IN1K_FILTERS = ['*_in21k', '*_in22k', '*in12k', '*_dino', '*fcmae', '*seer']
 
 
 def main():
