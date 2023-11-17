@@ -969,7 +969,7 @@ def train_one_epoch(
             lrl = [param_group['lr'] for param_group in optimizer.param_groups]
             lr = sum(lrl) / len(lrl)
             # remaining_seconds: Estimated Time of Arrival
-            remaining_seconds = ((args.epochs - epoch) * updates_per_epoch - (update_idx + 1)) / update_time_m.avg
+            remaining_seconds = round(((args.epochs - epoch) * updates_per_epoch - (update_idx + 1)) * update_time_m.avg)
 
             if args.distributed:
                 reduced_loss = utils.reduce_tensor(loss.data, args.world_size)
