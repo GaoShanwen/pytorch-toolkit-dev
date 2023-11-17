@@ -122,6 +122,7 @@ if __name__ == '__main__':
         new_g_label = gallery_label
         new_g_files = gallery_files
     
+    # import pdb; pdb.set_trace()
     choose_cats = np.array([1210, 1447, 1521, 1991])
     cat_index = np.where(query_label[:, np.newaxis] == choose_cats)[0]
     query_feature = query_feature[cat_index]
@@ -138,5 +139,4 @@ if __name__ == '__main__':
     p_label = new_g_label[I]
     tp1_errors = np.where(p_label[:, 0] != query_label)[0]
     new_q_label, new_q_files = query_label[tp1_errors], query_files[tp1_errors]
-    # import pdb; pdb.set_trace()
     run_vis2bigimgs(I[tp1_errors], new_g_label, new_g_files, new_q_label, new_q_files, label_map, args.save_root)

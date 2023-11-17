@@ -71,6 +71,7 @@ def main(args):
     save_keeps_file(new_g_label, new_g_files, class_list, args.threshold)
     index = create_index(new_g_feats, use_gpu=args.use_gpu)
 
+    # import pdb; pdb.set_trace()
     D, I = index.search(query_feature, k)
     p_label = new_g_label[I]
     acc_map = compute_acc_by_cat(p_label, query_label, class_list)

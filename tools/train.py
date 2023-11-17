@@ -12,7 +12,7 @@ import os
 import time
 from collections import OrderedDict
 from contextlib import suppress
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 
 import torch
@@ -968,6 +968,8 @@ def train_one_epoch(
         if update_idx % args.log_interval == 0:
             lrl = [param_group['lr'] for param_group in optimizer.param_groups]
             lr = sum(lrl) / len(lrl)
+            # remaining_seconds: Estimated Time of Arrival
+            remaining_seconds = ((args.epochs - epoch) * updates_per_epoch - (update_idx + 1)) / update_time_m.avg
 
             if args.distributed:
                 reduced_loss = utils.reduce_tensor(loss.data, args.world_size)
@@ -982,7 +984,8 @@ def train_one_epoch(
                     f'Time: {update_time_m.val:.3f}s, {update_sample_count / update_time_m.val:>7.2f}/s  '
                     f'({update_time_m.avg:.3f}s, {update_sample_count / update_time_m.avg:>7.2f}/s)  '
                     f'LR: {lr:.3e}  '
-                    f'Data: {data_time_m.val:.3f} ({data_time_m.avg:.3f})'
+                    f'ETA: {timedelta(seconds=remaining_seconds)}  '
+                    # f'Data: {data_time_m.val:.3f} ({data_time_m.avg:.3f})'
                 )
 
                 if args.save_images and output_dir:

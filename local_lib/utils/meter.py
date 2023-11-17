@@ -1,3 +1,10 @@
+######################################################
+# author: gaowenjie
+# email: gaowenjie@rongxwy.com
+# date: 2023.11.09
+# filenaem: meter.py
+# function: eval accuracy of every classes. 
+######################################################
 import torch
 import collections
 import pandas as pd

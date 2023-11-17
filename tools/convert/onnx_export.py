@@ -216,6 +216,7 @@ def main():
         input_name = session.get_inputs()[0].name
         output2 = session.run([], {input_name: [x.transpose(2,0,1)]})
         print('onnx', output2)
+    
     if args.run_test:
         run_test(model, args.output)
     # export onnx (it is recommended to set the opset_version to 12)

@@ -1,6 +1,7 @@
 import pymysql
 import tqdm
 
+
 class MySQLHelper(object):
     def __init__(
         self, 
