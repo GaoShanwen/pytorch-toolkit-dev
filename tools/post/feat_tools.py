@@ -21,29 +21,25 @@ def load_data(file_path):
     return feas, labels, fpaths
 
 
-def run_compute(p_label, query_label, do_output=False, k=5):
-    tp1_num, tp5_num = 0, 0
-    for (pred, gt) in zip(p_label, query_label):
-        tp5_num += gt in pred
-        tp1_num += gt == pred[0]
-    # tp_num = np.where(p_label == query_label)[0].shape[0]
-    if not do_output:
+def run_compute(p_label, query_label, do_output=True, k=5):
+    tp1_num = np.where(p_label[:, 0] == query_label)[0].shape[0]
+    tp5_num = np.unique(np.where(p_label == query_label[:, np.newaxis])[0]).shape[0]
+    if do_output:
         return tp1_num, tp5_num
     print(f"top1-knn(k={k}): {tp1_num}/{query_label.shape[0]}|{tp1_num/query_label.shape[0]}")
     print(f"top5-knn(k={k}): {tp5_num}/{query_label.shape[0]}|{tp5_num/query_label.shape[0]}")
 
 
 def compute_acc_by_cat(p_label, query_label, class_list):
-    top1_num, top5_num = run_compute(p_label, query_label, do_output=True)
+    top1_num, top5_num = run_compute(p_label, query_label)
     acc_map = {"all_data": {"top1_num": top1_num, "top1_acc": top1_num/query_label.shape[0], \
                             "top5_num": top5_num, "top5_acc": top5_num/query_label.shape[0], "data_num": query_label.shape[0]}}
     val_dict = dict(Counter(query_label))
     for cat, data_num in val_dict.items():
         cat_index = np.where(query_label == cat)
         top1_num = np.where(p_label[cat_index, 0] == query_label[cat_index])[1].shape[0]
-        top5_num = len(set(np.where(p_label[cat_index, :] == query_label[cat_index, np.newaxis])[1]))
+        top5_num = np.unique(np.where(p_label[cat_index, :] == query_label[cat_index, np.newaxis])[1]).shape[0]
         acc_map[class_list[cat]] = {"top1_num": top1_num, "top1_acc": top1_num/data_num, "top5_num": top5_num, "top5_acc": top5_num/data_num, "data_num": data_num}
-    # import pdb; pdb.set_trace()
     return acc_map
 
 
@@ -75,10 +71,11 @@ def create_index(datas_embedding, use_gpu=False):
     return index
 
 # 进行非极大值抑制
-def choose_feats(matrix, labels, samilar_thresh=0.9, use_gpu=False):
+def choose_feats(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
     cats = list(set(labels))
+    stride = len(cats)//update_times if update_times else 1
     keeps = []
-    for cat in tqdm.tqdm(cats):
+    for cat in tqdm.tqdm(cats, miniters=stride, maxinterval=600):
         cat_index = np.where(labels == cat)[0]
         choose_gallery = matrix[cat_index]
         enable_gpu = use_gpu if choose_gallery.shape[0] <= 2048 else False

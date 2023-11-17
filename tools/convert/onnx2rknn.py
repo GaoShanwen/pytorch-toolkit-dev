@@ -23,7 +23,7 @@ import sys
 sys.path.append('./')
 
 from local_lib.data import create_owner_dataset
-from tools.feat_extract import init_feats_dir, merge_feat_files, save_feat
+from tools.post.feat_extract import init_feats_dir, merge_feat_files, save_feat
 
 _logger = logging.getLogger('validate')
 
@@ -110,83 +110,6 @@ scripting_group.add_argument('--torchcompile', nargs='?', type=str, default=None
                              help="Enable compilation w/ specified backend (default: inductor).")
 scripting_group.add_argument('--aot-autograd', default=False, action='store_true',
                              help="Enable AOT Autograd support.")
-
-
-def feat_extract(args, rknn):
-    root_dir = args.data or args.data_dir
-    # create model
-    in_chans = 3
-    if args.in_chans is not None:
-        in_chans = args.in_chans
-    elif args.input_size is not None:
-        in_chans = args.input_size[0]
-    model = create_model(
-        args.model, pretrained=args.pretrained, num_classes=args.num_classes,
-        in_chans=in_chans, global_pool=args.gp, scriptable=args.torchscript,
-        **args.model_kwargs,
-    )
-    
-    def run_infer(model, args, root_dir, infer_mode, data_config):
-        dataset = create_owner_dataset(
-            root=root_dir, name=args.dataset, split=args.split,
-            is_training=infer_mode=="train", download=args.dataset_download,
-            load_bytes=args.tf_preprocessing, class_map=args.class_map,
-            num_classes=args.num_classes,
-            num_choose=args.num_choose,
-        )
-        _logger.info(f"load image number={len(dataset)}")
-        device = torch.device(args.device)
-        loader = create_loader(
-            dataset, input_size=data_config['input_size'],
-            batch_size=args.batch_size, is_training=False,
-            use_prefetcher=not args.no_prefetcher,
-            interpolation=data_config['interpolation'],
-            mean=data_config['mean'], std=data_config['std'],
-            num_workers=args.workers,
-            crop_pct=data_config['crop_pct'],
-            crop_mode=data_config['crop_mode'],
-            pin_memory=args.pin_mem,
-            device=device,
-            tf_preprocessing=args.tf_preprocessing,
-        )
-        pbar = tqdm.tqdm(total=len(loader))
-
-        init_feats_dir(args.results_dir)
-        # sess_options = onnxruntime.SessionOptions()
-        # sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
-        # session = onnxruntime.InferenceSession(args.input, sess_options)
-        # input_name = session.get_inputs()[0].name
-        for batch_idx, (input, target) in enumerate(loader):
-            if args.no_prefetcher:
-                target = target.to(device)
-                input = input.to(device)
-            if args.channels_last:
-                input = input.contiguous(memory_format=torch.channels_last)
-
-            if args.do_quantizate:
-                img = input.numpy().transpose((0,2,3,1))[0] * 255
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                output = rknn.inference(inputs=[img[np.newaxis, ...]], data_format='nhwc')
-                # output2 = session.run([], {input_name: [img.transpose((2,0,1))]})
-            else:
-                output = rknn.inference(inputs=[input.numpy()], data_format='nchw')
-            # # output2 = session.run([], {input_name: input.numpy()})
-            # import pdb; pdb.set_trace()
-            save_feat(output[0], target, batch_idx, args.results_dir)
-            pbar.update(1)
-
-        # del pbar
-        # merge_feat_files(args.results_dir, infer_mode)
-        # _logger.info(f'feat saved in {args.results_dir}-{infer_mode}.npz')
-    if args.do_quantizate:
-        args.mean, args.std = [0,0,0], [1,1,1]
-    data_config = resolve_data_config(
-        vars(args), model=model,
-        use_test_size=not args.use_train_size,
-        verbose=True,
-    )
-    run_infer(model, args, root_dir, 'val', data_config)
-    run_infer(model, args, root_dir, 'train', data_config)
 
 
 if __name__ == '__main__':

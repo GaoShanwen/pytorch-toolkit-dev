@@ -22,6 +22,7 @@ class MySQLHelper(object):
         self.mycursor = self.mydb.cursor()
         self.write_sql = f"insert into `{table_name}` (`sLabel`, `sImgURL`, `sModelVersion`, `sFeature`) VALUES (%s, %s, %s, %s)"
         self.del_sql = f"delete from {table_name}"
+        # self.del_sql = f"truncate table {table_name} " # insufficient permissions 
         self.read_sql = f"select * from {table_name}"
 
     def write_val2table(self, val):
@@ -40,17 +41,20 @@ class MySQLHelper(object):
         self.mycursor.close()
 
 
-def save_keeps2mysql(feats, labels, files, class_list):
+def save_keeps2mysql(feats, labels, files, class_list, update_times=0):
     mysql = MySQLHelper()
     mysql.del_table()
-    pbar = tqdm.tqdm(total=labels.shape[0])
-    for label_index, filename, feat in zip(labels, files, feats):
+    stride = labels.shape[0]//update_times if update_times else 1
+    pbar = tqdm.tqdm(total=labels.shape[0], miniters=stride, maxinterval=300)
+    for i, (label_index, filename, feat) in enumerate(zip(labels, files, feats)):
         label = class_list[label_index]
         feat = ','.join(map(str, feat.tolist()))
         val = (label[1:], filename, '20231115', f'[{feat}]')
         mysql.write_val2table(val)
         pbar.update(1)
-    del pbar
+        if not (i+1)%stride:
+            mysql.mydb.commit()
+    pbar.close()
     mysql.close_cursor()
 
 

@@ -278,7 +278,7 @@ def validate(args):
         cats_path=args.cats_path,
         pass_path=args.pass_path,
     )
-
+    
     if args.valid_labels:
         with open(args.valid_labels, 'r') as f:
             valid_labels = [int(line.rstrip()) for line in f]
