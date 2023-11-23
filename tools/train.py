@@ -35,6 +35,7 @@ sys.path.append('./')
 
 import local_lib.models # for regster local model
 from local_lib.data import create_owner_dataset
+from local_lib.utils.hooks import TensorBoardWriter
 
 try:
     from apex import amp
@@ -109,6 +110,8 @@ group.add_argument('--no-resume-opt', action='store_true', default=False,
                    help='prevent resume of optimizer state when resuming model')
 group.add_argument('--num-classes', type=int, default=None, metavar='N',
                    help='number of label classes (Model default if None)')
+parser.add_argument('--num-choose', type=int, nargs='+', default=None,
+                    help='Number choose in dataset, (start_index, end_index)')
 group.add_argument('--gp', default=None, type=str, metavar='POOL',
                    help='Global pool type, one of (fast, avg, max, avgmax, avgmaxc). Model default if None.')
 group.add_argument('--img-size', type=int, default=None, metavar='N',
@@ -140,6 +143,8 @@ group.add_argument('--grad-checkpointing', action='store_true', default=False,
                    help='Enable gradient checkpointing through model blocks/stages')
 group.add_argument('--fast-norm', default=False, action='store_true',
                    help='enable experimental fast-norm')
+group.add_argument('--tensorboard', default='', type=str, metavar='PATH',
+                   help='the path for save tensorboard logs (default: none)')
 group.add_argument('--model-kwargs', nargs='*', default={}, action=utils.ParseKwargs)
 group.add_argument('--head-init-scale', default=None, type=float,
                    help='Head initialization scale')
@@ -592,6 +597,7 @@ def main():
         seed=args.seed,
         repeats=args.epoch_repeats,
         num_classes=args.num_classes,
+        num_choose=args.num_choose,
         cats_path=args.cats_path,
         pass_path=args.pass_path,
     )
@@ -606,6 +612,7 @@ def main():
         download=args.dataset_download,
         batch_size=args.batch_size,
         num_classes=args.num_classes,
+        num_choose=args.num_choose,
         cats_path=args.cats_path,
         pass_path=args.pass_path,
     )
@@ -717,6 +724,7 @@ def main():
     best_epoch = None
     saver = None
     output_dir = None
+    tb_writer = None
     if utils.is_primary(args):
         if args.experiment:
             exp_name = args.experiment
@@ -741,6 +749,9 @@ def main():
         )
         with open(os.path.join(output_dir, 'args.yaml'), 'w') as f:
             f.write(args_text)
+        
+        if args.tensorboard:
+            tb_writer = TensorBoardWriter(args.tensorboard, exp_name)
 
     if utils.is_primary(args) and args.log_wandb:
         if has_wandb:
@@ -822,7 +833,9 @@ def main():
                     log_suffix=' (EMA)',
                 )
                 eval_metrics = ema_eval_metrics
-
+            if tb_writer is not None:
+                lrs = [param_group['lr'] for param_group in optimizer.param_groups]
+                tb_writer.update(epoch, train_metrics, eval_metrics, lr=sum(lrs) / len(lrs))
             if output_dir is not None:
                 lrs = [param_group['lr'] for param_group in optimizer.param_groups]
                 utils.update_summary(

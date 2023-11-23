@@ -1,4 +1,5 @@
 numpy==1.24.4
+setuptools==56.1.0
 opencv-python==4.8.1.78
 tqdm==4.64.0
 torch==1.10.1+cu102
@@ -20,4 +21,5 @@ ruamel.yaml==0.17.4
 grad-cam==1.4.8
 pandas==2.0.3
 pymysql==1.1.0
+tensorboard==2.14.0
 opencv-python-headless

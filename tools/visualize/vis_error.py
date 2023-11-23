@@ -6,6 +6,7 @@
 # function: visualize the error picture
 ######################################################
 import argparse
+import shutil
 import faiss
 import os
 import cv2
@@ -15,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 import sys
 sys.path.append('./')
 
-from tools.post.feat_tools import load_data, choose_feats, create_index, save_keeps_file
+from tools.post.feat_tools import load_data, create_index
 
 
 def parse_args():
@@ -25,12 +26,13 @@ def parse_args():
     parser.add_argument('-l', "--label-file", type=str,
                         default='dataset/exp-data/zero_dataset/label_names.csv')
     parser.add_argument('-c', "--cats-file", type=str, 
-                        default='dataset/exp-data/removeredundancy/4091_cats.txt')
+                        default='dataset/exp-data/removeredundancy/629_cats.txt')
     parser.add_argument('--pass-remove', action='store_true', default=False,
                         help="pass remove redundancy flag(True: pass, False: run remove)")
     parser.add_argument('--use-gpu', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
-    parser.add_argument('--save-root', type=str, default=False)
+    parser.add_argument('--save-root', type=str, default='')
+    parser.add_argument("--num-classes", type=int, default=629)
     parser.add_argument("--threshold", type=float, default=0.9)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=9)
@@ -78,7 +80,7 @@ def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map):
             start_h += 642
             start_w = 0
         H, W, _ = img.shape
-        new_height = int(H * (480 / W))  # 保持原来的长宽比  
+        new_height = min(640, int(H * (480 / W)))  # 保持原来的长宽比  
         resized_img = cv2.resize(img, (480, new_height)) # 调整大小 
         # print('新的宽度和高度：', resized_img.shape[:2]) # 显示新的图像大小  
 
@@ -101,29 +103,31 @@ def run_vis2bigimgs(initial_rank, g_labels, g_files, q_labels, q_files, label_ma
         cv2.imwrite(obj_path, sum_img)
 
 
+def save_imgs(labels, files, class_list, save_root):
+    with open('/'.join(save_root.split('/')[:-2] + ['choose_noise.txt']), 'w') as f:
+        for i, (current_file, current_label) in enumerate(zip(files, labels)):
+            label_name = class_list[current_label]
+            obj_dir = os.path.join(save_root, label_name)
+            if not os.path.exists(obj_dir):
+                os.mkdir(obj_dir)
+            obj_path = os.path.join(obj_dir, f"{i:08d}.jpg")
+            shutil.copy(current_file, obj_path)
+            f.write(f"{current_file},{obj_path}\n")
+
+
 if __name__ == '__main__':
     args = parse_args()
-    param, measure = 'Flat', faiss.METRIC_INNER_PRODUCT
+    # param, measure = 'Flat', faiss.METRIC_INNER_PRODUCT
+    args.param = f'IVF{args.num_classes},Flat'
+    args.measure = faiss.METRIC_INNER_PRODUCT
     # 加载npz文件
     gallery_feature, gallery_label, gallery_files = load_data(args.gallerys)
     query_feature, query_label, query_files = load_data(args.querys)
     with open(args.cats_file, 'r') as f: class_list = [line.strip('\n')[1:] for line in f.readlines()]
     faiss.normalize_L2(gallery_feature)
-
-    if not args.pass_remove:
-        keeps = choose_feats(gallery_feature, gallery_label, samilar_thresh=args.threshold, use_gpu=False)
-        print(f"original data: {gallery_label.shape[0]}, after remove samilar data: {keeps.shape[0]}")
-        new_g_feats = gallery_feature[keeps]
-        new_g_label = gallery_label[keeps]
-        new_g_files = gallery_files[keeps]
-        np.savez(f'output/feats/regnety_040-train-{args.threshold}.npz', feats=new_g_feats, gts=new_g_label, fpaths=new_g_files)
-    else:
-        new_g_feats = gallery_feature
-        new_g_label = gallery_label
-        new_g_files = gallery_files
     
-    # import pdb; pdb.set_trace()
-    choose_cats = np.array([1210, 1447, 1521, 1991])
+    choose_cats = np.array([class_list.index(cat) for cat in ["999920265", "10000000105", "999920247", "9999150390"]])
+    # choose_cats = np.array([1210, 1447, 1521, 1991])
     cat_index = np.where(query_label[:, np.newaxis] == choose_cats)[0]
     query_feature = query_feature[cat_index]
     query_label = query_label[cat_index]
@@ -133,10 +137,10 @@ if __name__ == '__main__':
     label_index = load_csv_file(args.label_file)
     cats = list(set(gallery_label))
     label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
-    index = create_index(new_g_feats, use_gpu=args.use_gpu)
+    index = create_index(gallery_feature, use_gpu=args.use_gpu)
     _, I = index.search(query_feature, args.topk)
 
-    p_label = new_g_label[I]
+    p_label = gallery_label[I]
     tp1_errors = np.where(p_label[:, 0] != query_label)[0]
     new_q_label, new_q_files = query_label[tp1_errors], query_files[tp1_errors]
-    run_vis2bigimgs(I[tp1_errors], new_g_label, new_g_files, new_q_label, new_q_files, label_map, args.save_root)
+    run_vis2bigimgs(I[tp1_errors], gallery_label, gallery_files, new_q_label, new_q_files, label_map, args.save_root)

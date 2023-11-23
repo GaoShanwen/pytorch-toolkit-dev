@@ -3,8 +3,8 @@
 # author: gaowenjie
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.09
-# filenaem: train.py
-# function: train owner data use timm.
+# filenaem: feat_extract.py
+# function: extract the features of owner data (train/val).
 ######################################################
 import argparse
 import logging
@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 import torch.nn.parallel
 
-from timm.data import create_loader, resolve_data_config
+from timm.data import resolve_data_config
 from timm.layers import apply_test_time_pool, set_fast_norm
 from timm.models import create_model, load_checkpoint
 from timm.utils import setup_default_logging, ParseKwargs, reparameterize_model
@@ -28,6 +28,7 @@ sys.path.append('./')
 
 import local_lib.models # enable local model
 from local_lib.data import create_owner_dataset
+from local_lib.data import create_owner_loader
 
 try:
     from apex import amp
@@ -83,6 +84,8 @@ parser.add_argument('--use-train-size', action='store_true', default=False,
 parser.add_argument('--crop-pct', default=None, type=float,
                     metavar='N', help='Input image center crop pct')
 parser.add_argument('--crop-mode', default=None, type=str,
+                    metavar='N', help='Input image crop mode (squash, border, center). Model default if None.')
+parser.add_argument('--mode-function', default='feat_extract', type=str,
                     metavar='N', help='Input image crop mode (squash, border, center). Model default if None.')
 parser.add_argument('--mean', type=float, nargs='+', default=None, metavar='MEAN',
                     help='Override mean pixel value of dataset')
@@ -321,7 +324,7 @@ def extract(args):
     _logger.info(f"load image number={len(dataset)}")
     
     crop_pct = 1.0 if test_time_pool else data_config['crop_pct']
-    loader = create_loader(
+    loader = create_owner_loader(
         dataset,
         input_size=data_config['input_size'],
         batch_size=args.batch_size,
@@ -335,8 +338,9 @@ def extract(args):
         pin_memory=args.pin_mem,
         device=device,
         tf_preprocessing=args.tf_preprocessing,
+        mode_function=args.mode_function
     )
-    pbar = tqdm.tqdm(total=len(loader))
+    pbar = tqdm.tqdm(total=len(loader)-args.start_batch)
     
     model.eval()
     with torch.no_grad():
@@ -350,14 +354,13 @@ def extract(args):
         if not args.start_batch: init_feats_dir(args.results_dir)
         for batch_idx, (input, target) in enumerate(loader):
             if batch_idx<args.start_batch:
-                pbar.update(1)
                 continue
             if args.no_prefetcher:
                 target = target.to(device)
                 input = input.to(device)
             if args.channels_last:
                 input = input.contiguous(memory_format=torch.channels_last)
-
+            
             # compute output
             with amp_autocast():
                 output = model(input)

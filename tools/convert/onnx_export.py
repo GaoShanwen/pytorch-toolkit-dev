@@ -218,6 +218,22 @@ def main():
         print('onnx', output2)
     
     if args.run_test:
+        # path = "/data/AI-scales/images/0/backflow/00001/1831_8fdaa0cf410f1c36_1673323817187_1673323817536.jpg"
+        # from torchvision import transforms
+        # from local_lib.data.loader import OwnerResize
+        # from PIL import Image
+        # import numpy as np
+        # transform = transforms.Compose([
+        #     # transforms.Resize([224, 224], interpolation=InterpolationMode.BICUBIC, antialias=False),
+        #     OwnerResize([224, 224]),
+        #     transforms.ToTensor(),
+        #     transforms.Normalize(mean=torch.tensor([0.485, 0.456, 0.406]), std=torch.tensor([0.229, 0.224, 0.225]))
+        # ])
+        # img = Image.open(path)
+        # input = transform(img).unsqueeze(0).float()
+        # model.eval()
+        # output = model(input)
+        # print('pth', output.detach().numpy(), path)
         run_test(model, args.output)
     # export onnx (it is recommended to set the opset_version to 12)
     # model.eval()

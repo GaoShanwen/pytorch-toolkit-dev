@@ -46,11 +46,11 @@ def save_keeps2mysql(feats, labels, files, class_list, update_times=0):
     mysql = MySQLHelper()
     mysql.del_table()
     stride = labels.shape[0]//update_times if update_times else 1
-    pbar = tqdm.tqdm(total=labels.shape[0], miniters=stride, maxinterval=300)
+    pbar = tqdm.tqdm(total=labels.shape[0], miniters=stride, maxinterval=3600) #超过最长时间后会重新设置最长打印时间, 故设置为1h/3600s
     for i, (label_index, filename, feat) in enumerate(zip(labels, files, feats)):
         label = class_list[label_index]
         feat = ','.join(map(str, feat.tolist()))
-        val = (label[1:], filename, '20231115', f'[{feat}]')
+        val = (label, filename, '20231115', f'[{feat}]')
         mysql.write_val2table(val)
         pbar.update(1)
         if not (i+1)%stride:

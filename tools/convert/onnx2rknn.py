@@ -158,7 +158,9 @@ if __name__ == '__main__':
     # feat_extract(args, rknn)
 
     # img=cv2.imread("dataset/exp-data/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg")
-    img=cv2.imread("./dataset/1.jpg")
+    path = "/data/AI-scales/images/0/backflow/00001/1831_8fdaa0cf410f1c36_1673323817187_1673323817536.jpg"
+    # path = "./dataset/1.jpg"
+    img=cv2.imread(path)
     inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB); inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
     x = np.array(inputs).astype(np.float32)/255.  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]  
     x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化

@@ -54,38 +54,68 @@ def save_keeps_file(labels, files, class_list, threshold):
     with open(obj_files, 'w') as f:
         for label_index, filename in zip(labels, files):
             label = class_list[label_index]
-            f.write(f'{filename},{label}\n')
+            f.write(f'{filename}, {label}\n')
 
 
-def create_index(datas_embedding, use_gpu=False):
+def create_index(datas_embedding, use_gpu=False, param='Flat', measure=faiss.METRIC_INNER_PRODUCT):
     dim = datas_embedding.shape[1]
-    if not use_gpu:
-        index = faiss.index_factory(dim, 'Flat', faiss.METRIC_INNER_PRODUCT)
-        index.train(datas_embedding)
-        index.add(datas_embedding)
-        return index
-    # 构建索引，这里我们选用暴力检索的方法FlatL2为例，L2代表构建的index采用的相似度度量方法为L2范数，即欧氏距离
-    index_flat = faiss.IndexFlatL2(dim)   # 这里必须传入一个向量的维度，创建一个空的索引
-    index = faiss.index_cpu_to_gpus_list(index_flat, gpus=[0, 1]) # gpus用于指定使用的gpu号
+    index = faiss.index_factory(dim, param, measure)
+    if use_gpu:
+        index = faiss.index_cpu_to_gpus_list(index, gpus=[0, 1]) # gpus用于指定使用的gpu号
+    index.train(datas_embedding)
     index.add(datas_embedding)   # 把向量数据加入索引
     return index
 
+
 # 进行非极大值抑制
-def choose_feats(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
+def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
     cats = list(set(labels))
     stride = len(cats)//update_times if update_times else 1
     keeps = []
-    for cat in tqdm.tqdm(cats, miniters=stride, maxinterval=600):
+    pbar = tqdm.tqdm(total=len(cats), miniters=stride, maxinterval=600)
+    for cat in cats:
         cat_index = np.where(labels == cat)[0]
         choose_gallery = matrix[cat_index]
         enable_gpu = use_gpu if choose_gallery.shape[0] <= 2048 else False
         index = create_index(choose_gallery, enable_gpu)
         g_g_dist, _ = index.search(choose_gallery, choose_gallery.shape[0])
-        masks = np.where(
-            (g_g_dist >= samilar_thresh) &
-            (np.arange(g_g_dist.shape[1])[:, np.newaxis] < np.arange(g_g_dist.shape[0]))
-        )[0]
-        keep = np.setdiff1d(cat_index, cat_index[masks])
-        keeps += keep.tolist()
+        masks = []
+        for i in range(cat_index.shape[0]-1):
+            if i in masks: continue
+            masks += np.where((g_g_dist[i, :] >= samilar_thresh) & (np.arange(cat_index.shape[0]) > i))[0].tolist()
+        masks = np.array(masks)
+        keeps += np.setdiff1d(cat_index, cat_index[masks]).tolist()
+        pbar.update(1)
         del index
+    pbar.close()
     return np.array(keeps)
+
+
+def choose_noises(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
+    cats = list(set(labels))
+    stride = len(cats)//update_times if update_times else 1
+    keeps = []
+    pbar = tqdm.tqdm(total=len(cats), miniters=stride, maxinterval=600)
+    for cat in cats:
+        cat_index = np.where(labels == cat)[0]
+        choose_gallery = matrix[cat_index]
+        enable_gpu = use_gpu if choose_gallery.shape[0] <= 2048 else False
+        index = create_index(choose_gallery, enable_gpu)
+        _, index_matric = index.search(choose_gallery, choose_gallery.shape[0])
+        choose_num = int(cat_index.shape[0] * choose_ratio)
+        last_count = Counter(index_matric[:, -choose_num:].reshape(-1).tolist()).most_common()
+        keep = [key for key, _ in last_count][:choose_num]
+        keeps += cat_index[np.array(keep, dtype=int)].tolist()
+        pbar.update(1)
+        del index
+    pbar.close()
+    return np.array(keeps)
+
+
+def run_choose(matrix, labels, args):
+    if args.remove_mode == "noise":
+        return choose_noises(matrix, labels, args.threshold, use_gpu=args.use_gpu, update_times=args.update_times)
+    elif args.remove_mode == "similarity":
+        return choose_similarity(matrix, labels, args.threshold, use_gpu=args.use_gpu, update_times=args.update_times)
+    else:
+        raise f"{args.remove_mode} is not support!"
