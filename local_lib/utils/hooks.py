@@ -18,9 +18,9 @@ class TensorBoardWriter(object):
     
     def update(self, epoch, train_metrics, eval_metrics, lr) -> None:
         train_loss, eval_loss = train_metrics.pop("loss"), eval_metrics.pop("loss")
-        self.writer.add_scalar('train_loss', train_loss, epoch)
-        self.writer.add_scalar('train_lr', lr, epoch)
-        self.writer.add_scalar('val_loss', eval_loss, epoch)
+        self.writer.add_scalar('loss_train', train_loss, epoch)
+        self.writer.add_scalar('loss_val', eval_loss, epoch)
+        self.writer.add_scalar('lr', lr, epoch)
         self.writer.add_scalars('val_acc', eval_metrics, epoch)
     
     def close(self):

@@ -67,10 +67,14 @@ you can install these by this [document](https://github.com/GaoShanwen/pytorch-t
 
 ### train with tensorboard
 
+You can open this [link](http://localhost:6006/) in web to see after run commands.
+
 ```bash
+<pytorch-toolkit-dev> ~ $ # add tensorboard to train output:
+<pytorch-toolkit-dev> ~ $ OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 ... --tensorboard logs
+<pytorch-toolkit-dev> ~ $ # view the output of tensorboard:
 <pytorch-toolkit-dev> ~ $ tensorboard --logdir logs/20231124-000720-regnety_redution_040_ra3_in1k-224
 ```
-open this [link](http://localhost:6006/) in web.
 
 ### Run model convert
 
