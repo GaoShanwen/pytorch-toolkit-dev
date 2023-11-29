@@ -18,7 +18,7 @@ import torch
 import torch.nn.parallel
 
 from timm.models import create_model, load_checkpoint
-from timm.utils import setup_default_logging, ParseKwargs, reparameterize_model
+from timm.utils import setup_default_logging, ParseKwargs
 
 import sys
 sys.path.append('./')
@@ -42,27 +42,17 @@ try:
 except AttributeError:
     pass
 
-try:
-    from functorch.compile import memory_efficient_fusion
-    has_functorch = True
-except ImportError as e:
-    has_functorch = False
-
-has_compile = hasattr(torch, 'compile')
-
 _logger = logging.getLogger('validate')
 
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Validation')
-parser.add_argument('--infer-dir', default="", type=str,
+parser.add_argument('--data-path', default="", type=str,
                     metavar='NAME', help='the dirs to inference.')
-parser.add_argument('--infer-img', default="", type=str,
-                    metavar='NAME', help='the dirs to inference.')
-parser.add_argument('--dataset-download', action='store_true', default=False,
-                    help='Allow download of dataset for torch/ and tfds/ datasets that support it.')
+parser.add_argument('--input-mode', default="", type=str,
+                    help='the way of get input (path, dir, file).')
 parser.add_argument('--model', '-m', metavar='NAME', default='dpn92',
                     help='model architecture (default: dpn92)')
-parser.add_argument('-g', "--gallerys", type=str, default="output/feats/regnety_040-train-0.5.npz")
+parser.add_argument('-g', "--gallerys", type=str, default="output/feats/regnety_040-train-0.16.npz")
 parser.add_argument('-l', "--label-file", type=str,
                     default='dataset/exp-data/zero_dataset/label_names.csv')
 parser.add_argument('-c', "--cats-file", type=str, 
@@ -149,7 +139,7 @@ def load_feats(load_dir="./output/features"):
     return np.concatenate(feats)
 
 
-def run_imgs_infer(args):
+def load_model(args):
     # might as well try to validate something
     args.pretrained = args.pretrained or not args.checkpoint
     args.prefetcher = not args.no_prefetcher
@@ -160,8 +150,6 @@ def run_imgs_infer(args):
 
     device = torch.device(args.device)
 
-    # resolve AMP arguments based on PyTorch / Apex availability
-    amp_autocast = suppress
     # create model
     in_chans = 3
     if args.in_chans is not None:
@@ -200,15 +188,33 @@ def run_imgs_infer(args):
 
     if args.num_gpu > 1:
         model = torch.nn.DataParallel(model, device_ids=list(range(args.num_gpu)))
+    return model
 
-    assert args.infer_img or args.infer_dir, "please set --infer-img or --infer-dir for inference!"
-    input_imgs = [args.infer_img, ] if args.infer_img else os.listdir(args.infer_dir)
+
+def run_infer(model, args):
+    device = torch.device(args.device)
+    # resolve AMP arguments based on PyTorch / Apex availability
+    amp_autocast = suppress
+
+    with open(args.cats_file, 'r') as f: class_list = [line.strip('\n')[1:] for line in f.readlines()]
+    assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
+    if args.input_mode == "file":
+        with open(args.data_path, 'r') as f:
+            query_files, query_labels = zip(*([line.strip('\n').split(', ') for line in f.readlines()]))
+        query_labels = [class_list.index(q_label) for q_label in query_labels]
+        query_labels = np.array(query_labels, dtype=int)
+        # import pdb; pdb.set_trace()
+    else:
+        query_files = os.listdir(args.data_path) if args.input_mode=="dir" else [args.data_path,]
+        query_labels = None
+    query_files = np.array(query_files)
+
     data_trans = owner_transfrom()
-    pbar = tqdm.tqdm(total=len(input_imgs))
+    pbar = tqdm.tqdm(total=query_files.shape[0])
     model.eval()
     init_feats_dir(args.results_dir)
     with torch.no_grad():
-        for batch_idx, input in enumerate(input_imgs):
+        for batch_idx, input in enumerate(query_files):
             input = data_trans(Image.open(input).convert('RGB')).unsqueeze(0)
             if args.no_prefetcher:
                 input = input.to(device)
@@ -217,49 +223,50 @@ def run_imgs_infer(args):
                 output = model(input)
             save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
             pbar.update(1)
-
     pbar.close()
+
+    # args.param = f'IVF{args.num_classes},Flat'
+    # args.measure = faiss.METRIC_INNER_PRODUCT
+    args.param, args.measure = 'Flat', faiss.METRIC_INNER_PRODUCT
+    # 加载npz文件
+    gallery_feature, gallery_labels, gallery_files = load_data(args.gallerys)
+    faiss.normalize_L2(gallery_feature)
     query_feats = load_feats(args.results_dir)
     faiss.normalize_L2(query_feats)
-
-    # 加载npz文件
-    gallery_feature, gallery_label, gallery_files = load_data(args.gallerys)
-    with open(args.cats_file, 'r') as f: class_list = [line.strip('\n')[1:] for line in f.readlines()]
-    faiss.normalize_L2(gallery_feature)
     
     label_index = load_csv_file(args.label_file)
-    cats = list(set(gallery_label))
+    cats = list(set(gallery_labels))
     label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
-    index = create_index(gallery_feature, use_gpu=args.use_gpu)
+    index = create_index(gallery_feature, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     _, I = index.search(query_feats, args.topk)
 
-    p_label = gallery_label[I]
-    query_label = p_label[:, 0]
-    query_files = np.array(input_imgs)
-    run_vis2bigimgs(I, gallery_label, gallery_files, query_label, query_files, label_map, args.save_root)
+    p_labels = gallery_labels[I]
+    query_labels = query_labels if query_labels is not None else p_labels[:, 0]
+    run_vis2bigimgs(I, gallery_labels, gallery_files, query_labels, query_files, label_map, args.save_root)
 
 
 if __name__ == '__main__':
-    # setup_default_logging()
-    # args = parser.parse_args()
-    # run_imgs_infer(args)
-    matrix = np.array([
-        [1.0, 0.9, 0.2, 0.1], 
-        [0.2, 1.0, 0.1, 0.9],
-        [0.2, 0.9, 1.0, 0.1], 
-        [0.9, 0.2, 0.1, 1.0]
-    ])
+    setup_default_logging()
+    args = parser.parse_args()
+    model = load_model(args)
+    run_infer(model, args)
+    # matrix = np.array([
+    #     [1.0, 0.9, 0.2, 0.1], 
+    #     [0.2, 1.0, 0.1, 0.9],
+    #     [0.2, 0.9, 1.0, 0.1], 
+    #     [0.9, 0.2, 0.1, 1.0]
+    # ])
 
-    masks = []
-    for i in range(matrix.shape[0]-1):
-        if i in masks:
-            continue
-        masks += np.where((matrix[i, :] >= 0.8)&(np.arange(matrix.shape[0])>i))[0].tolist()
-    masks = np.array(masks)
-    # masks = np.where(
-    #     (matrix > 0.8)&
-    #     (np.arange(matrix.shape[1])[:, np.newaxis] > np.arange(matrix.shape[0]))
-    # )[0]
-    cat_index = np.arange(matrix.shape[0])
-    keep = np.setdiff1d(cat_index, cat_index[masks])
-    print(masks, keep)
+    # masks = []
+    # for i in range(matrix.shape[0]-1):
+    #     if i in masks:
+    #         continue
+    #     masks += np.where((matrix[i, :] >= 0.8)&(np.arange(matrix.shape[0])>i))[0].tolist()
+    # masks = np.array(masks)
+    # # masks = np.where(
+    # #     (matrix > 0.8)&
+    # #     (np.arange(matrix.shape[1])[:, np.newaxis] > np.arange(matrix.shape[0]))
+    # # )[0]
+    # cat_index = np.arange(matrix.shape[0])
+    # keep = np.setdiff1d(cat_index, cat_index[masks])
+    # print(masks, keep)

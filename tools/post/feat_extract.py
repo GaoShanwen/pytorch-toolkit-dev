@@ -93,7 +93,9 @@ parser.add_argument('--std', type=float,  nargs='+', default=None, metavar='STD'
                     help='Override std deviation of of dataset')
 parser.add_argument('--interpolation', default='', type=str, metavar='NAME',
                     help='Image resize interpolation type (overrides model)')
-parser.add_argument('--num-classes', type=int, default=None,
+parser.add_argument('--data-classes', type=int, default=None,
+                    help='Number classes in dataset')
+parser.add_argument('--model-classes', type=int, default=None,
                     help='Number classes in dataset')
 parser.add_argument('--num-choose', type=int, nargs='+', default=None,
                     help='Number choose in dataset, (start_index, end_index)')
@@ -229,9 +231,6 @@ def extract(args):
     else:
         _logger.info('Validating in float32. AMP not enabled.')
 
-    if args.fuser:
-        set_jit_fuser(args.fuser)
-
     if args.fast_norm:
         set_fast_norm()
 
@@ -245,7 +244,7 @@ def extract(args):
     model = create_model(
         args.model,
         pretrained=args.pretrained,
-        num_classes=args.num_classes,
+        num_classes=args.model_classes,
         in_chans=in_chans,
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
@@ -255,9 +254,9 @@ def extract(args):
         **args.model_kwargs,
     )
 
-    if args.num_classes is None:
+    if args.model_classes is None:
         assert hasattr(model, 'num_classes'), 'Model must have `num_classes` attr if not set on cmd line/config.'
-        args.num_classes = model.num_classes
+        args.model_classes = model.num_classes
 
     if args.checkpoint:
         load_checkpoint(model, args.checkpoint, args.use_ema)
@@ -316,7 +315,7 @@ def extract(args):
         download=args.dataset_download,
         load_bytes=args.tf_preprocessing,
         class_map=args.class_map,
-        num_classes=args.num_classes,
+        num_classes=args.data_classes,
         num_choose=args.num_choose,
         cats_path=args.cats_path,
         pass_path=args.pass_path,

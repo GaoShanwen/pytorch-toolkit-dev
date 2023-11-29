@@ -18,7 +18,6 @@ class TxtReaderImageDataset(ImageDataset):
     ):
         if reader is None or isinstance(reader, str):
             reader = create_reader(
-                reader or '',
                 root=root,
                 split=split,
                 class_map=class_map,

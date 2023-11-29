@@ -29,11 +29,12 @@ def parse_args():
                         default='dataset/exp-data/removeredundancy/629_cats.txt')
     parser.add_argument('--pass-remove', action='store_true', default=False,
                         help="pass remove redundancy flag(True: pass, False: run remove)")
+    parser.add_argument("--pass-cats", type=str, 
+                        default='dataset/exp-data/removeredundancy/pass_cats.txt')
     parser.add_argument('--use-gpu', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
-    parser.add_argument('--save-root', type=str, default='')
+    parser.add_argument('--save-root', type=str, default='output/vis/errors')
     parser.add_argument("--num-classes", type=int, default=629)
-    parser.add_argument("--threshold", type=float, default=0.9)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=9)
     return parser.parse_args()
@@ -61,12 +62,12 @@ def cv2AddChineseText(img, text, position, textColor, textSize):
     return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 
-def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map):
+def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, textSize=16):
     sum_img = np.full((1282, 2408, 3), 255, dtype=np.uint8) #生成全白大图
     q_name = label_map[q_label]
     img = cv2.imread(q_file)
     color = (255, 0, 0)
-    img = cv2AddChineseText(img, q_name, [2, 2], color, 16)
+    img = cv2AddChineseText(img, q_name, [2, 2], color, textSize)
     H, W, _ = img.shape
     sum_img[0:H, 0:W, :] = img
     start_h, start_w = 0, 0
@@ -74,7 +75,7 @@ def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map):
         img = cv2.imread(pred_file)
         g_name = label_map[pred_label]
         color = (255, 0, 0) if q_label == pred_label else (0, 255, 0)
-        img = cv2AddChineseText(img, g_name, [2, 2], color, 16)
+        img = cv2AddChineseText(img, g_name, [2, 2], color, textSize)
         start_w += 482
         if start_w >= 2408:
             start_h += 642
@@ -97,7 +98,7 @@ def run_vis2bigimgs(initial_rank, g_labels, g_files, q_labels, q_files, label_ma
         
         topks = initial_rank[ind]
         pred_files, pred_labels = g_files[topks], g_labels[topks]
-        sum_img = draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map)
+        sum_img = draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, textSize=24)
         
         obj_path = os.path.join(obj_dir, q_file.split('/')[-1])
         cv2.imwrite(obj_path, sum_img)
@@ -125,14 +126,28 @@ if __name__ == '__main__':
     query_feature, query_label, query_files = load_data(args.querys)
     with open(args.cats_file, 'r') as f: class_list = [line.strip('\n')[1:] for line in f.readlines()]
     faiss.normalize_L2(gallery_feature)
-    
-    choose_cats = np.array([class_list.index(cat) for cat in ["999920265", "10000000105", "999920247", "9999150390"]])
-    # choose_cats = np.array([1210, 1447, 1521, 1991])
-    cat_index = np.where(query_label[:, np.newaxis] == choose_cats)[0]
-    query_feature = query_feature[cat_index]
-    query_label = query_label[cat_index]
-    query_files = query_files[cat_index]
     faiss.normalize_L2(query_feature)
+
+    if args.debug:
+        with open(args.pass_cats, 'r') as f: mask_cats = [line.strip('\n') for line in f.readlines()]
+        choose_cats = list(set(gallery_label))
+        # print(class_list, len(choose_cats))
+        for cat in mask_cats:
+            choose_cats.remove(class_list.index(cat))
+        # choose_cats = list(set(g_label))[:15]
+        cat_index = np.where(gallery_label[:, np.newaxis] == choose_cats)[0]
+        gallery_feature, gallery_label, gallery_files = gallery_feature[cat_index], gallery_label[cat_index], gallery_files[cat_index]
+
+        cat_index = np.where(query_label[:, np.newaxis] == choose_cats)[0]
+        query_feature, query_label, query_files = query_feature[cat_index], query_label[cat_index], query_files[cat_index]
+    
+    # choose_cats = np.array([class_list.index(cat) for cat in ["999920265", "10000000105", "999920247", "9999150390"]])
+    # # choose_cats = np.array([1210, 1447, 1521, 1991])
+    # cat_index = np.where(query_label[:, np.newaxis] == choose_cats)[0]
+    # query_feature = query_feature[cat_index]
+    # query_label = query_label[cat_index]
+    # query_files = query_files[cat_index]
+    # faiss.normalize_L2(query_feature)
     
     label_index = load_csv_file(args.label_file)
     cats = list(set(gallery_label))

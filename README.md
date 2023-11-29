@@ -65,18 +65,23 @@ you can install these by this [document](https://github.com/GaoShanwen/pytorch-t
         python tools/eval_feats.py -g output/feats/mobilenet_large_100-train.npz -q output/feats/mobilenet_large_100-val.npz
 ```
 
-### train with tensorboard
+### Train with tensorboard or wandb
 
-You can open this [link](http://localhost:6006/) in web to see after run commands.
+You can open this [tensorboard](http://localhost:6006/) or [wandb](https://wandb.ai/) in web to see after run this commands.
 
 ```bash
 <pytorch-toolkit-dev> ~ $ # add tensorboard to train output:
 <pytorch-toolkit-dev> ~ $ OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 ... --tensorboard logs
 <pytorch-toolkit-dev> ~ $ # view the output of tensorboard:
 <pytorch-toolkit-dev> ~ $ tensorboard --logdir logs/20231124-000720-regnety_redution_040_ra3_in1k-224
+
+<pytorch-toolkit-dev> ~ $ # login 
+<pytorch-toolkit-dev> ~ $ wandb login
+<pytorch-toolkit-dev> ~ $ # add wandb to train output:
+<pytorch-toolkit-dev> ~ $ OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 ... --log-wandb
 ```
 
-### Run model convert
+### Convert pth model to onnx/rknn
 
 ```bash
 <pytorch-toolkit-dev> ~ $ # pth -> onnx
@@ -86,7 +91,6 @@ You can open this [link](http://localhost:6006/) in web to see after run command
 <pytorch-toolkit-dev> ~ $ # onnx -> rknn; validate(onnx and rknn, if model is cls model) model
         python tools/convert/onnx2rknn.py output/converted_model/rk3566-mobilenetv3-224.rknn \
         --input output/converted_model/20231022-213614-mobilenetv3_redution_large_100-224.onnx
-<pytorch-toolkit-dev> ~ $ # convert other
-        ... output/converted_model/rk3566-regnety_016-224.rknn -m regnety_redution_016.tv2_in1k --results-dir output/feats/regnety_016 \
-        --input output/converted_model/... --crop-pct 1.
+<pytorch-toolkit-dev> ~ $ # convert other model
+        ... output/converted_model/rk3566-regnety_016-224.rknn --input output/converted_model/... 
 ```
