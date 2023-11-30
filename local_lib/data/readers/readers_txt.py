@@ -36,29 +36,32 @@ def read_images_and_targets(
     """
     # types = get_img_extensions(as_set=True) if not types else set(types)
     # cats_path = "dataset/exp-data/zero_dataset/save_cats.txt"
+    save_cats = None
     if kwargs.get("cats_path", None):
         cats_path = kwargs["cats_path"]
-    with open(cats_path, 'r') as f: save_cats = [line.strip('\n') for line in f.readlines()]
+        with open(cats_path, 'r') as f: save_cats = [line.strip('\n') for line in f.readlines()]
+    
     if kwargs.get("pass_path", None):
         pass_path = kwargs["pass_path"]
         with open(pass_path, 'r') as f: 
             for line in f.readlines():
                 save_cats.remove(line.strip('\n'))
+    
     if kwargs.get("num_classes", None):
         num_classes = kwargs["num_classes"]
-        save_cats = save_cats[:num_classes] if num_classes < len(save_cats) else save_cats
+        save_cats = save_cats[:num_classes] if save_cats is not None and num_classes < len(save_cats) else save_cats
     choose_cats = save_cats
     if kwargs.get("num_choose", None):
         num_choose = kwargs["num_choose"]
         choose_cats = save_cats[num_choose[0]:num_choose[1]]
     with open(anno_path, 'r') as f:
         lines = [line.strip().split(', ') for line in f.readlines() if line.startswith("/data/AI-scales/images")]
-    filenames, labels = zip(*[(filename, label) for filename, label in lines if label in choose_cats])
+    filenames, labels = zip(*[(filename, label) for filename, label in lines if choose_cats is None or label in choose_cats])
 
     if class_to_idx is None:
         # building class index
         # unique_labels = set(labels)
-        unique_labels = save_cats
+        unique_labels = save_cats if save_cats is not None else set(labels)
         sorted_labels = list(sorted(unique_labels, key=natural_key))
         class_to_idx = {c: idx for idx, c in enumerate(sorted_labels)}
     images_and_targets = [(f, class_to_idx[l]) for f, l in zip(filenames, labels) if l in class_to_idx]
