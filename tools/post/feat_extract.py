@@ -20,13 +20,13 @@ import torch.nn.parallel
 
 from timm.data import resolve_data_config
 from timm.layers import apply_test_time_pool, set_fast_norm
-from timm.models import create_model, load_checkpoint
+from timm.models import load_checkpoint
 from timm.utils import setup_default_logging, ParseKwargs, reparameterize_model
 
 import sys
 sys.path.append('./')
 
-import local_lib.models # enable local model
+from local_lib.models import create_owner_model # enable local model
 from local_lib.data import create_owner_dataset
 from local_lib.data import create_owner_loader
 
@@ -84,8 +84,6 @@ parser.add_argument('--use-train-size', action='store_true', default=False,
 parser.add_argument('--crop-pct', default=None, type=float,
                     metavar='N', help='Input image center crop pct')
 parser.add_argument('--crop-mode', default=None, type=str,
-                    metavar='N', help='Input image crop mode (squash, border, center). Model default if None.')
-parser.add_argument('--mode-function', default='feat_extract', type=str,
                     metavar='N', help='Input image crop mode (squash, border, center). Model default if None.')
 parser.add_argument('--mean', type=float, nargs='+', default=None, metavar='MEAN',
                     help='Override mean pixel value of dataset')
@@ -241,7 +239,7 @@ def extract(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_model(
+    model = create_owner_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.model_classes,
@@ -337,7 +335,7 @@ def extract(args):
         pin_memory=args.pin_mem,
         device=device,
         tf_preprocessing=args.tf_preprocessing,
-        mode_function=args.mode_function
+        transfrom_mode="owner"
     )
     pbar = tqdm.tqdm(total=len(loader)-args.start_batch)
     

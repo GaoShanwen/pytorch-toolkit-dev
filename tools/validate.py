@@ -23,14 +23,14 @@ import torch.nn.parallel
 
 from timm.data import create_loader, resolve_data_config, RealLabelsImagenet
 from timm.layers import apply_test_time_pool, set_fast_norm
-from timm.models import create_model, load_checkpoint, is_model, list_models
+from timm.models import load_checkpoint, is_model, list_models
 from timm.utils import accuracy, AverageMeter, natural_key, setup_default_logging, set_jit_fuser, \
     decay_batch_step, check_batch_size_retry, ParseKwargs, reparameterize_model
 
 import sys
 sys.path.append('./')
 
-import local_lib.models
+from local_lib.models import create_owner_model
 from local_lib.data import create_owner_dataset
 from local_lib.utils import ClassAccuracyMap
 
@@ -209,7 +209,7 @@ def validate(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_model(
+    model = create_owner_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.num_classes,

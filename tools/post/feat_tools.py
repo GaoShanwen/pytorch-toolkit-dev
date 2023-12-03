@@ -53,20 +53,19 @@ def print_acc_map(acc_map, csv_name):
 
 
 def save_keeps_file(labels, files, class_list, obj_files):
-    # obj_files = f"train-th{threshold}.txt"
     with open(obj_files, 'w') as f:
         for label_index, filename in zip(labels, files):
             label = class_list[label_index]
             f.write(f'{filename}, {label}\n')
 
 
-def create_index(datas_embedding, use_gpu=False, param='Flat', measure=faiss.METRIC_INNER_PRODUCT):
-    dim = datas_embedding.shape[1]
+def create_index(data_embedding, use_gpu=False, param='Flat', measure=faiss.METRIC_INNER_PRODUCT):
+    dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
     if use_gpu:
         index = faiss.index_cpu_to_gpus_list(index, gpus=[0, 1]) # gpus用于指定使用的gpu号
-    index.train(datas_embedding)
-    index.add(datas_embedding)   # 把向量数据加入索引
+    index.train(data_embedding)
+    index.add(data_embedding)   # 把向量数据加入索引
     return index
 
 
@@ -80,17 +79,19 @@ def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_
         choose_gallery = matrix[cat_index]
         enable_gpu = use_gpu if choose_gallery.shape[0] <= 2048 else False
         index = create_index(choose_gallery, enable_gpu)
-        g_g_dist, _ = index.search(choose_gallery, choose_gallery.shape[0])
+        g_g_scores, g_g_indexs = index.search(choose_gallery, choose_gallery.shape[0])
         masks = []
         for i in range(cat_index.shape[0]-1):
             if i in masks: continue
-            masks += np.where((g_g_dist[i, :] >= samilar_thresh) & (np.arange(cat_index.shape[0]) > i))[0].tolist()
+            # 找到大于阈值的得分, 定位到位置，
+            mask_index = np.where((g_g_scores[i, :] >= samilar_thresh) & (g_g_indexs[i, :] > i))[0]
+            masks += g_g_indexs[i, mask_index].tolist()
         masks = np.array(masks)
-        keeps += np.setdiff1d(cat_index, cat_index[masks]).tolist()
+        keeps += np.setdiff1d(cat_index, cat_index[masks]).tolist() if masks.shape[0] else cat_index.tolist()
         pbar.update(1)
         del index
     pbar.close()
-    return np.array(keeps)
+    return np.array(keeps)#, masks
 
 
 def get_predict_label(distances, initial_rank, gallery_label, query_label, k=5, use_knn=False, use_sgd=False):

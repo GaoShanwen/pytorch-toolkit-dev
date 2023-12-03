@@ -21,10 +21,11 @@ class OwnerResize(Resize):
         return Image.fromarray(img)
 
 
-def owner_transfrom():
+def owner_transfrom(input_size=[3, 224, 224]):
+    img_size = input_size[1:]
     owner_trans = transforms.Compose([
         # transforms.Resize([224, 224], interpolation=InterpolationMode.BICUBIC, antialias=False),
-        OwnerResize([224, 224]),
+        OwnerResize(img_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=torch.tensor([0.485, 0.456, 0.406]), std=torch.tensor([0.229, 0.224, 0.225]))
     ])
@@ -66,9 +67,8 @@ def create_owner_loader(
         use_multi_epochs_loader=False,
         persistent_workers=True,
         worker_seeding='all',
-        mode_function='trainval',
+        transfrom_mode='trainval',
 ):
-    # if mode_function=='trainval':
     loader =  create_loader(
         dataset, input_size, batch_size, is_training, use_prefetcher,
         no_aug, re_prob, re_mode, re_count, re_split, scale, ratio,
@@ -78,6 +78,10 @@ def create_owner_loader(
         fp16, img_dtype, device, tf_preprocessing,
         use_multi_epochs_loader, persistent_workers, worker_seeding,
     )
-    if mode_function=='feat_extract':
-        loader.dataset.transform = owner_transfrom()
+    if transfrom_mode=='owner':
+        if input_size is None:
+            loader.dataset.transform = owner_transfrom()
+        else:
+            loader.dataset.transform = owner_transfrom(input_size)
+    print(loader.dataset.transform)
     return loader

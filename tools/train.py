@@ -25,7 +25,7 @@ from timm import utils
 from timm.data import create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 from timm.layers import convert_splitbn_model, convert_sync_batchnorm, set_fast_norm
 from timm.loss import JsdCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy, LabelSmoothingCrossEntropy
-from timm.models import create_model, safe_model_name, resume_checkpoint, load_checkpoint, model_parameters
+from timm.models import safe_model_name, resume_checkpoint, load_checkpoint, model_parameters
 from timm.optim import create_optimizer_v2, optimizer_kwargs
 from timm.scheduler import create_scheduler_v2, scheduler_kwargs
 from timm.utils import ApexScaler, NativeScaler
@@ -33,7 +33,7 @@ from timm.utils import ApexScaler, NativeScaler
 import sys
 sys.path.append('./')
 
-import local_lib.models # for regster local model
+from local_lib.models import create_owner_model # for regster local model
 from local_lib.data import create_owner_dataset
 from local_lib.utils.hooks import TensorBoardWriter
 
@@ -421,7 +421,7 @@ def main():
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_model(
+    model = create_owner_model(
         args.model,
         pretrained=args.pretrained,
         in_chans=in_chans,

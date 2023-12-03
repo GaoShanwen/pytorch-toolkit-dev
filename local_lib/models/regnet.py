@@ -112,23 +112,24 @@ if __name__=="__main__":
     import torch.optim as optim
     # m = timm.create_model('regnety_redution_016.tv2_in1k', pretrained=True, num_classes=100)
     # m = timm.create_model('regnetz_redution_040_h.ra3_in1k', pretrained=True, num_classes=100)
-    m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
+    # m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
+    m = timm.create_model("regnety_320.swag_ft_in1k", pretrained=True, num_classes=4281)
     o = m(torch.randn(2, 3, 224, 224))
-    parameters = m.parameters()
-    optimizer = optim.Adam(parameters)
-    saver = utils.CheckpointSaver(
-        model=m,
-        optimizer=optimizer,
-        args=None,
-        model_ema=None,
-        amp_scaler=None,
-        checkpoint_dir=None,
-        recovery_dir=None,
-        decreasing=None,
-        max_history=1
-    )
+    # parameters = m.parameters()
+    # optimizer = optim.Adam(parameters)
+    # saver = utils.CheckpointSaver(
+    #     model=m,
+    #     optimizer=optimizer,
+    #     args=None,
+    #     model_ema=None,
+    #     amp_scaler=None,
+    #     checkpoint_dir=None,
+    #     recovery_dir=None,
+    #     decreasing=None,
+    #     max_history=1
+    # )
     # best_metric, best_epoch = saver.save_checkpoint(2, metric=0.5)
     # optimizer = create_optimizer_v2(m, **optimizer_kwargs(cfg={"lr":0.1}),)
-    save_path = "output/converted_model/regnety_redution_040.ra3_in1k-test.pth.tar"
-    saver._save(save_path, 2, metric=0.01)
-    # import pdb; pdb.set_trace()
+    # save_path = "output/converted_model/regnety_redution_040.ra3_in1k-test.pth.tar"
+    # saver._save(save_path, 2, metric=0.01)
+    import pdb; pdb.set_trace()
