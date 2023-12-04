@@ -11,53 +11,118 @@ import torch
 import timm
 from timm import utils
 from timm.utils.model import reparameterize_model
+
 # from timm.utils.onnx import onnx_export
 
 from typing import Optional, Tuple, List
 
 import sys
-sys.path.append('./')
 
-import local_lib.models # for regster local model
+sys.path.append("./")
 
-parser = argparse.ArgumentParser(description='PyTorch ImageNet Validation')
-parser.add_argument('output', metavar='ONNX_FILE',
-                    help='output model filename')
-parser.add_argument('--model', '-m', metavar='MODEL', default='mobilenetv3_large_100',
-                    help='model architecture (default: mobilenetv3_large_100)')
-parser.add_argument('--opset', type=int, default=None,
-                    help='ONNX opset to use (default: 10)')
-parser.add_argument('--keep-init', action='store_true', default=False,
-                    help='Keep initializers as input. Needed for Caffe2 compatible export in newer PyTorch/ONNX.')
-parser.add_argument('--aten-fallback', action='store_true', default=False,
-                    help='Fallback to ATEN ops. Helps fix AdaptiveAvgPool issue with Caffe2 in newer PyTorch/ONNX.')
-parser.add_argument('--dynamic-size', action='store_true', default=False,
-                    help='Export model width dynamic width/height. Not recommended for "tf" models with SAME padding.')
-parser.add_argument('--check-forward', action='store_true', default=False,
-                    help='Do a full check of torch vs onnx forward after export.')
-parser.add_argument('-b', '--batch-size', default=1, type=int,
-                    metavar='N', help='mini-batch size (default: 1)')
-parser.add_argument('--img-size', default=224, type=int,
-                    metavar='N', help='Input image dimension, uses model default if empty')
-parser.add_argument('--mean', type=float, nargs='+', default=None, metavar='MEAN',
-                    help='Override mean pixel value of dataset')
-parser.add_argument('--std', type=float,  nargs='+', default=None, metavar='STD',
-                    help='Override std deviation of of dataset')
-parser.add_argument('--num-classes', type=int, default=1000,
-                    help='Number classes in dataset')
-parser.add_argument('--checkpoint', default='', type=str, metavar='PATH',
-                    help='path to checkpoint (default: none)')
-parser.add_argument('--reparam', default=False, action='store_true',
-                    help='Reparameterize model')
-parser.add_argument('--use-ema', dest='use_ema', action='store_true',
-                    help='use ema version of weights if present')
-parser.add_argument('--run-test', action='store_true',
-                    help='use test to be sure onnx is same with pth model')
-parser.add_argument('--model-kwargs', nargs='*', default={}, action=utils.ParseKwargs)
-parser.add_argument('--training', default=False, action='store_true',
-                    help='Export in training mode (default is eval)')
-parser.add_argument('--verbose', default=False, action='store_true',
-                    help='Extra stdout output')
+import local_lib.models  # for regster local model
+
+parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
+parser.add_argument("output", metavar="ONNX_FILE", help="output model filename")
+parser.add_argument(
+    "--model",
+    "-m",
+    metavar="MODEL",
+    default="mobilenetv3_large_100",
+    help="model architecture (default: mobilenetv3_large_100)",
+)
+parser.add_argument(
+    "--opset", type=int, default=None, help="ONNX opset to use (default: 10)"
+)
+parser.add_argument(
+    "--keep-init",
+    action="store_true",
+    default=False,
+    help="Keep initializers as input. Needed for Caffe2 compatible export in newer PyTorch/ONNX.",
+)
+parser.add_argument(
+    "--aten-fallback",
+    action="store_true",
+    default=False,
+    help="Fallback to ATEN ops. Helps fix AdaptiveAvgPool issue with Caffe2 in newer PyTorch/ONNX.",
+)
+parser.add_argument(
+    "--dynamic-size",
+    action="store_true",
+    default=False,
+    help='Export model width dynamic width/height. Not recommended for "tf" models with SAME padding.',
+)
+parser.add_argument(
+    "--check-forward",
+    action="store_true",
+    default=False,
+    help="Do a full check of torch vs onnx forward after export.",
+)
+parser.add_argument(
+    "-b",
+    "--batch-size",
+    default=1,
+    type=int,
+    metavar="N",
+    help="mini-batch size (default: 1)",
+)
+parser.add_argument(
+    "--img-size",
+    default=224,
+    type=int,
+    metavar="N",
+    help="Input image dimension, uses model default if empty",
+)
+parser.add_argument(
+    "--mean",
+    type=float,
+    nargs="+",
+    default=None,
+    metavar="MEAN",
+    help="Override mean pixel value of dataset",
+)
+parser.add_argument(
+    "--std",
+    type=float,
+    nargs="+",
+    default=None,
+    metavar="STD",
+    help="Override std deviation of of dataset",
+)
+parser.add_argument(
+    "--num-classes", type=int, default=1000, help="Number classes in dataset"
+)
+parser.add_argument(
+    "--checkpoint",
+    default="",
+    type=str,
+    metavar="PATH",
+    help="path to checkpoint (default: none)",
+)
+parser.add_argument(
+    "--reparam", default=False, action="store_true", help="Reparameterize model"
+)
+parser.add_argument(
+    "--use-ema",
+    dest="use_ema",
+    action="store_true",
+    help="use ema version of weights if present",
+)
+parser.add_argument(
+    "--run-test",
+    action="store_true",
+    help="use test to be sure onnx is same with pth model",
+)
+parser.add_argument("--model-kwargs", nargs="*", default={}, action=utils.ParseKwargs)
+parser.add_argument(
+    "--training",
+    default=False,
+    action="store_true",
+    help="Export in training mode (default is eval)",
+)
+parser.add_argument(
+    "--verbose", default=False, action="store_true", help="Extra stdout output"
+)
 
 
 def onnx_forward(onnx_file, example_input):
@@ -72,21 +137,21 @@ def onnx_forward(onnx_file, example_input):
 
 
 def onnx_export(
-        model: torch.nn.Module,
-        output_file: str,
-        example_input: Optional[torch.Tensor] = None,
-        training: bool = False,
-        verbose: bool = False,
-        check: bool = True,
-        check_forward: bool = False,
-        batch_size: int = 64,
-        input_size: Tuple[int, int, int] = None,
-        opset: Optional[int] = None,
-        dynamic_size: bool = False,
-        aten_fallback: bool = False,
-        keep_initializers: Optional[bool] = None,
-        input_names: List[str] = None,
-        output_names: List[str] = None,
+    model: torch.nn.Module,
+    output_file: str,
+    example_input: Optional[torch.Tensor] = None,
+    training: bool = False,
+    verbose: bool = False,
+    check: bool = True,
+    check_forward: bool = False,
+    batch_size: int = 64,
+    input_size: Tuple[int, int, int] = None,
+    opset: Optional[int] = None,
+    dynamic_size: bool = False,
+    aten_fallback: bool = False,
+    keep_initializers: Optional[bool] = None,
+    input_names: List[str] = None,
+    output_names: List[str] = None,
 ):
     import onnx
 
@@ -99,8 +164,8 @@ def onnx_export(
 
     if example_input is None:
         if not input_size:
-            assert hasattr(model, 'default_cfg')
-            input_size = model.default_cfg.get('input_size')
+            assert hasattr(model, "default_cfg")
+            input_size = model.default_cfg.get("input_size")
         example_input = torch.randn((batch_size,) + input_size, requires_grad=training)
 
     # Run model once before export trace, sets padding for models with Conv2dSameExport. This means
@@ -115,10 +180,10 @@ def onnx_export(
     input_names = input_names or ["input0"]
     output_names = output_names or ["output0"]
 
-    dynamic_axes = {'input0': {0: 'batch'}, 'output0': {0: 'batch'}}
+    dynamic_axes = {"input0": {0: "batch"}, "output0": {0: "batch"}}
     if dynamic_size:
-        dynamic_axes['input0'][2] = 'height'
-        dynamic_axes['input0'][3] = 'width'
+        dynamic_axes["input0"][2] = "height"
+        dynamic_axes["input0"][3] = "width"
 
     if aten_fallback:
         export_type = torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK
@@ -137,7 +202,7 @@ def onnx_export(
         keep_initializers_as_inputs=keep_initializers,
         # dynamic_axes=dynamic_axes,
         opset_version=opset,
-        operator_export_type=export_type
+        operator_export_type=export_type,
     )
 
     if check:
@@ -145,9 +210,12 @@ def onnx_export(
         onnx.checker.check_model(onnx_model, full_check=True)  # assuming throw on error
         if check_forward and not training:
             import numpy as np
+
             onnx_out = onnx_forward(output_file, example_input)
             np.testing.assert_almost_equal(torch_out.data.numpy(), onnx_out, decimal=3)
-            np.testing.assert_almost_equal(original_out.data.numpy(), torch_out.data.numpy(), decimal=5)
+            np.testing.assert_almost_equal(
+                original_out.data.numpy(), torch_out.data.numpy(), decimal=5
+            )
 
 
 def main():
@@ -174,21 +242,22 @@ def main():
 
     if args.reparam:
         model = reparameterize_model(model)
-    
-    if 'redution' in args.model:
+
+    if "redution" in args.model:
         import torch.nn as nn
+
         if "mobilenetv3" in args.model:
-            model.classifier = nn.Identity() # 移除分类层
+            model.classifier = nn.Identity()  # 移除分类层
         elif "regnet" in args.model:
-            model.head.fc = nn.Identity() # 移除分类层
+            model.head.fc = nn.Identity()  # 移除分类层
         else:
             raise f"not support {args.model} !"
-    
+
     onnx_export(
         model,
         args.output,
         opset=args.opset,
-        dynamic_size=args.dynamic_size, # 需要测试改为false是否能不影响转rknn
+        dynamic_size=args.dynamic_size,  # 需要测试改为false是否能不影响转rknn
         aten_fallback=args.aten_fallback,
         keep_initializers=args.keep_init,
         check_forward=args.check_forward,
@@ -201,22 +270,32 @@ def main():
     def run_test(model, onnx_path, image_path="1.jpg"):
         import cv2
         import numpy as np
+
         img = cv2.imread(image_path)
-        inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB); inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
-        x = np.array(inputs).astype(np.float32)/255.  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]  
-        x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化
-        input = x.transpose(2,0,1)[np.newaxis, ...]; input = torch.from_numpy(input).float()#.to(device)
+        inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
+        x = (
+            np.array(inputs).astype(np.float32) / 255.0
+        )  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
+        x = (x - np.array([0.485, 0.456, 0.406])) / np.array(
+            [0.229, 0.224, 0.225]
+        )  # Normalize操作，使用ImageNet标准进行标准化
+        input = x.transpose(2, 0, 1)[np.newaxis, ...]
+        input = torch.from_numpy(input).float()  # .to(device)
         output = model(input)
-        print('pth', output.detach().numpy())
+        print("pth", output.detach().numpy())
 
         import onnxruntime
+
         sess_options = onnxruntime.SessionOptions()
-        sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+        sess_options.graph_optimization_level = (
+            onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+        )
         session = onnxruntime.InferenceSession(onnx_path, sess_options)
         input_name = session.get_inputs()[0].name
-        output2 = session.run([], {input_name: [x.transpose(2,0,1)]})
-        print('onnx', output2)
-    
+        output2 = session.run([], {input_name: [x.transpose(2, 0, 1)]})
+        print("onnx", output2)
+
     if args.run_test:
         # path = "/data/AI-scales/images/0/backflow/00001/1831_8fdaa0cf410f1c36_1673323817187_1673323817536.jpg"
         # from torchvision import transforms
@@ -241,5 +320,5 @@ def main():
     # torch.onnx.export(model, x, args.output, opset_version=12, input_names=['input'], output_names=['output'])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

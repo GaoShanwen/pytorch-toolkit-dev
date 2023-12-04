@@ -19,10 +19,10 @@ def connect_mongodb():
     # mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
     # server = '120.92.86.215'
     # server = '172.17.0.1'
-    server = '10.0.2.47'
-    port = '27017'
-    user = parse.quote_plus('RXTech')
-    pwd = parse.quote_plus('ZMKM@Retail01')
+    server = "10.0.2.47"
+    port = "27017"
+    user = parse.quote_plus("RXTech")
+    pwd = parse.quote_plus("ZMKM@Retail01")
     uri = "mongodb://{0}:{1}@{2}:{3}/".format(user, pwd, server, port)
     mongo_client = pymongo.MongoClient(uri)
 
@@ -30,15 +30,15 @@ def connect_mongodb():
 
 
 def sync_image(image_path):
-    dst_file = os.path.join('/data/AI-scales/images/', image_path)
+    dst_file = os.path.join("/data/AI-scales/images/", image_path)
     if not os.path.exists(dst_file):
-        src_file = os.path.join('/DATA/disk1/AI-scales/images/', image_path)
+        src_file = os.path.join("/DATA/disk1/AI-scales/images/", image_path)
         if not os.path.exists(src_file):
-            print(f'Missing file: {src_file}')
+            print(f"Missing file: {src_file}")
             return False
         else:
-            print(f'Copy file: {src_file} {dst_file}')
-            dst_dir,_ = os.path.split(dst_file)
+            print(f"Copy file: {src_file} {dst_file}")
+            dst_dir, _ = os.path.split(dst_file)
             if not os.path.exists(dst_dir):
                 os.makedirs(dst_dir)
             copyfile(src_file, dst_file)
@@ -47,11 +47,11 @@ def sync_image(image_path):
             img.shape
         except:
             os.remove(dst_file)
-            print(dst_file, 'broken image')
+            print(dst_file, "broken image")
             return False
-        if(img.shape[2] != 3):
+        if img.shape[2] != 3:
             os.remove(dst_file)
-            print(dst_file, 'none rgb image')
+            print(dst_file, "none rgb image")
             return False
     return True
 
@@ -75,68 +75,74 @@ def main():
     with open(args.label_file) as f:
         for line in f:
             # import pdb; pdb.set_trace()
-            id_record = line.strip().replace('"', '').split(",")
+            id_record = line.strip().replace('"', "").split(",")
             product_id_map[int(id_record[0])] = id_record[1]
-    
+
     # step 3: calculate
     mongo_client = connect_mongodb()
-    AIScale = mongo_client['AIScale']
+    AIScale = mongo_client["AIScale"]
     brand_id = args.brand_id
     # ImageSet = AIScale['OrderSet']
 
     # step 3.2: calculate
     # num_class = len(product_id_map)
-    data_dir = '/data/AI-scales/images/'
+    data_dir = "/data/AI-scales/images/"
+
     def save_files(ImageSet, save_path, data_dir, brand_id, product_id_map):
         count = 0
-        with open(save_path, 'w') as f:
-            images = ImageSet.find({'brand_id': brand_id}, no_cursor_timeout=True)
+        with open(save_path, "w") as f:
+            images = ImageSet.find({"brand_id": brand_id}, no_cursor_timeout=True)
             for data_record in tqdm.tqdm(images):
                 product_id = data_record["product_id"]
                 if int(product_id) not in product_id_map.keys():
                     continue
-                image_path = os.path.join(data_dir, data_record['image_path'])
+                image_path = os.path.join(data_dir, data_record["image_path"])
                 if not os.path.exists(image_path):
                     continue
-                try:  
-                    # Image.open(filename).verify()  
-                    with open(image_path, 'rb') as img_f:
+                try:
+                    # Image.open(filename).verify()
+                    with open(image_path, "rb") as img_f:
                         img_f.seek(-2, 2)
-                        if not img_f.read() == b'\xff\xd9':
+                        if not img_f.read() == b"\xff\xd9":
                             continue
-                except IOError:  
+                except IOError:
                     continue
-                f.write(f'{image_path},{product_id}\n')
+                f.write(f"{image_path},{product_id}\n")
                 count += 1
-            num_img = ImageSet.count_documents({'brand_id':brand_id}) #, 'type':1
-            print(f'save num: {count}, origin num: {num_img}')
+            num_img = ImageSet.count_documents({"brand_id": brand_id})  # , 'type':1
+            print(f"save num: {count}, origin num: {num_img}")
+
     # import pdb; pdb.set_trace()
 
-    TrainValSet = AIScale['TrainValSet']#; TrainValSet.count_documents({'brand_id':brand_id})
+    TrainValSet = AIScale[
+        "TrainValSet"
+    ]  # ; TrainValSet.count_documents({'brand_id':brand_id})
     # save_root = "/home/work/pytorch-cls-project/dataset/exp-data/zero_dataset"
     save_root = "dataset/exp-data/removeredundancy"
     trainval_files = os.path.join(save_root, "trainval.txt")
     save_files(TrainValSet, trainval_files, data_dir, brand_id, product_id_map)
-    ValSet = AIScale['ValSet']
+    ValSet = AIScale["ValSet"]
     val_files = os.path.join(save_root, "val.txt")
     save_files(ValSet, val_files, data_dir, brand_id, product_id_map)
     train_files = os.path.join(save_root, "train.txt")
+
     def choose_trainset(src_files, check_files, obj_files):
-        with open(check_files, 'r') as f:
+        with open(check_files, "r") as f:
             check_lines = [line.strip() for line in f.readlines()]
-        with open(src_files, 'r') as f:
+        with open(src_files, "r") as f:
             src_lines = [line.strip() for line in f.readlines()]
-        with open(obj_files, 'w') as f:
+        with open(obj_files, "w") as f:
             for lines in tqdm.tqdm(src_lines):
                 if lines in check_lines:
                     continue
-                f.write(f'{lines}\n')
-        with open(obj_files, 'r') as f:
+                f.write(f"{lines}\n")
+        with open(obj_files, "r") as f:
             count = len(f.readlines())
         num_img = len(src_lines) - len(check_lines)
-        print(f'save num: {count}, origin num: {num_img}')
+        print(f"save num: {count}, origin num: {num_img}")
+
     choose_trainset(trainval_files, val_files, train_files)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

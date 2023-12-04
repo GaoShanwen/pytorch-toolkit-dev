@@ -3,18 +3,17 @@ from timm.data import ImageDataset
 
 
 class TxtReaderImageDataset(ImageDataset):
-
     def __init__(
-            self,
-            root,
-            reader=None,
-            split='train',
-            class_map=None,
-            load_bytes=False,
-            img_mode='RGB',
-            transform=None,
-            target_transform=None,
-            **kwargs,
+        self,
+        root,
+        reader=None,
+        split="train",
+        class_map=None,
+        load_bytes=False,
+        img_mode="RGB",
+        transform=None,
+        target_transform=None,
+        **kwargs,
     ):
         if reader is None or isinstance(reader, str):
             reader = create_reader(
