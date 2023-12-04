@@ -21,39 +21,31 @@ def load_data(file_path):
     return feas, labels, fpaths
 
 
-def run_compute(p_label, query_label, do_output=True, k=5):
-    tp1_num = np.where(p_label[:, 0] == query_label)[0].shape[0]
-    tp5_num = np.unique(
-        np.where(p_label[:, :k] == query_label[:, np.newaxis])[0]
-    ).shape[0]
+def run_compute(p_label, q_label, do_output=True, k=5):
+    tp1_num = np.where(p_label[:, 0] == q_label)[0].shape[0]
+    tp5_num = np.unique(np.where(p_label[:, :k] == q_label[:, np.newaxis])[0]).shape[0]
     if do_output:
         return tp1_num, tp5_num
-    print(
-        f"top1-knn(k={k}): {tp1_num}/{query_label.shape[0]}|{tp1_num/query_label.shape[0]}"
-    )
-    print(
-        f"top5-knn(k={k}): {tp5_num}/{query_label.shape[0]}|{tp5_num/query_label.shape[0]}"
-    )
+    print(f"top1-knn(k={k}): {tp1_num}/{q_label.shape[0]}|{tp1_num/q_label.shape[0]}")
+    print(f"top5-knn(k={k}): {tp5_num}/{q_label.shape[0]}|{tp5_num/q_label.shape[0]}")
 
 
-def compute_acc_by_cat(p_label, query_label, class_list, label_map=None):
-    top1_num, top5_num = run_compute(p_label, query_label)
+def compute_acc_by_cat(p_label, q_label, class_list, label_map=None):
+    top1_num, top5_num = run_compute(p_label, q_label)
     acc_map = {
         "all_data": {
             "top1_num": top1_num,
-            "top1_acc": top1_num / query_label.shape[0],
+            "top1_acc": top1_num / q_label.shape[0],
             "top5_num": top5_num,
-            "top5_acc": top5_num / query_label.shape[0],
-            "data_num": query_label.shape[0],
+            "top5_acc": top5_num / q_label.shape[0],
+            "data_num": q_label.shape[0],
         }
     }
-    val_dict = dict(Counter(query_label))
+    val_dict = dict(Counter(q_label))
     for cat, data_num in val_dict.items():
-        cat_index = np.where(query_label == cat)
-        top1_num = np.where(p_label[cat_index, 0] == query_label[cat_index])[1].shape[0]
-        top5_num = np.unique(
-            np.where(p_label[cat_index, :] == query_label[cat_index, np.newaxis])[1]
-        ).shape[0]
+        cat_index = np.where(q_label == cat)
+        top1_num = np.where(p_label[cat_index, 0] == q_label[cat_index])[1].shape[0]
+        top5_num = np.unique(np.where(p_label[cat_index, :] == q_label[cat_index, np.newaxis])[1]).shape[0]
         cat_res = {
             "top1_num": top1_num,
             "top1_acc": top1_num / data_num,
@@ -80,9 +72,7 @@ def save_keeps_file(labels, files, class_list, obj_files):
             f.write(f"{filename}, {label}\n")
 
 
-def create_index(
-    data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT
-):
+def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT):
     dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
     if use_gpu:
@@ -92,9 +82,7 @@ def create_index(
     return index
 
 
-def choose_similarity(
-    matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0
-):
+def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
     cats = list(set(labels))
     stride = len(cats) // update_times if update_times else 1
     keeps = []
@@ -110,16 +98,10 @@ def choose_similarity(
             if i in masks:
                 continue
             # 找到大于阈值的得分, 定位到位置，
-            mask_index = np.where(
-                (g_g_scores[i, :] >= samilar_thresh) & (g_g_indexs[i, :] > i)
-            )[0]
+            mask_index = np.where((g_g_scores[i, :] >= samilar_thresh) & (g_g_indexs[i, :] > i))[0]
             masks += g_g_indexs[i, mask_index].tolist()
         masks = np.array(masks)
-        keeps += (
-            np.setdiff1d(cat_index, cat_index[masks]).tolist()
-            if masks.shape[0]
-            else cat_index.tolist()
-        )
+        keeps += np.setdiff1d(cat_index, cat_index[masks]).tolist() if masks.shape[0] else cat_index.tolist()
         pbar.update(1)
         del index
     pbar.close()
@@ -127,10 +109,8 @@ def choose_similarity(
 
 
 def get_predict_label(
-    distances,
     initial_rank,
     gallery_label,
-    query_label,
     k=5,
     use_knn=False,
     use_sgd=False,
@@ -159,9 +139,7 @@ def choose_noises(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
         index = create_index(choose_gallery, enable_gpu)
         _, index_matric = index.search(choose_gallery, choose_gallery.shape[0])
         choose_num = int(cat_index.shape[0] * choose_ratio)
-        last_count = Counter(
-            index_matric[:, -choose_num:].reshape(-1).tolist()
-        ).most_common()
+        last_count = Counter(index_matric[:, -choose_num:].reshape(-1).tolist()).most_common()
         keep = [key for key, _ in last_count][:choose_num]
         keeps += cat_index[np.array(keep, dtype=int)].tolist()
         pbar.update(1)

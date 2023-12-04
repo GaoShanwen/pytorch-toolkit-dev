@@ -46,13 +46,9 @@ class ByobRedutionNet(ByobNet):
         self.reduction_dim = reduction_dim
         num_pooled_features = self.num_features * self.head.global_pool.feat_mult()
         if self.head.use_conv:
-            self.head.reduction = nn.Conv2d(
-                num_pooled_features, self.reduction_dim, 1, bias=True
-            )
+            self.head.reduction = nn.Conv2d(num_pooled_features, self.reduction_dim, 1, bias=True)
         else:
-            self.head.reduction = nn.Linear(
-                num_pooled_features, self.reduction_dim, bias=True
-            )
+            self.head.reduction = nn.Linear(num_pooled_features, self.reduction_dim, bias=True)
         self.head.fc = _create_fc(self.reduction_dim, num_classes, self.head.use_conv)
 
     def reset_classifier(self, num_classes, global_pool="avg"):
@@ -89,9 +85,7 @@ if __name__ == "__main__":
     import timm
     import torch
 
-    m = timm.create_model(
-        "haloregnetz_redution_b.ra3_in1k", pretrained=True, num_classes=100
-    )
+    m = timm.create_model("haloregnetz_redution_b.ra3_in1k", pretrained=True, num_classes=100)
     # o = m(torch.randn(2, 3, 224, 224))
     import pdb
 

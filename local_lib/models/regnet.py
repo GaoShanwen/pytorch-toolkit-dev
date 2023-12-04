@@ -44,13 +44,9 @@ class RegNetRedution(RegNet):
         self.reduction_dim = reduction_dim
         num_pooled_features = self.num_features * self.head.global_pool.feat_mult()
         if self.head.use_conv:
-            self.head.reduction = nn.Conv2d(
-                num_pooled_features, self.reduction_dim, 1, bias=True
-            )
+            self.head.reduction = nn.Conv2d(num_pooled_features, self.reduction_dim, 1, bias=True)
         else:
-            self.head.reduction = nn.Linear(
-                num_pooled_features, self.reduction_dim, bias=True
-            )
+            self.head.reduction = nn.Linear(num_pooled_features, self.reduction_dim, bias=True)
         self.head.fc = _create_fc(self.reduction_dim, num_classes, self.head.use_conv)
 
     def reset_classifier(self, num_classes, global_pool="avg"):

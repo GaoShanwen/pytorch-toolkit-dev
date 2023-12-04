@@ -13,11 +13,7 @@ import collections
 
 def load_data(anno_path):
     with open(anno_path, "r") as f:
-        lines = [
-            line.strip().split(",")
-            for line in f.readlines()
-            if line.startswith("/data/AI-scales/images")
-        ]
+        lines = [line.strip().split(",") for line in f.readlines() if line.startswith("/data/AI-scales/images")]
     filenames, labels = zip(*(lines))
     return filenames, labels
 
@@ -64,9 +60,7 @@ def static_data(train_data, val_data, cat_map):
     show_counter = train_counter  # val_counter
 
     # import pdb; pdb.set_trace()
-    print(
-        "| =- cat id -= |  ====----    n a m e    ----====  | =- train -= |  =- val -=  |"
-    )
+    print("| =- cat id -= |  ====----    n a m e    ----====  | =- train -= |  =- val -=  |")
     # train_counter = []
     for id, num1 in show_counter:  # .items():
         num2 = check_dict.get(id, "")

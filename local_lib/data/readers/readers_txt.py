@@ -50,27 +50,15 @@ def read_images_and_targets(
 
     if kwargs.get("num_classes", None):
         num_classes = kwargs["num_classes"]
-        save_cats = (
-            save_cats[:num_classes]
-            if save_cats is not None and num_classes < len(save_cats)
-            else save_cats
-        )
+        save_cats = save_cats[:num_classes] if save_cats is not None and num_classes < len(save_cats) else save_cats
     choose_cats = save_cats
     if kwargs.get("num_choose", None):
         num_choose = kwargs["num_choose"]
         choose_cats = save_cats[num_choose[0] : num_choose[1]]
     with open(anno_path, "r") as f:
-        lines = [
-            line.strip().split(", ")
-            for line in f.readlines()
-            if line.startswith("/data/AI-scales/images")
-        ]
+        lines = [line.strip().split(", ") for line in f.readlines() if line.startswith("/data/AI-scales/images")]
     filenames, labels = zip(
-        *[
-            (filename, label)
-            for filename, label in lines
-            if choose_cats is None or label in choose_cats
-        ]
+        *[(filename, label) for filename, label in lines if choose_cats is None or label in choose_cats]
     )
 
     if class_to_idx is None:
@@ -78,9 +66,7 @@ def read_images_and_targets(
         unique_labels = set(labels) if save_cats is None else save_cats
         sorted_labels = list(sorted(unique_labels, key=natural_key))
         class_to_idx = {c: idx for idx, c in enumerate(sorted_labels)}
-    images_and_targets = [
-        (f, class_to_idx[l]) for f, l in zip(filenames, labels) if l in class_to_idx
-    ]
+    images_and_targets = [(f, class_to_idx[l]) for f, l in zip(filenames, labels) if l in class_to_idx]
     if sort:
         images_and_targets = sorted(images_and_targets, key=lambda k: natural_key(k[0]))
     return images_and_targets, class_to_idx
@@ -98,14 +84,8 @@ class ReaderImageTxt(Reader):
             "train",
             "val",
         ], f"split must be train/val, but you set is {split}"
-        anno_path = (
-            os.path.join(root, "train.txt")
-            if split == "train"
-            else os.path.join(root, "val.txt")
-        )
-        self.samples, self.class_to_idx = read_images_and_targets(
-            anno_path, class_to_idx=class_to_idx, **kwargs
-        )
+        anno_path = os.path.join(root, "train.txt") if split == "train" else os.path.join(root, "val.txt")
+        self.samples, self.class_to_idx = read_images_and_targets(anno_path, class_to_idx=class_to_idx, **kwargs)
         if len(self.samples) == 0:
             raise RuntimeError(
                 f"Found 0 images in subfolders of {root}. "
@@ -154,9 +134,7 @@ class ReaderImagePaths(Reader):
             )
         )
         if sort:
-            images_and_targets = sorted(
-                images_and_targets, key=lambda k: natural_key(k[0])
-            )
+            images_and_targets = sorted(images_and_targets, key=lambda k: natural_key(k[0]))
         self.samples, self.class_to_idx = images_and_targets, class_to_idx
 
     def __getitem__(self, index):

@@ -67,34 +67,22 @@ class MobileNetV3Redution(MobileNetV3):
         del self.classifier
         self.reduction_dim = reduction_dim
         self.reduction = Linear(self.num_features, self.reduction_dim)
-        self.classifier = (
-            Linear(self.reduction_dim, num_classes)
-            if num_classes > 0
-            else nn.Identity()
-        )
+        self.classifier = Linear(self.reduction_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def as_sequential(self):
         layers = [self.conv_stem, self.bn1]
         layers.extend(self.blocks)
         layers.extend([self.global_pool, self.conv_head, self.act2])
-        layers.extend(
-            [nn.Flatten(), nn.Dropout(self.drop_rate), self.reduction, self.classifier]
-        )
+        layers.extend([nn.Flatten(), nn.Dropout(self.drop_rate), self.reduction, self.classifier])
         return nn.Sequential(*layers)
 
     def reset_classifier(self, num_classes, global_pool="avg"):
         self.num_classes = num_classes
         # cannot meaningfully change pooling of efficient head after creation
         self.global_pool = SelectAdaptivePool2d(pool_type=global_pool)
-        self.flatten = (
-            nn.Flatten(1) if global_pool else nn.Identity()
-        )  # don't flatten if pooling disabled
+        self.flatten = nn.Flatten(1) if global_pool else nn.Identity()  # don't flatten if pooling disabled
         self.reduction = Linear(self.num_features, self.reduction_dim)
-        self.classifier = (
-            Linear(self.reduction_dim, num_classes)
-            if num_classes > 0
-            else nn.Identity()
-        )
+        self.classifier = Linear(self.reduction_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def forward_head(self, x, pre_logits: bool = False):
         x = self.global_pool(x)
@@ -240,9 +228,7 @@ def _gen_mobilenet_v3(variant, channel_multiplier=1.0, pretrained=False, **kwarg
 @register_model
 def mobilenetv3_redution_large_100(pretrained=False, **kwargs) -> MobileNetV3:
     """Redution MobileNet V3"""
-    model = _gen_mobilenet_v3(
-        "mobilenetv3_large_100", 1.0, pretrained=pretrained, **kwargs
-    )
+    model = _gen_mobilenet_v3("mobilenetv3_large_100", 1.0, pretrained=pretrained, **kwargs)
     return model
 
 

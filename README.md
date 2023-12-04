@@ -94,3 +94,10 @@ You can open this [tensorboard](http://localhost:6006/) or [wandb](https://wandb
 <pytorch-toolkit-dev> ~ $ # convert other model
         ... output/converted_model/rk3566-regnety_016-224.rknn --input output/converted_model/... 
 ```
+
+### normalize code
+
+```bash
+<pytorch-toolkit-dev> ~ $ # run this command after install black
+<pytorch-toolkit-dev> ~ $ black --line-length=120 ./
+```

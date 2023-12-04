@@ -16,11 +16,7 @@ import collections
 
 def load_data(anno_path):
     with open(anno_path, "r") as f:
-        lines = [
-            line.strip().split(",")
-            for line in f.readlines()
-            if line.startswith("/data/AI-scales/images")
-        ]
+        lines = [line.strip().split(",") for line in f.readlines() if line.startswith("/data/AI-scales/images")]
     filenames, labels = zip(*(lines))
     return filenames, labels
 

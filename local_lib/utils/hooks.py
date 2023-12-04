@@ -41,8 +41,6 @@ if __name__ == "__main__":
     for i, content in enumerate(write_contents):
         train_loss, top1, test_loss, top5, lr = content
         train_metrics = OrderedDict([("loss", train_loss)])
-        eval_metrics = OrderedDict(
-            [("loss", test_loss), ("top1", top1), ("top5", top5)]
-        )
+        eval_metrics = OrderedDict([("loss", test_loss), ("top1", top1), ("top5", top5)])
         tb_writer.update(i, train_metrics, eval_metrics, lr)
     tb_writer.close()

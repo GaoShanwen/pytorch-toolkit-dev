@@ -39,9 +39,7 @@ parser.add_argument(
     default="rk3566",
     help="target platform (default: rk3566)",
 )
-parser.add_argument(
-    "--do-quantizate", action="store_true", default=False, help="enable do quantizate"
-)
+parser.add_argument("--do-quantizate", action="store_true", default=False, help="enable do quantizate")
 parser.add_argument(
     "--results-dir",
     default="",
@@ -169,12 +167,8 @@ parser.add_argument(
     metavar="NAME",
     help="Image resize interpolation type (overrides model)",
 )
-parser.add_argument(
-    "--num-classes", type=int, default=None, help="Number classes in dataset"
-)
-parser.add_argument(
-    "--num-choose", type=int, default=None, help="Number choose in dataset"
-)
+parser.add_argument("--num-classes", type=int, default=None, help="Number classes in dataset")
+parser.add_argument("--num-choose", type=int, default=None, help="Number choose in dataset")
 parser.add_argument(
     "--class-map",
     default="",
@@ -203,13 +197,9 @@ parser.add_argument(
     metavar="PATH",
     help="path to latest checkpoint (default: none)",
 )
-parser.add_argument(
-    "--pretrained", dest="pretrained", action="store_true", help="use pre-trained model"
-)
+parser.add_argument("--pretrained", dest="pretrained", action="store_true", help="use pre-trained model")
 parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
-parser.add_argument(
-    "--test-pool", dest="test_pool", action="store_true", help="enable test time pool"
-)
+parser.add_argument("--test-pool", dest="test_pool", action="store_true", help="enable test time pool")
 parser.add_argument(
     "--no-prefetcher",
     action="store_true",
@@ -228,9 +218,7 @@ parser.add_argument(
     default=False,
     help="Use channels_last memory layout",
 )
-parser.add_argument(
-    "--device", default="cpu", type=str, help="Device (accelerator) to use."
-)
+parser.add_argument("--device", default="cpu", type=str, help="Device (accelerator) to use.")
 parser.add_argument(
     "--tf-preprocessing",
     action="store_true",
@@ -277,9 +265,7 @@ if __name__ == "__main__":
     print("Config model done")
 
     print("--> Loading model")
-    onnx_model = (
-        args.input
-    )  # "output/converted_model/20230925-185645-resnet18-224.onnx"
+    onnx_model = args.input  # "output/converted_model/20230925-185645-resnet18-224.onnx"
     ret = rknn.load_onnx(
         model=onnx_model
     )  # , inputs=["input0"], input_size_list=[[1, args.in_chans, args.img_size, args.img_size]])
@@ -290,14 +276,8 @@ if __name__ == "__main__":
 
     # Build model
     print("--> Building model")
-    data_file = (
-        "dataset/exp-data/minidata/quantizate/dataset1.txt"
-        if args.do_quantizate
-        else None
-    )
-    ret = rknn.build(
-        do_quantization=args.do_quantizate, dataset=data_file
-    )  # , rknn_batch_size=args.batch_size)
+    data_file = "dataset/exp-data/minidata/quantizate/dataset1.txt" if args.do_quantizate else None
+    ret = rknn.build(do_quantization=args.do_quantizate, dataset=data_file)  # , rknn_batch_size=args.batch_size)
     # rknn.accuracy_analysis(inputs=['dataset/.../image.jpg'])
     if ret != 0:
         print("build model failed.")
@@ -327,17 +307,11 @@ if __name__ == "__main__":
     img = cv2.imread(path)
     inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
-    x = (
-        np.array(inputs).astype(np.float32) / 255.0
-    )  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
-    x = (x - np.array([0.485, 0.456, 0.406])) / np.array(
-        [0.229, 0.224, 0.225]
-    )  # Normalize操作，使用ImageNet标准进行标准化
+    x = np.array(inputs).astype(np.float32) / 255.0  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
+    x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化
 
     sess_options = onnxruntime.SessionOptions()
-    sess_options.graph_optimization_level = (
-        onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
-    )
+    sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
     session = onnxruntime.InferenceSession(args.input, sess_options)
     input_name = session.get_inputs()[0].name
     output2 = session.run([], {input_name: [x.transpose(2, 0, 1)]})

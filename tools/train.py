@@ -84,9 +84,7 @@ _logger = logging.getLogger("train")
 
 # The first arg parser parses out only the --config argument, this argument is used to
 # load a yaml file containing key-values that override the defaults for the main parser below
-config_parser = parser = argparse.ArgumentParser(
-    description="Training Config", add_help=False
-)
+config_parser = parser = argparse.ArgumentParser(description="Training Config", add_help=False)
 parser.add_argument(
     "-c",
     "--config",
@@ -305,12 +303,8 @@ group.add_argument(
     help="the path for save tensorboard logs (default: none)",
 )
 group.add_argument("--model-kwargs", nargs="*", default={}, action=utils.ParseKwargs)
-group.add_argument(
-    "--head-init-scale", default=None, type=float, help="Head initialization scale"
-)
-group.add_argument(
-    "--head-init-bias", default=None, type=float, help="Head initialization bias value"
-)
+group.add_argument("--head-init-scale", default=None, type=float, help="Head initialization scale")
+group.add_argument("--head-init-bias", default=None, type=float, help="Head initialization bias value")
 
 # scripting / codegen
 scripting_group = group.add_mutually_exclusive_group()
@@ -360,9 +354,7 @@ group.add_argument(
     metavar="M",
     help="Optimizer momentum (default: 0.9)",
 )
-group.add_argument(
-    "--weight-decay", type=float, default=2e-5, help="weight decay (default: 2e-5)"
-)
+group.add_argument("--weight-decay", type=float, default=2e-5, help="weight decay (default: 2e-5)")
 group.add_argument(
     "--clip-grad",
     type=float,
@@ -586,12 +578,8 @@ group.add_argument(
     metavar="RATIO",
     help="Random resize aspect ratio (default: 0.75 1.33)",
 )
-group.add_argument(
-    "--hflip", type=float, default=0.5, help="Horizontal flip training aug probability"
-)
-group.add_argument(
-    "--vflip", type=float, default=0.0, help="Vertical flip training aug probability"
-)
+group.add_argument("--hflip", type=float, default=0.5, help="Horizontal flip training aug probability")
+group.add_argument("--vflip", type=float, default=0.0, help="Vertical flip training aug probability")
 group.add_argument(
     "--color-jitter",
     type=float,
@@ -643,12 +631,8 @@ group.add_argument(
     metavar="PCT",
     help="Random erase prob (default: 0.)",
 )
-group.add_argument(
-    "--remode", type=str, default="pixel", help='Random erase mode (default: "pixel")'
-)
-group.add_argument(
-    "--recount", type=int, default=1, help="Random erase count (default: 1)"
-)
+group.add_argument("--remode", type=str, default="pixel", help='Random erase mode (default: "pixel")')
+group.add_argument("--recount", type=int, default=1, help="Random erase count (default: 1)")
 group.add_argument(
     "--resplit",
     action="store_true",
@@ -699,18 +683,14 @@ group.add_argument(
     metavar="N",
     help="Turn off mixup after this epoch, disabled if 0 (default: 0)",
 )
-group.add_argument(
-    "--smoothing", type=float, default=0.1, help="Label smoothing (default: 0.1)"
-)
+group.add_argument("--smoothing", type=float, default=0.1, help="Label smoothing (default: 0.1)")
 group.add_argument(
     "--train-interpolation",
     type=str,
     default="random",
     help='Training interpolation (random, bilinear, bicubic default: "random")',
 )
-group.add_argument(
-    "--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)"
-)
+group.add_argument("--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)")
 group.add_argument(
     "--drop-connect",
     type=float,
@@ -734,9 +714,7 @@ group.add_argument(
 )
 
 # Batch norm parameters (only works with gen_efficientnet based models currently)
-group = parser.add_argument_group(
-    "Batch norm parameters", "Only works with gen_efficientnet based models currently."
-)
+group = parser.add_argument_group("Batch norm parameters", "Only works with gen_efficientnet based models currently.")
 group.add_argument(
     "--bn-momentum",
     type=float,
@@ -789,12 +767,8 @@ group.add_argument(
 
 # Misc
 group = parser.add_argument_group("Miscellaneous parameters")
-group.add_argument(
-    "--seed", type=int, default=42, metavar="S", help="random seed (default: 42)"
-)
-group.add_argument(
-    "--worker-seeding", type=str, default="all", help="worker seed mode (default: all)"
-)
+group.add_argument("--seed", type=int, default=42, metavar="S", help="random seed (default: 42)")
+group.add_argument("--worker-seeding", type=str, default="all", help="worker seed mode (default: all)")
 group.add_argument(
     "--log-interval",
     type=int,
@@ -975,9 +949,7 @@ def main():
             use_amp = "apex"
             assert args.amp_dtype == "float16"
         else:
-            assert (
-                has_native_amp
-            ), "Please update PyTorch to a version with native AMP (or use APEX)."
+            assert has_native_amp, "Please update PyTorch to a version with native AMP (or use APEX)."
             use_amp = "native"
             assert args.amp_dtype in ("float16", "bfloat16")
         if args.amp_dtype == "bfloat16":
@@ -1020,12 +992,8 @@ def main():
         nn.init.constant_(model.get_classifier().bias, args.head_init_bias)
 
     if args.num_classes is None:
-        assert hasattr(
-            model, "num_classes"
-        ), "Model must have `num_classes` attr if not set on cmd line/config."
-        args.num_classes = (
-            model.num_classes
-        )  # FIXME handle model default vs config num_classes more elegantly
+        assert hasattr(model, "num_classes"), "Model must have `num_classes` attr if not set on cmd line/config."
+        args.num_classes = model.num_classes  # FIXME handle model default vs config num_classes more elegantly
 
     if args.grad_checkpointing:
         model.set_grad_checkpointing(enable=True)
@@ -1035,9 +1003,7 @@ def main():
             f"Model {safe_model_name(args.model)} created, param count:{sum([m.numel() for m in model.parameters()])}"
         )
 
-    data_config = resolve_data_config(
-        vars(args), model=model, verbose=utils.is_primary(args)
-    )
+    data_config = resolve_data_config(vars(args), model=model, verbose=utils.is_primary(args))
 
     # setup augmentation batch splits for contrastive loss or split bn
     num_aug_splits = 0
@@ -1082,9 +1048,7 @@ def main():
         batch_ratio = global_batch_size / args.lr_base_size
         if not args.lr_base_scale:
             on = args.opt.lower()
-            args.lr_base_scale = (
-                "sqrt" if any([o in on for o in ("ada", "lamb")]) else "linear"
-            )
+            args.lr_base_scale = "sqrt" if any([o in on for o in ("ada", "lamb")]) else "linear"
         if args.lr_base_scale == "sqrt":
             batch_ratio = batch_ratio**0.5
         args.lr = args.lr_base * batch_ratio
@@ -1111,9 +1075,7 @@ def main():
             _logger.info("Using NVIDIA APEX AMP. Training in mixed precision.")
     elif use_amp == "native":
         try:
-            amp_autocast = partial(
-                torch.autocast, device_type=device.type, dtype=amp_dtype
-            )
+            amp_autocast = partial(torch.autocast, device_type=device.type, dtype=amp_dtype)
         except (AttributeError, TypeError):
             # fallback to CUDA only AMP for PyTorch < 1.10
             assert device.type == "cuda"
@@ -1160,16 +1122,12 @@ def main():
         else:
             if utils.is_primary(args):
                 _logger.info("Using native Torch DistributedDataParallel.")
-            model = NativeDDP(
-                model, device_ids=[device], broadcast_buffers=not args.no_ddp_bb
-            )
+            model = NativeDDP(model, device_ids=[device], broadcast_buffers=not args.no_ddp_bb)
         # NOTE: EMA model does not need to be wrapped by DDP
 
     if args.torchcompile:
         # torch compile should be done after DDP
-        assert (
-            has_compile
-        ), "A version of torch w/ torch.compile() is required for --compile, possibly a nightly."
+        assert has_compile, "A version of torch w/ torch.compile() is required for --compile, possibly a nightly."
         model = torch.compile(model, backend=args.torchcompile)
 
     # create the train and eval datasets
@@ -1223,9 +1181,7 @@ def main():
             num_classes=args.num_classes,
         )
         if args.prefetcher:
-            assert (
-                not num_aug_splits
-            )  # collate conflict (need to support deinterleaving in collate mixup)
+            assert not num_aug_splits  # collate conflict (need to support deinterleaving in collate mixup)
             collate_fn = FastCollateMixup(**mixup_args)
         else:
             mixup_fn = Mixup(**mixup_args)
@@ -1292,9 +1248,7 @@ def main():
     # setup loss function
     if args.jsd_loss:
         assert num_aug_splits > 1  # JSD only valid with aug splits set
-        train_loss_fn = JsdCrossEntropy(
-            num_splits=num_aug_splits, smoothing=args.smoothing
-        )
+        train_loss_fn = JsdCrossEntropy(num_splits=num_aug_splits, smoothing=args.smoothing)
     elif mixup_active:
         # smoothing is handled with mixup target transform which outputs sparse, soft targets
         if args.bce_loss:
@@ -1303,9 +1257,7 @@ def main():
             train_loss_fn = SoftTargetCrossEntropy()
     elif args.smoothing:
         if args.bce_loss:
-            train_loss_fn = BinaryCrossEntropy(
-                smoothing=args.smoothing, target_threshold=args.bce_target_thresh
-            )
+            train_loss_fn = BinaryCrossEntropy(smoothing=args.smoothing, target_threshold=args.bce_target_thresh)
         else:
             train_loss_fn = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
     else:
@@ -1331,9 +1283,7 @@ def main():
                     str(data_config["input_size"][-1]),
                 ]
             )
-        output_dir = utils.get_outdir(
-            args.output if args.output else "./output/train", exp_name
-        )
+        output_dir = utils.get_outdir(args.output if args.output else "./output/train", exp_name)
         decreasing = True if eval_metric == "loss" else False
         saver = utils.CheckpointSaver(
             model=model,
@@ -1362,9 +1312,7 @@ def main():
             )
 
     # setup learning rate schedule and starting epoch
-    updates_per_epoch = (
-        len(loader_train) + args.grad_accum_steps - 1
-    ) // args.grad_accum_steps
+    updates_per_epoch = (len(loader_train) + args.grad_accum_steps - 1) // args.grad_accum_steps
     lr_scheduler, num_epochs = create_scheduler_v2(
         optimizer,
         **scheduler_kwargs(args),
@@ -1425,9 +1373,7 @@ def main():
 
             if model_ema is not None and not args.model_ema_force_cpu:
                 if args.distributed and args.dist_bn in ("broadcast", "reduce"):
-                    utils.distribute_bn(
-                        model_ema, args.world_size, args.dist_bn == "reduce"
-                    )
+                    utils.distribute_bn(model_ema, args.world_size, args.dist_bn == "reduce")
 
                 ema_eval_metrics = validate(
                     model_ema.module,
@@ -1440,9 +1386,7 @@ def main():
                 eval_metrics = ema_eval_metrics
             if tb_writer is not None:
                 lrs = [param_group["lr"] for param_group in optimizer.param_groups]
-                tb_writer.update(
-                    epoch, train_metrics, eval_metrics, lr=sum(lrs) / len(lrs)
-                )
+                tb_writer.update(epoch, train_metrics, eval_metrics, lr=sum(lrs) / len(lrs))
             if output_dir is not None:
                 lrs = [param_group["lr"] for param_group in optimizer.param_groups]
                 utils.update_summary(
@@ -1458,9 +1402,7 @@ def main():
             if saver is not None:
                 # save proper checkpoint with eval metric
                 save_metric = eval_metrics[eval_metric]
-                best_metric, best_epoch = saver.save_checkpoint(
-                    epoch, metric=save_metric
-                )
+                best_metric, best_epoch = saver.save_checkpoint(epoch, metric=save_metric)
 
             if lr_scheduler is not None:
                 # step LR for next epoch
@@ -1545,9 +1487,7 @@ def train_one_epoch(
                     optimizer,
                     clip_grad=args.clip_grad,
                     clip_mode=args.clip_mode,
-                    parameters=model_parameters(
-                        model, exclude_head="agc" in args.clip_mode
-                    ),
+                    parameters=model_parameters(model, exclude_head="agc" in args.clip_mode),
                     create_graph=second_order,
                     need_update=need_update,
                 )
@@ -1556,9 +1496,7 @@ def train_one_epoch(
                 if need_update:
                     if args.clip_grad is not None:
                         utils.dispatch_clip_grad(
-                            model_parameters(
-                                model, exclude_head="agc" in args.clip_mode
-                            ),
+                            model_parameters(model, exclude_head="agc" in args.clip_mode),
                             value=args.clip_grad,
                             mode=args.clip_mode,
                         )
@@ -1596,8 +1534,7 @@ def train_one_epoch(
             lr = sum(lrl) / len(lrl)
             # remaining_seconds: Estimated Time of Arrival
             remaining_seconds = round(
-                ((args.epochs - epoch) * updates_per_epoch - (update_idx + 1))
-                * update_time_m.avg
+                ((args.epochs - epoch) * updates_per_epoch - (update_idx + 1)) * update_time_m.avg
             )
 
             if args.distributed:
@@ -1625,11 +1562,7 @@ def train_one_epoch(
                         normalize=True,
                     )
 
-        if (
-            saver is not None
-            and args.recovery_interval
-            and ((update_idx + 1) % args.recovery_interval == 0)
-        ):
+        if saver is not None and args.recovery_interval and ((update_idx + 1) % args.recovery_interval == 0):
             saver.save_recovery(epoch, batch_idx=update_idx)
 
         if lr_scheduler is not None:
@@ -1702,9 +1635,7 @@ def validate(
 
             batch_time_m.update(time.time() - end)
             end = time.time()
-            if utils.is_primary(args) and (
-                last_batch or batch_idx % args.log_interval == 0
-            ):
+            if utils.is_primary(args) and (last_batch or batch_idx % args.log_interval == 0):
                 log_name = "Test" + log_suffix
                 _logger.info(
                     f"{log_name}: [{batch_idx:>4d}/{last_idx}]  "
@@ -1714,9 +1645,7 @@ def validate(
                     f"Acc@5: {top5_m.val:>7.3f} ({top5_m.avg:>7.3f})"
                 )
 
-    metrics = OrderedDict(
-        [("loss", losses_m.avg), ("top1", top1_m.avg), ("top5", top5_m.avg)]
-    )
+    metrics = OrderedDict([("loss", losses_m.avg), ("top1", top1_m.avg), ("top5", top5_m.avg)])
 
     return metrics
 

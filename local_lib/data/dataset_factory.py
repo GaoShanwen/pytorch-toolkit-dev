@@ -41,7 +41,5 @@ def create_owner_dataset(
     ], f"split must be train/val or infer but you set {split}"
     if split == "infer":
         reader = ReaderImagePaths(root, sort=False)
-    ds = TxtReaderImageDataset(
-        root, reader=reader, split=split, class_map=class_map, **kwargs
-    )
+    ds = TxtReaderImageDataset(root, reader=reader, split=split, class_map=class_map, **kwargs)
     return ds

@@ -114,9 +114,7 @@ def main():
 
     # import pdb; pdb.set_trace()
 
-    TrainValSet = AIScale[
-        "TrainValSet"
-    ]  # ; TrainValSet.count_documents({'brand_id':brand_id})
+    TrainValSet = AIScale["TrainValSet"]  # ; TrainValSet.count_documents({'brand_id':brand_id})
     # save_root = "/home/work/pytorch-cls-project/dataset/exp-data/zero_dataset"
     save_root = "dataset/exp-data/removeredundancy"
     trainval_files = os.path.join(save_root, "trainval.txt")

@@ -60,80 +60,38 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_eval(
-    g_feats, g_label, q_feats, q_label, class_list, args, acc_file_name="eval_res.csv"
-):
-    index = feat_tools.create_index(
-        g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure
-    )
+def run_eval(g_feats, g_label, q_feats, q_label, class_list, args, acc_file_name="eval_res.csv"):
+    index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     D, I = index.search(q_feats, args.topk)
-    p_label = feat_tools.get_predict_label(
-        D, I, g_label, q_label, use_knn=args.use_knn, use_sgd=args.use_sgd
-    )
+    p_label = feat_tools.get_predict_label(I, g_label, use_knn=args.use_knn, use_sgd=args.use_sgd)
     if acc_file_name:
         label_index = load_csv_file(args.label_file)
         cats = list(set(g_label))
-        label_map = {
-            i: label_index[cat].split("/")[0]
-            for i, cat in enumerate(class_list)
-            if i in cats
-        }
+        label_map = {i: label_index[cat].split("/")[0] for i, cat in enumerate(class_list) if i in cats}
         acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, class_list, label_map)
         feat_tools.print_acc_map(acc_map, acc_file_name)
     feat_tools.run_compute(p_label, q_label, do_output=False)
 
 
-def main(
-    gallery_feature,
-    gallery_label,
-    gallery_files,
-    query_feature,
-    query_label,
-    class_list,
-    args,
-):
-    run_eval(
-        gallery_feature,
-        gallery_label,
-        query_feature,
-        query_label,
-        class_list,
-        args,
-        "eval_res.csv",
-    )
+def main(g_feats, g_label, g_files, q_feats, q_label, class_list, args):
+    run_eval(g_feats, g_label, q_feats, q_label, class_list, args, "eval_res.csv")
 
     if args.remove_mode == "none":
         if args.save_sql:
-            save_keeps2mysql(
-                gallery_feature,
-                gallery_label,
-                gallery_files,
-                class_list,
-                update_times=args.update_times,
-            )
+            save_keeps2mysql(g_feats, g_label, g_files, class_list, update_times=args.update_times)
         return
-    keeps = feat_tools.run_choose(gallery_feature, gallery_label, args)
+    keeps = feat_tools.run_choose(g_feats, g_label, args)
     if args.remove_mode == "noise":
         if args.save_detail:
             label_index = load_csv_file(args.label_file)
-            cats = list(set(gallery_label))
-            label_map = {
-                i: label_index[cat].split("/")[0]
-                for i, cat in enumerate(class_list)
-                if i in cats
-            }
+            cats = list(set(g_label))
+            label_map = {i: label_index[cat].split("/")[0] for i, cat in enumerate(class_list) if i in cats}
             save_imgs(new_g_label, new_g_files, label_map, args.save_root)
-        all_indics = np.arange(gallery_label.shape[0])
+        all_indics = np.arange(g_label.shape[0])
         keeps = np.setdiff1d(all_indics, keeps)
 
-    print(
-        f"original data: {gallery_label.shape[0]}, after remove {args.remove_mode} data: {keeps.shape[0]}"
-    )
-    new_g_feats, new_g_label, new_g_files = (
-        gallery_feature[keeps],
-        gallery_label[keeps],
-        gallery_files[keeps],
-    )
+    print(f"original data: {g_label.shape[0]}, after remove {args.remove_mode} data: {keeps.shape[0]}")
+    new_g_feats, new_g_label, new_g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
     np.savez(
         f"output/feats/regnety_040-train-{args.threshold}.npz",
         feats=new_g_feats,
@@ -141,22 +99,10 @@ def main(
         fpaths=new_g_files,
     )
     if args.save_sql:
-        save_keeps2mysql(
-            new_g_feats,
-            new_g_label,
-            new_g_files,
-            class_list,
-            update_times=args.update_times,
-        )
-    feat_tools.save_keeps_file(
-        new_g_label, new_g_files, class_list, f"train-th{args.threshold}.txt"
-    )
-    csv_name = (
-        f"eval_res-{args.remove_mode}-{args.threshold}.csv" if args.save_detail else ""
-    )
-    run_eval(
-        new_g_feats, new_g_label, query_feature, query_label, class_list, args, csv_name
-    )
+        save_keeps2mysql(new_g_feats, new_g_label, new_g_files, class_list, update_times=args.update_times)
+    feat_tools.save_keeps_file(new_g_label, new_g_files, class_list, f"train-th{args.threshold}.txt")
+    csv_name = f"eval_res-{args.remove_mode}-{args.threshold}.csv" if args.save_detail else ""
+    run_eval(new_g_feats, new_g_label, q_feats, q_label, class_list, args, csv_name)
 
 
 def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args):
@@ -164,9 +110,7 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, a
     mask_files = np.load(args.mask_path)
     masks = np.isin(q_files, mask_files)
     keeps = np.array(np.arange(q_files.shape[0]))[~masks]
-    print(
-        f"original data: {q_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}"
-    )
+    print(f"original data: {q_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}")
     q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
     # masks = np.isin(g_files, mask_files)
     # keeps = np.array(np.arange(g_files.shape[0]))[~masks]
@@ -214,10 +158,10 @@ if __name__ == "__main__":
     # param, measure = 'LSH', faiss.METRIC_L2           # 局部敏感哈希
 
     # 加载npz文件
-    g_feature, g_label, g_files = feat_tools.load_data(args.gallerys)
-    q_feature, q_label, q_files = feat_tools.load_data(args.querys)
-    faiss.normalize_L2(g_feature)
-    faiss.normalize_L2(q_feature)
+    g_feats, g_label, g_files = feat_tools.load_data(args.gallerys)
+    q_feats, q_label, q_files = feat_tools.load_data(args.querys)
+    faiss.normalize_L2(g_feats)
+    faiss.normalize_L2(q_feats)
 
     with open(args.cats_file, "r") as f:
         class_list = [line.strip("\n") for line in f.readlines()]
@@ -228,46 +172,13 @@ if __name__ == "__main__":
         # for cat in mask_cats:
         #     choose_cats.remove(class_list.index(cat))
         choose_cats = list(set(g_label))[:15]
-        cat_index = np.where(g_label[:, np.newaxis] == choose_cats)[0]
-        g_feature, g_label, g_files = (
-            g_feature[cat_index],
-            g_label[cat_index],
-            g_files[cat_index],
-        )
+        cat_idx = np.where(g_label[:, np.newaxis] == choose_cats)[0]
+        g_feats, g_label, g_files = g_feats[cat_idx], g_label[cat_idx], g_files[cat_idx]
 
-        cat_index = np.where(q_label[:, np.newaxis] == choose_cats)[0]
-        q_feature, q_label, q_files = (
-            q_feature[cat_index],
-            q_label[cat_index],
-            q_files[cat_index],
-        )
+        cat_idx = np.where(q_label[:, np.newaxis] == choose_cats)[0]
+        q_feats, q_label, q_files = q_feats[cat_idx], q_label[cat_idx], q_files[cat_idx]
 
     if args.run_test:
-        run_test(
-            g_feature, g_label, g_files, q_feature, q_label, q_files, class_list, args
-        )
+        run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args)
     else:
-        main(g_feature, g_label, g_files, q_feature, q_label, class_list, args)
-    # from collections import Counter
-    # import tqdm
-    # import random
-    # cats = list(set(g_label))
-    # keeps, choose_ratio = [], 1.
-    # pbar = tqdm.tqdm(total=len(cats))
-    # for cat in cats:
-    #     cat_index = np.where(g_label == cat)[0]
-    #     choose_gallery = g_feature[cat_index]
-    #     enable_gpu = args.use_gpu #if choose_gallery.shape[0] <= 2048 else False
-    #     index = feat_tools.create_index(choose_gallery, enable_gpu)
-    #     choose_num = min(3, int(cat_index.shape[0] * choose_ratio))
-    #     _, index_matric = index.search(choose_gallery, choose_num)
-    #     last_count = Counter(index_matric.reshape(-1).tolist()).most_common()
-    #     keep = [key for key, _ in last_count][:choose_num]
-    #     keeps += cat_index[np.array(keep, dtype=int)].tolist()
-    #     pbar.update(1)
-    #     del index
-    # choose_files = g_files[np.array(keeps)]
-    # obj_file = "blacklist_dataset.txt"
-    # with open(obj_file, "w") as f:
-    #     for choose_file in choose_files:
-    #         f.write(f"{choose_file}, {9}\n")
+        main(g_feats, g_label, g_files, q_feats, q_label, class_list, args)

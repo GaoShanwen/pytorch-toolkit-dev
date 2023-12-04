@@ -31,9 +31,7 @@ parser.add_argument(
     default="mobilenetv3_large_100",
     help="model architecture (default: mobilenetv3_large_100)",
 )
-parser.add_argument(
-    "--opset", type=int, default=None, help="ONNX opset to use (default: 10)"
-)
+parser.add_argument("--opset", type=int, default=None, help="ONNX opset to use (default: 10)")
 parser.add_argument(
     "--keep-init",
     action="store_true",
@@ -89,9 +87,7 @@ parser.add_argument(
     metavar="STD",
     help="Override std deviation of of dataset",
 )
-parser.add_argument(
-    "--num-classes", type=int, default=1000, help="Number classes in dataset"
-)
+parser.add_argument("--num-classes", type=int, default=1000, help="Number classes in dataset")
 parser.add_argument(
     "--checkpoint",
     default="",
@@ -99,9 +95,7 @@ parser.add_argument(
     metavar="PATH",
     help="path to checkpoint (default: none)",
 )
-parser.add_argument(
-    "--reparam", default=False, action="store_true", help="Reparameterize model"
-)
+parser.add_argument("--reparam", default=False, action="store_true", help="Reparameterize model")
 parser.add_argument(
     "--use-ema",
     dest="use_ema",
@@ -120,9 +114,7 @@ parser.add_argument(
     action="store_true",
     help="Export in training mode (default is eval)",
 )
-parser.add_argument(
-    "--verbose", default=False, action="store_true", help="Extra stdout output"
-)
+parser.add_argument("--verbose", default=False, action="store_true", help="Extra stdout output")
 
 
 def onnx_forward(onnx_file, example_input):
@@ -213,9 +205,7 @@ def onnx_export(
 
             onnx_out = onnx_forward(output_file, example_input)
             np.testing.assert_almost_equal(torch_out.data.numpy(), onnx_out, decimal=3)
-            np.testing.assert_almost_equal(
-                original_out.data.numpy(), torch_out.data.numpy(), decimal=5
-            )
+            np.testing.assert_almost_equal(original_out.data.numpy(), torch_out.data.numpy(), decimal=5)
 
 
 def main():
@@ -274,12 +264,8 @@ def main():
         img = cv2.imread(image_path)
         inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
-        x = (
-            np.array(inputs).astype(np.float32) / 255.0
-        )  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
-        x = (x - np.array([0.485, 0.456, 0.406])) / np.array(
-            [0.229, 0.224, 0.225]
-        )  # Normalize操作，使用ImageNet标准进行标准化
+        x = np.array(inputs).astype(np.float32) / 255.0  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
+        x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化
         input = x.transpose(2, 0, 1)[np.newaxis, ...]
         input = torch.from_numpy(input).float()  # .to(device)
         output = model(input)
@@ -288,9 +274,7 @@ def main():
         import onnxruntime
 
         sess_options = onnxruntime.SessionOptions()
-        sess_options.graph_optimization_level = (
-            onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
-        )
+        sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
         session = onnxruntime.InferenceSession(onnx_path, sess_options)
         input_name = session.get_inputs()[0].name
         output2 = session.run([], {input_name: [x.transpose(2, 0, 1)]})

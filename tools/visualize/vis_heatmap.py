@@ -41,9 +41,7 @@ import local_lib.models
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument("output", metavar="save_root", help="output picture root")
-parser.add_argument(
-    "--num-classes", type=int, default=None, help="Number classes in dataset"
-)
+parser.add_argument("--num-classes", type=int, default=None, help="Number classes in dataset")
 parser.add_argument(
     "--checkpoint",
     default="",
@@ -71,9 +69,7 @@ parser.add_argument("--model-kwargs", nargs="*", default={}, action=ParseKwargs)
 def visualize_CAM(image, model):
     rgb_img = np.float32(image) / 255.0
     # preprocess_image作用：归一化图像，并转成tensor
-    input_tensor = preprocess_image(
-        rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-    )
+    input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     # ----------------------------------------
     """
     3)初始化CAM对象，包括模型，目标层以及是否使用cuda等
@@ -95,9 +91,7 @@ def visualize_CAM(image, model):
     5)计算cam
     """
     # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
-    grayscale_cam = cam(
-        input_tensor=input_tensor, targets=target_category
-    )  # [batch, 224,224]
+    grayscale_cam = cam(input_tensor=input_tensor, targets=target_category)  # [batch, 224,224]
 
     """
     6)展示热力图并保存

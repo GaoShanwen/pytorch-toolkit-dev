@@ -47,10 +47,7 @@ class ClassAccuracyMap:
         counter = collections.Counter(target.tolist())
         for cat, num in counter.items():
             indices = torch.where(target == cat)[0]
-            top1, top5 = [
-                correct[: min(k, maxk), indices].reshape(-1).float().sum(0)
-                for k in topk
-            ]
+            top1, top5 = [correct[: min(k, maxk), indices].reshape(-1).float().sum(0) for k in topk]
             self.update_cat(cat, top1.item(), top5.item(), num)
         top1, top5 = [correct[: min(k, maxk)].reshape(-1).float().sum(0) for k in topk]
         self.update_cat("all", top1.item(), top5.item(), batch_size)

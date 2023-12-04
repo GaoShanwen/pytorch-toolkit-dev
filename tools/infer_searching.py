@@ -48,12 +48,8 @@ _logger = logging.getLogger("validate")
 
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
-parser.add_argument(
-    "--data-path", default="", type=str, metavar="NAME", help="the dirs to inference."
-)
-parser.add_argument(
-    "--input-mode", default="", type=str, help="the way of get input (path, dir, file)."
-)
+parser.add_argument("--data-path", default="", type=str, metavar="NAME", help="the dirs to inference.")
+parser.add_argument("--input-mode", default="", type=str, help="the way of get input (path, dir, file).")
 parser.add_argument(
     "--model",
     "-m",
@@ -61,9 +57,7 @@ parser.add_argument(
     default="dpn92",
     help="model architecture (default: dpn92)",
 )
-parser.add_argument(
-    "-g", "--gallerys", type=str, default="output/feats/regnety_040-train-0.16.npz"
-)
+parser.add_argument("-g", "--gallerys", type=str, default="output/feats/regnety_040-train-0.16.npz")
 parser.add_argument(
     "-l",
     "--label-file",
@@ -151,9 +145,7 @@ parser.add_argument(
     metavar="NAME",
     help="Image resize interpolation type (overrides model)",
 )
-parser.add_argument(
-    "--num-classes", type=int, default=None, help="Number classes in dataset"
-)
+parser.add_argument("--num-classes", type=int, default=None, help="Number classes in dataset")
 parser.add_argument(
     "--num-choose",
     type=int,
@@ -182,13 +174,9 @@ parser.add_argument(
     metavar="PATH",
     help="path to latest checkpoint (default: none)",
 )
-parser.add_argument(
-    "--pretrained", dest="pretrained", action="store_true", help="use pre-trained model"
-)
+parser.add_argument("--pretrained", dest="pretrained", action="store_true", help="use pre-trained model")
 parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
-parser.add_argument(
-    "--test-pool", dest="test_pool", action="store_true", help="enable test time pool"
-)
+parser.add_argument("--test-pool", dest="test_pool", action="store_true", help="enable test time pool")
 parser.add_argument(
     "--no-prefetcher",
     action="store_true",
@@ -207,9 +195,7 @@ parser.add_argument(
     default=False,
     help="Use channels_last memory layout",
 )
-parser.add_argument(
-    "--device", default="cuda", type=str, help="Device (accelerator) to use."
-)
+parser.add_argument("--device", default="cuda", type=str, help="Device (accelerator) to use.")
 parser.add_argument("--model-kwargs", nargs="*", default={}, action=ParseKwargs)
 
 
@@ -235,9 +221,7 @@ scripting_group.add_argument(
     help="Enable AOT Autograd support.",
 )
 
-parser.add_argument(
-    "--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)"
-)
+parser.add_argument("--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)")
 parser.add_argument(
     "--drop-connect",
     type=float,
@@ -316,9 +300,7 @@ def load_model(args):
     )
 
     if args.num_classes is None:
-        assert hasattr(
-            model, "num_classes"
-        ), "Model must have `num_classes` attr if not set on cmd line/config."
+        assert hasattr(model, "num_classes"), "Model must have `num_classes` attr if not set on cmd line/config."
         args.num_classes = model.num_classes
 
     if args.checkpoint:
@@ -359,9 +341,7 @@ def run_infer(model, args):
     ], "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
-            query_files, query_labels = zip(
-                *([line.strip("\n").split(", ") for line in f.readlines()])
-            )
+            query_files, query_labels = zip(*([line.strip("\n").split(", ") for line in f.readlines()]))
         query_labels = [class_list.index(q_label) for q_label in query_labels]
         query_labels = np.array(query_labels, dtype=int)
         # import pdb; pdb.set_trace()
@@ -405,9 +385,7 @@ def run_infer(model, args):
     cats = list(set(gallery_labels))
     # import pdb; pdb.set_trace()
     label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
-    index = create_index(
-        gallery_feature, use_gpu=args.use_gpu, param=args.param, measure=args.measure
-    )
+    index = create_index(gallery_feature, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     _, I = index.search(query_feats, args.topk)
 
     p_labels = gallery_labels[I]

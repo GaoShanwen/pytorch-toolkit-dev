@@ -76,16 +76,12 @@ def cv2AddChineseText(img, text, position, text_color, text_size):
     if isinstance(img, np.ndarray):  # OpenCV图片类型转为Image
         img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img)
-    fontStyle = ImageFont.truetype(
-        "./dataset/exp-data/simsun.ttc", text_size, encoding="utf-8"
-    )
+    fontStyle = ImageFont.truetype("./dataset/exp-data/simsun.ttc", text_size, encoding="utf-8")
     draw.text(position, text, text_color, font=fontStyle)
     return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 
-def draw2big_pic(
-    q_file, q_label, pred_files, pred_labels, label_map, text_size=24, scores=None
-):
+def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size=24, scores=None):
     sum_img = np.full((1282, 2408, 3), 255, dtype=np.uint8)  # 生成全白大图
     q_name = label_map[q_label] if label_map is not None else str(q_label)
     img = cv2.imread(q_file)
@@ -101,9 +97,7 @@ def draw2big_pic(
         img = cv2AddChineseText(img, g_name, [2, 2], color, text_size)
         H, W, _ = img.shape
         if scores is not None:
-            img = cv2AddChineseText(
-                img, f"{scores[i]}", [2, H - text_size - 2], color, text_size
-            )
+            img = cv2AddChineseText(img, f"{scores[i]}", [2, H - text_size - 2], color, text_size)
         start_w += 482
         if start_w >= 2408:
             start_h += 642
@@ -112,9 +106,7 @@ def draw2big_pic(
         resized_img = cv2.resize(img, (480, new_height))  # 调整大小
         # print('新的宽度和高度：', resized_img.shape[:2]) # 显示新的图像大小
 
-        sum_img[
-            start_h : start_h + new_height, start_w : start_w + 480, :
-        ] = resized_img
+        sum_img[start_h : start_h + new_height, start_w : start_w + 480, :] = resized_img
     return sum_img
 
 

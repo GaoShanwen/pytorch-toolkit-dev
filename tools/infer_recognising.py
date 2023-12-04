@@ -19,13 +19,13 @@ import torch.nn.parallel
 
 from timm.models import load_checkpoint
 from timm.utils import setup_default_logging, ParseKwargs
-
 import sys
 
 sys.path.append("./")
 
 from local_lib.models import create_owner_model  # enable local model
-from local_lib.data.loader import owner_transfrom
+from local_lib.data.loader import owner_transfrom, create_owner_loader
+from local_lib.data.dataset_factory import create_owner_dataset
 
 try:
     from apex import amp
@@ -45,12 +45,8 @@ _logger = logging.getLogger("validate")
 
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
-parser.add_argument(
-    "--data-path", default="", type=str, metavar="NAME", help="the dirs to inference."
-)
-parser.add_argument(
-    "--input-mode", default="", type=str, help="the way of get input (path, dir, file)."
-)
+parser.add_argument("--data-path", default="", type=str, metavar="NAME", help="the dirs to inference.")
+parser.add_argument("--input-mode", default="", type=str, help="the way of get input (path, dir, file).")
 parser.add_argument(
     "--model",
     "-m",
@@ -58,12 +54,8 @@ parser.add_argument(
     default="dpn92",
     help="model architecture (default: dpn92)",
 )
-parser.add_argument(
-    "-c", "--cats-path", type=str, default="dataset/exp-data/blacklist/save_cats.txt"
-)
-parser.add_argument(
-    "--need-cats", type=str, default="dataset/exp-data/blacklist/need_cats.txt"
-)
+parser.add_argument("-c", "--cats-path", type=str, default="dataset/exp-data/blacklist/save_cats.txt")
+parser.add_argument("--need-cats", type=str, default="dataset/exp-data/blacklist/need_cats.txt")
 parser.add_argument("--save-root", type=str, default="output/vis/errors")
 parser.add_argument(
     "--img-size",
@@ -137,9 +129,7 @@ parser.add_argument(
     metavar="NAME",
     help="Image resize interpolation type (overrides model)",
 )
-parser.add_argument(
-    "--num-classes", type=int, default=None, help="Number classes in dataset"
-)
+parser.add_argument("--num-classes", type=int, default=None, help="Number classes in dataset")
 parser.add_argument(
     "--num-choose",
     type=int,
@@ -168,9 +158,7 @@ parser.add_argument(
     metavar="PATH",
     help="path to latest checkpoint (default: none)",
 )
-parser.add_argument(
-    "--pretrained", dest="pretrained", action="store_true", help="use pre-trained model"
-)
+parser.add_argument("--pretrained", dest="pretrained", action="store_true", help="use pre-trained model")
 parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
 parser.add_argument(
     "--batch-size",
@@ -205,9 +193,7 @@ parser.add_argument(
     default=False,
     help="Use channels_last memory layout",
 )
-parser.add_argument(
-    "--device", default="cuda", type=str, help="Device (accelerator) to use."
-)
+parser.add_argument("--device", default="cuda", type=str, help="Device (accelerator) to use.")
 parser.add_argument("--model-kwargs", nargs="*", default={}, action=ParseKwargs)
 
 
@@ -233,9 +219,7 @@ scripting_group.add_argument(
     help="Enable AOT Autograd support.",
 )
 
-parser.add_argument(
-    "--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)"
-)
+parser.add_argument("--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)")
 parser.add_argument(
     "--drop-connect",
     type=float,
@@ -314,9 +298,7 @@ def load_model(args):
     )
 
     if args.num_classes is None:
-        assert hasattr(
-            model, "num_classes"
-        ), "Model must have `num_classes` attr if not set on cmd line/config."
+        assert hasattr(model, "num_classes"), "Model must have `num_classes` attr if not set on cmd line/config."
         args.num_classes = model.num_classes
 
     if args.checkpoint:
@@ -343,26 +325,13 @@ def run_infer(model, args):
         class_list = [line.strip("\n") for line in f.readlines()]
     with open(args.need_cats, "r") as f:
         need_list = [class_list.index(line.strip("\n")) for line in f.readlines()]
-    assert args.input_mode in [
-        "path",
-        "dir",
-        "file",
-    ], "please set infer_mode to path, dir, or files"
+    assert args.input_mode in ["path", "dir", "file"], \
+        "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
             query_files = [line.strip("\n").split(", ")[0] for line in f.readlines()]
     else:
-        query_files = (
-            os.listdir(args.data_path)
-            if args.input_mode == "dir"
-            else [
-                args.data_path,
-            ]
-        )
-    from local_lib.data.dataset_factory import create_owner_dataset
-    from local_lib.data.loader import create_owner_loader
-
-    data_trans = owner_transfrom()
+        query_files = os.listdir(args.data_path) if args.input_mode == "dir" else [args.data_path,]
 
     dataset = create_owner_dataset(
         root=query_files,

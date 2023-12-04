@@ -185,12 +185,8 @@ parser.add_argument(
     metavar="NAME",
     help="Image resize interpolation type (overrides model)",
 )
-parser.add_argument(
-    "--num-classes", type=int, default=None, help="Number classes in dataset"
-)
-parser.add_argument(
-    "--num-choose", type=int, default=None, help="Number choose in dataset"
-)
+parser.add_argument("--num-classes", type=int, default=None, help="Number classes in dataset")
+parser.add_argument("--num-choose", type=int, default=None, help="Number choose in dataset")
 parser.add_argument(
     "--class-map",
     default="",
@@ -219,13 +215,9 @@ parser.add_argument(
     metavar="PATH",
     help="path to latest checkpoint (default: none)",
 )
-parser.add_argument(
-    "--pretrained", dest="pretrained", action="store_true", help="use pre-trained model"
-)
+parser.add_argument("--pretrained", dest="pretrained", action="store_true", help="use pre-trained model")
 parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
-parser.add_argument(
-    "--test-pool", dest="test_pool", action="store_true", help="enable test time pool"
-)
+parser.add_argument("--test-pool", dest="test_pool", action="store_true", help="enable test time pool")
 parser.add_argument(
     "--infer-mode",
     default="val",
@@ -271,9 +263,7 @@ parser.add_argument(
     default=False,
     help="Use channels_last memory layout",
 )
-parser.add_argument(
-    "--device", default="cuda", type=str, help="Device (accelerator) to use."
-)
+parser.add_argument("--device", default="cuda", type=str, help="Device (accelerator) to use.")
 parser.add_argument(
     "--amp",
     action="store_true",
@@ -316,9 +306,7 @@ parser.add_argument(
     action="store_true",
     help="enable experimental fast-norm",
 )
-parser.add_argument(
-    "--reparam", default=False, action="store_true", help="Reparameterize model"
-)
+parser.add_argument("--reparam", default=False, action="store_true", help="Reparameterize model")
 parser.add_argument("--model-kwargs", nargs="*", default={}, action=ParseKwargs)
 
 
@@ -400,17 +388,11 @@ def validate(args):
             use_amp = "apex"
             _logger.info("Validating in mixed precision with NVIDIA APEX AMP.")
         else:
-            assert (
-                has_native_amp
-            ), "Please update PyTorch to a version with native AMP (or use APEX)."
+            assert has_native_amp, "Please update PyTorch to a version with native AMP (or use APEX)."
             assert args.amp_dtype in ("float16", "bfloat16")
             use_amp = "native"
-            amp_dtype = (
-                torch.bfloat16 if args.amp_dtype == "bfloat16" else torch.float16
-            )
-            amp_autocast = partial(
-                torch.autocast, device_type=device.type, dtype=amp_dtype
-            )
+            amp_dtype = torch.bfloat16 if args.amp_dtype == "bfloat16" else torch.float16
+            amp_autocast = partial(torch.autocast, device_type=device.type, dtype=amp_dtype)
             _logger.info("Validating in mixed precision with native PyTorch AMP.")
     else:
         _logger.info("Validating in float32. AMP not enabled.")
@@ -438,9 +420,7 @@ def validate(args):
         **args.model_kwargs,
     )
     if args.num_classes is None:
-        assert hasattr(
-            model, "num_classes"
-        ), "Model must have `num_classes` attr if not set on cmd line/config."
+        assert hasattr(model, "num_classes"), "Model must have `num_classes` attr if not set on cmd line/config."
         args.num_classes = model.num_classes
 
     if args.checkpoint:
@@ -470,9 +450,7 @@ def validate(args):
         assert not use_amp == "apex", "Cannot use APEX AMP with torchscripted model"
         model = torch.jit.script(model)
     elif args.torchcompile:
-        assert (
-            has_compile
-        ), "A version of torch w/ torch.compile() is required for --compile, possibly a nightly."
+        assert has_compile, "A version of torch w/ torch.compile() is required for --compile, possibly a nightly."
         torch._dynamo.reset()
         model = torch.compile(model, backend=args.torchcompile)
     elif args.aot_autograd:
@@ -509,9 +487,7 @@ def validate(args):
         valid_labels = None
 
     if args.real_labels:
-        real_labels = RealLabelsImagenet(
-            dataset.filenames(basename=True), real_json=args.real_labels
-        )
+        real_labels = RealLabelsImagenet(dataset.filenames(basename=True), real_json=args.real_labels)
     else:
         real_labels = None
 
@@ -540,9 +516,7 @@ def validate(args):
     model.eval()
     with torch.no_grad():
         # warmup, reduce variability of first batch time, especially for comparing torchscript vs non
-        input = torch.randn((args.batch_size,) + tuple(data_config["input_size"])).to(
-            device
-        )
+        input = torch.randn((args.batch_size,) + tuple(data_config["input_size"])).to(device)
         if args.channels_last:
             input = input.contiguous(memory_format=torch.channels_last)
         with amp_autocast():
@@ -627,9 +601,7 @@ def _try_run(args, initial_batch_size):
     results = OrderedDict()
     error_str = "Unknown"
     while batch_size:
-        args.batch_size = (
-            batch_size * args.num_gpu
-        )  # multiply by num-gpu for DataParallel case
+        args.batch_size = batch_size * args.num_gpu  # multiply by num-gpu for DataParallel case
         try:
             if torch.cuda.is_available() and "cuda" in args.device:
                 torch.cuda.empty_cache()
@@ -684,11 +656,7 @@ def main():
             model_cfgs = [(n, None) for n in model_names if n]
 
     if len(model_cfgs):
-        _logger.info(
-            "Running bulk validation on these pretrained models: {}".format(
-                ", ".join(model_names)
-            )
-        )
+        _logger.info("Running bulk validation on these pretrained models: {}".format(", ".join(model_names)))
         results = []
         try:
             initial_batch_size = args.batch_size

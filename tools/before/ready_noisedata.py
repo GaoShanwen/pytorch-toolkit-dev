@@ -16,9 +16,7 @@ def do_write(src_file, add_file, pass_file, obj_file):
     masks = np.isin(src_imgs, pass_imgs)
     src_connets = np.array(src_connets)[~masks]
     with open(obj_file, "w") as f:
-        pbar = tqdm.tqdm(
-            total=len(add_connets) + src_connets.shape[0]
-        )  # len(add_connets)+len(src_connets))
+        pbar = tqdm.tqdm(total=len(add_connets) + src_connets.shape[0])  # len(add_connets)+len(src_connets))
         for src_img, label in add_connets:
             pbar.update(1)
             if label == "9":
