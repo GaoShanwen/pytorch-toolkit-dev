@@ -108,13 +108,7 @@ def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_
     return np.array(keeps)  # , masks
 
 
-def get_predict_label(
-    initial_rank,
-    gallery_label,
-    k=5,
-    use_knn=False,
-    use_sgd=False,
-):
+def get_predict_label(initial_rank, gallery_label, k=5, use_knn=False, use_sgd=False):
     if not use_knn:
         return gallery_label[initial_rank]
     res = []

@@ -45,8 +45,8 @@ if __name__ == "__main__":
     #     # if i >20:
     #     #     break
 
-    blacklist_file = "dataset/exp-data/blacklist/train-4c.txt"
-    src_file = "dataset/exp-data/removeredundancy/train.txt"
+    blacklist_file = "dataset/blacklist/train-4c.txt"
+    src_file = "dataset/removeredundancy/train.txt"
     pass_file = "output/choose_noise.txt"
-    obj_file = "dataset/exp-data/blacklist/train.txt"
+    obj_file = "dataset/blacklist/train.txt"
     do_write(src_file, blacklist_file, pass_file, obj_file)

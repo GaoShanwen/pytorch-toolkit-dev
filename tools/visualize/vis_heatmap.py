@@ -51,7 +51,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--model",
-    "-m",
     metavar="NAME",
     default="dpn92",
     help="model architecture (default: dpn92)",
@@ -126,7 +125,7 @@ if __name__ == "__main__":
     # plt.imshow(img)
 
     # 加载一张测试图像
-    img_path = "dataset/exp-data/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg"
+    img_path = "dataset/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg"
     # image = plt.imread(img_path)
     rgb_img = cv2.imread(img_path, 1)  # imread()读取的是BGR格式
     # 可视化CAM

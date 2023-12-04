@@ -246,7 +246,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--pass-path",
-    default="dataset/exp-data/zero_dataset/pass_cats.txt",
+    default="dataset/zero_dataset/pass_cats.txt",
     type=str,
     metavar="PATH",
     help="path of pass categories (default: none, current dir)",

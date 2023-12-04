@@ -4,7 +4,7 @@
 <pytorch-toolkit-dev> <timm-dev>
     ├── dataset
     │   ├── 1.jpg
-    │   ├── exp-data # train/validate data
+    │   ├── <your datasets> # train/validate data
     │   └── README.md
     ├── docs
     │   ├── environment.md

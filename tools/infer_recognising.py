@@ -54,8 +54,8 @@ parser.add_argument(
     default="dpn92",
     help="model architecture (default: dpn92)",
 )
-parser.add_argument("-c", "--cats-path", type=str, default="dataset/exp-data/blacklist/save_cats.txt")
-parser.add_argument("--need-cats", type=str, default="dataset/exp-data/blacklist/need_cats.txt")
+parser.add_argument("-c", "--cats-path", type=str, default="dataset/blacklist/save_cats.txt")
+parser.add_argument("--need-cats", type=str, default="dataset/blacklist/need_cats.txt")
 parser.add_argument("--save-root", type=str, default="output/vis/errors")
 parser.add_argument(
     "--img-size",
@@ -112,7 +112,7 @@ parser.add_argument(
     nargs="+",
     default=None,
     metavar="MEAN",
-    help="Override mean pixel value of dataset",
+    help="Override mean pixel value of dataset"
 )
 parser.add_argument(
     "--std",
@@ -325,19 +325,19 @@ def run_infer(model, args):
         class_list = [line.strip("\n") for line in f.readlines()]
     with open(args.need_cats, "r") as f:
         need_list = [class_list.index(line.strip("\n")) for line in f.readlines()]
-    assert args.input_mode in ["path", "dir", "file"], \
-        "please set infer_mode to path, dir, or files"
+    assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
             query_files = [line.strip("\n").split(", ")[0] for line in f.readlines()]
     else:
-        query_files = os.listdir(args.data_path) if args.input_mode == "dir" else [args.data_path,]
-
-    dataset = create_owner_dataset(
-        root=query_files,
-        name="txt_data",
-        split="infer",
-    )
+        query_files = (
+            os.listdir(args.data_path)
+            if args.input_mode == "dir"
+            else [
+                args.data_path,
+            ]
+        )
+    dataset = create_owner_dataset(root=query_files, name="txt_data", split="infer")
     input_size = [3, args.img_size, args.img_size]
     loader = create_owner_loader(
         dataset,
@@ -377,7 +377,8 @@ def run_infer(model, args):
         print(f"cat={cat} num: {choices_num}")
 
     # save_imgs(choices_files, choices_type, args.results_dir)
-    np.save("blacklist-val.npy", choices_files)
+    base_name = os.path.basename(args.data_path).split(".")[0]
+    np.savez(f"blacklist-{base_name}.npz", files=choices_files, labels=choices_type)
 
 
 if __name__ == "__main__":

@@ -75,14 +75,14 @@ def static_data(train_data, val_data, cat_map):
 
 
 if __name__ == "__main__":
-    # load_train_path = "./dataset/exp-data/zero_dataset/train.txt"
-    load_train_path = "./dataset/exp-data/removeredundancy/train.txt"
+    # load_train_path = "./dataset/zero_dataset/train.txt"
+    load_train_path = "./dataset/removeredundancy/train.txt"
     train_files, train_labels = load_data(load_train_path)
     # check_data(train_files)
-    # load_val_path = "./dataset/exp-data/zero_dataset/val.txt"
-    load_val_path = "./dataset/exp-data/removeredundancy/val.txt"
+    # load_val_path = "./dataset/zero_dataset/val.txt"
+    load_val_path = "./dataset/removeredundancy/val.txt"
     val_files, val_labels = load_data(load_val_path)
     # check_data(val_files)
-    label_file = "./dataset/exp-data/zero_dataset/label_names.csv"
+    label_file = "./dataset/zero_dataset/label_names.csv"
     label_map = load_csv_file(label_file)
     static_data(train_labels, val_labels, label_map)

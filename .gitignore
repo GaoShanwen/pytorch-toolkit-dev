@@ -29,9 +29,11 @@ MANIFEST
 # input files
 dataset/
 # output files
+wandb/
 output
 *.onnx
 *.csv
+*.npy
 nohup.out
 
 # PyInstaller

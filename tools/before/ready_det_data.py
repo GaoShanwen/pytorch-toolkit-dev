@@ -54,7 +54,7 @@ def copy_choose_data(obj_dir, cat_file, anno_path, choose_num=5, num_classes=428
 
 
 if __name__ == "__main__":
-    cat_file = "./dataset/exp-data/zero_dataset/save_cats.txt"
-    anno_path = "dataset/exp-data/zero_dataset/train.txt"
-    obj_dir = "./dataset/exp-data/minidata/detection"
+    cat_file = "./dataset/zero_dataset/save_cats.txt"
+    anno_path = "dataset/zero_dataset/train.txt"
+    obj_dir = "./dataset/minidata/detection"
     copy_choose_data(obj_dir, cat_file, anno_path, choose_num=1)

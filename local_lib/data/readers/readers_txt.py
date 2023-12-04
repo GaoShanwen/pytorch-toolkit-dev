@@ -154,9 +154,9 @@ class ReaderImagePaths(Reader):
 
 
 if __name__ == "__main__":
-    anno_path = "./dataset/exp-data/blacklist/train.txt"
+    anno_path = "./dataset/blacklist/train.txt"
     # images_and_targets, class_to_idx = read_images_and_targets(
-    #     anno_path, cats_path="dataset/exp-data/blacklist/save_cats.txt",
+    #     anno_path, cats_path="dataset/blacklist/save_cats.txt",
     #     num_classes=632)
 
     with open(anno_path, "r") as f:

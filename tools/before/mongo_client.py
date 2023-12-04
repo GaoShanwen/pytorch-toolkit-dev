@@ -115,8 +115,8 @@ def main():
     # import pdb; pdb.set_trace()
 
     TrainValSet = AIScale["TrainValSet"]  # ; TrainValSet.count_documents({'brand_id':brand_id})
-    # save_root = "/home/work/pytorch-cls-project/dataset/exp-data/zero_dataset"
-    save_root = "dataset/exp-data/removeredundancy"
+    # save_root = "/home/work/pytorch-cls-project/dataset/zero_dataset"
+    save_root = "dataset/removeredundancy"
     trainval_files = os.path.join(save_root, "trainval.txt")
     save_files(TrainValSet, trainval_files, data_dir, brand_id, product_id_map)
     ValSet = AIScale["ValSet"]

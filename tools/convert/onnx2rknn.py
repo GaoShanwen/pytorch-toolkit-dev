@@ -276,7 +276,7 @@ if __name__ == "__main__":
 
     # Build model
     print("--> Building model")
-    data_file = "dataset/exp-data/minidata/quantizate/dataset1.txt" if args.do_quantizate else None
+    data_file = "dataset/minidata/quantizate/dataset1.txt" if args.do_quantizate else None
     ret = rknn.build(do_quantization=args.do_quantizate, dataset=data_file)  # , rknn_batch_size=args.batch_size)
     # rknn.accuracy_analysis(inputs=['dataset/.../image.jpg'])
     if ret != 0:
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     print("Export rknn success!")
 
     # # Set inputs
-    # img_root = "dataset/exp-data/minidata/validation"
+    # img_root = "dataset/minidata/validation"
     # evaliation(img_root, rknn, onnx_model)
     ret = rknn.init_runtime()
     if ret != 0:
@@ -301,7 +301,7 @@ if __name__ == "__main__":
         exit(ret)
     # feat_extract(args, rknn)
 
-    # img=cv2.imread("dataset/exp-data/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg")
+    # img=cv2.imread("dataset/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg")
     path = "/data/AI-scales/images/0/backflow/00001/1831_8fdaa0cf410f1c36_1673323817187_1673323817536.jpg"
     # path = "./dataset/1.jpg"
     img = cv2.imread(path)

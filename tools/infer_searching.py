@@ -15,8 +15,8 @@ import numpy as np
 from contextlib import suppress
 import faiss
 import torch
+import torch.nn as nn
 import torch.nn.parallel
-
 from timm.models import load_checkpoint
 from timm.utils import setup_default_logging, ParseKwargs
 
@@ -52,23 +52,20 @@ parser.add_argument("--data-path", default="", type=str, metavar="NAME", help="t
 parser.add_argument("--input-mode", default="", type=str, help="the way of get input (path, dir, file).")
 parser.add_argument(
     "--model",
-    "-m",
     metavar="NAME",
     default="dpn92",
     help="model architecture (default: dpn92)",
 )
 parser.add_argument("-g", "--gallerys", type=str, default="output/feats/regnety_040-train-0.16.npz")
 parser.add_argument(
-    "-l",
     "--label-file",
     type=str,
-    default="dataset/exp-data/zero_dataset/label_names.csv",
+    default="dataset/zero_dataset/label_names.csv",
 )
 parser.add_argument(
-    "-c",
     "--cats-file",
     type=str,
-    default="dataset/exp-data/removeredundancy/629_cats.txt",
+    default="dataset/removeredundancy/629_cats.txt",
 )
 parser.add_argument("--use-gpu", action="store_true", default=False)
 parser.add_argument("--topk", type=int, default=9)
@@ -306,8 +303,6 @@ def load_model(args):
     if args.checkpoint:
         load_checkpoint(model, args.checkpoint, False)
     if "redution" in args.model:
-        import torch.nn as nn
-
         if "mobilenetv3" in args.model:
             model.classifier = nn.Identity()  # 移除分类层
         elif "regnet" in args.model:
