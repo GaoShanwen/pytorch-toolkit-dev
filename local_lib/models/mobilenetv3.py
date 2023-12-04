@@ -113,13 +113,6 @@ def _create_mnv3(variant, pretrained=False, **kwargs):
     model_cls = MobileNetV3Redution
     kwargs_filter = None
     features_mode = ""
-    # if kwargs.pop('features_only', False):
-    #     if 'feature_cfg' in kwargs:
-    #         features_mode = 'cfg'
-    #     else:
-    #         kwargs_filter = ('num_classes', 'num_features', 'head_conv', 'head_bias', 'global_pool')
-    #         model_cls = MobileNetV3Features
-    #         features_mode = 'cls'
 
     model = build_model_with_cfg(
         model_cls,
@@ -246,7 +239,7 @@ def _gen_mobilenet_v3(variant, channel_multiplier=1.0, pretrained=False, **kwarg
 
 @register_model
 def mobilenetv3_redution_large_100(pretrained=False, **kwargs) -> MobileNetV3:
-    """MobileNet V3"""
+    """Redution MobileNet V3"""
     model = _gen_mobilenet_v3(
         "mobilenetv3_large_100", 1.0, pretrained=pretrained, **kwargs
     )
@@ -256,28 +249,6 @@ def mobilenetv3_redution_large_100(pretrained=False, **kwargs) -> MobileNetV3:
 # if __name__=="__main__":
 #     m = timm.create_model('mobilenetv3_redution_large_100', pretrained=True, num_classes=41)
 #     o = m(torch.randn(2, 3, 224, 224))
-#     kwargs = {'pretrained_cfg': None, 'pretrained_cfg_overlay': None, 'in_chans': 3, 'num_classes': 41, 'drop_rate': 0.2}
-#     act_layer = resolve_act_layer(kwargs, 'hard_swish')
-#     arch_def = [
-#         # stage 0, 112x112 in
-#         ['ds_r1_k3_s1_e1_c16_nre'],  # relu
-#         # stage 1, 112x112 in
-#         ['ir_r1_k3_s2_e4_c24_nre', 'ir_r1_k3_s1_e3_c24_nre'],  # relu
-#         # stage 2, 56x56 in
-#         ['ir_r3_k5_s2_e3_c40_se0.25_nre'],  # relu
-#         # stage 3, 28x28 in
-#         ['ir_r1_k3_s2_e6_c80', 'ir_r1_k3_s1_e2.5_c80', 'ir_r2_k3_s1_e2.3_c80'],  # hard-swish
-#         # stage 4, 14x14in
-#         ['ir_r2_k3_s1_e6_c112_se0.25'],  # hard-swish
-#         # stage 5, 14x14in
-#         ['ir_r3_k5_s2_e6_c160_se0.25'],  # hard-swish
-#         # stage 6, 7x7 in
-#         ['cn_r1_k1_s1_c960'],  # hard-swish
-#     ]
-
-#     se_layer = partial(SqueezeExcite, gate_layer='hard_sigmoid', force_act_layer=nn.ReLU, rd_round_fn=round_channels)
-#     block_args=decode_arch_def(arch_def)
-#     model = MobileNetV3Redution(block_args, num_classes=41, act_layer=act_layer)
 #     load_checkpoint(model, "output/train/20231011-120458-mobilenetv3_large_100-224/model_best.pth.tar", False)
 #     model.reset_classifier(0) # 移除分类层
 #     import pdb; pdb.set_trace()
