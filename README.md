@@ -2,13 +2,19 @@
 
 building a multitask training platform based on Pytorch
 
-## timm branch
+## Introduction
+
+timm-dev branch for classfication or re-identification tasks.
+
+<div align="center">
+    <img src="https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/demo4reid.jpg" width="3%" alt="" 
+</div>
 
 ### Motivation
 
-1. Use State-of-the-Art AI-classfication toolkit.
-2. Minimize our project.
-3. Enhance codes' reusability.
+1. 👀Use the State-of-the-Art AI-classfication toolkit.
+2. 🚀Enhance codes' reusability.
+3. 🛠️Minimize our project.
 
 ### Quick Start
 
