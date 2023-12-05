@@ -12,7 +12,6 @@ timm-dev branch for classfication or re-identification tasks.
 [![ONNX](https://img.shields.io/badge/ONNX-1.14.0-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)]()
 [![tqdm](https://img.shields.io/badge/tqdm-4.64.0-FFC107?style=flat-square&logo=tqdm&logoColor=FFFFFF)]()
 [![YAML](https://img.shields.io/badge/YAML-6.0.1-CB171E?style=flat-square&logo=YAML&logoColor=FFFFFF)]()
-
 [![wandb](https://img.shields.io/badge/weightsandbiases-0.12.18-FFBE00?style=flat-square&logo=weightsandbiases&logoColor=FFFFFF)]()
 [![mysql](https://img.shields.io/badge/mysql-1.1.0-FFBE00?style=flat-square&logo=mysql&logoColor=FFFFFF)]()
 [![mongodb](https://img.shields.io/badge/mongodb-4.6.0-47A248?style=flat-square&logo=mongodb&logoColor=FFFFFF)]()
