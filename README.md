@@ -22,11 +22,11 @@ timm-dev branch for classfication or re-identification tasks.
 
 For detailed installation guides, please refer to my [document](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md).
 
-### The command for running
+### User Guides
 
-<details open>
+<details>
 
-<summary>Train or validation</summary>
+<summary>Train & Validate</summary>
 
 - **build dataset**
 
@@ -35,7 +35,7 @@ For detailed installation guides, please refer to my [document](https://github.c
 <pytorch-toolkit-dev> ~$ ln -s /data/exp-data/* dataset/
 ```
 
-- **train dataset**
+- **Train dataset**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # nohup train 4281 cls with 1k pretrain model; resize-256,crop-224,rand aa, re-0.2;
@@ -51,7 +51,7 @@ For detailed installation guides, please refer to my [document](https://github.c
 <pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --model-kwargs reduction_dim=64
 ```
 
-- **validate dataset**
+- **Validate dataset**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # validate
@@ -61,7 +61,7 @@ For detailed installation guides, please refer to my [document](https://github.c
         --crop-pct .875
 ```
 
-- **feat extracte and eval**
+- **Feature extracte & Eval**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # feat extracte
@@ -135,7 +135,7 @@ Open this [wandb link](https://wandb.ai/) after run this commands.
 
 <details>
 
-<summary>normalize code</summary>
+<summary>Normalize code</summary>
 
 ```bash
 <pytorch-toolkit-dev> ~$ # run this command after install black
