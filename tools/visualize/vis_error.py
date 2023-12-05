@@ -118,10 +118,10 @@ def run_vis2bigimgs(
     pbar.close()
 
 
-def save_imgs(labels, files, class_list, save_root):
+def save_imgs(files, labels, class_list, save_root):
     with open("/".join(save_root.split("/")[:-2] + ["choose_noise.txt"]), "w") as f:
         for i, (current_file, current_label) in enumerate(zip(files, labels)):
-            label_name = class_list[current_label]
+            label_name = class_list[current_label] if class_list is not None else str(current_label)
             obj_dir = os.path.join(save_root, label_name)
             if not os.path.exists(obj_dir):
                 os.mkdir(obj_dir)

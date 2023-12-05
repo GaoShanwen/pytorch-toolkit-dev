@@ -69,7 +69,7 @@ def main(g_feats, g_label, g_files, q_feats, q_label, class_list, args):
             label_index = load_csv_file(args.label_file)
             cats = list(set(g_label))
             label_map = {i: label_index[cat].split("/")[0] for i, cat in enumerate(class_list) if i in cats}
-            save_imgs(new_g_label, new_g_files, label_map, args.save_root)
+            save_imgs(new_g_files, new_g_label, label_map, args.save_root)
         all_indics = np.arange(g_label.shape[0])
         keeps = np.setdiff1d(all_indics, keeps)
 
