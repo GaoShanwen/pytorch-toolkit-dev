@@ -59,11 +59,7 @@ _logger = logging.getLogger("validate")
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument(
-    "data",
-    nargs="?",
-    metavar="DIR",
-    const=None,
-    help="path to dataset (*deprecated*, use --data-dir)",
+    "data", nargs="?", metavar="DIR", const=None, help="path to dataset (*deprecated*, " "use --data-dir)"
 )
 parser.add_argument("--data-dir", metavar="DIR", help="path to dataset (root dir)")
 parser.add_argument(
@@ -72,48 +68,19 @@ parser.add_argument(
     default="",
     help='dataset type + name ("<type>/<name>") (default: ImageFolder or ImageTar if empty)',
 )
-parser.add_argument(
-    "--infer-mode",
-    default="val",
-    type=str,
-    metavar="NAME",
-    help="the dirs to inference.",
-)
-parser.add_argument(
-    "--split",
-    metavar="NAME",
-    default="validation",
-    help="dataset split (default: validation)",
-)
+parser.add_argument("--infer-mode", default="val", type=str, metavar="NAME", help="the dirs to inference.")
+parser.add_argument("--split", metavar="NAME", default="validation", help="dataset split (default: validation)")
 parser.add_argument(
     "--dataset-download",
     action="store_true",
     default=False,
-    help="Allow download of dataset for torch/ and tfds/ datasets that support it.",
+    help="Allow download of dataset for torch/ " "and tfds/ datasets that support it.",
 )
+parser.add_argument("--model", "-m", metavar="NAME", default="dpn92", help="model architecture (default: dpn92)")
 parser.add_argument(
-    "--model",
-    "-m",
-    metavar="NAME",
-    default="dpn92",
-    help="model architecture (default: dpn92)",
+    "-j", "--workers", default=4, type=int, metavar="N", help="number of data loading workers (default: 4)"
 )
-parser.add_argument(
-    "-j",
-    "--workers",
-    default=4,
-    type=int,
-    metavar="N",
-    help="number of data loading workers (default: 4)",
-)
-parser.add_argument(
-    "-b",
-    "--batch-size",
-    default=256,
-    type=int,
-    metavar="N",
-    help="mini-batch size (default: 256)",
-)
+parser.add_argument("-b", "--batch-size", default=256, type=int, metavar="N", help="mini-batch size (default: 256)")
 parser.add_argument(
     "--img-size",
     default=None,
@@ -121,13 +88,7 @@ parser.add_argument(
     metavar="N",
     help="Input image dimension, uses model default if empty",
 )
-parser.add_argument(
-    "--in-chans",
-    type=int,
-    default=None,
-    metavar="N",
-    help="Image input channels (default: None => 3)",
-)
+parser.add_argument("--in-chans", type=int, default=None, metavar="N", help="Image input channels (default: None => 3)")
 parser.add_argument(
     "--input-size",
     default=None,
@@ -142,13 +103,7 @@ parser.add_argument(
     default=False,
     help="force use of train input size, even when test size is specified in pretrained cfg",
 )
-parser.add_argument(
-    "--crop-pct",
-    default=None,
-    type=float,
-    metavar="N",
-    help="Input image center crop pct",
-)
+parser.add_argument("--crop-pct", default=None, type=float, metavar="N", help="Input image center crop pct")
 parser.add_argument(
     "--crop-mode",
     default=None,
@@ -157,20 +112,10 @@ parser.add_argument(
     help="Input image crop mode (squash, border, center). Model default if None.",
 )
 parser.add_argument(
-    "--mean",
-    type=float,
-    nargs="+",
-    default=None,
-    metavar="MEAN",
-    help="Override mean pixel value of dataset",
+    "--mean", type=float, nargs="+", default=None, metavar="MEAN", help="Override mean pixel value of dataset"
 )
 parser.add_argument(
-    "--std",
-    type=float,
-    nargs="+",
-    default=None,
-    metavar="STD",
-    help="Override std deviation of of dataset",
+    "--std", type=float, nargs="+", default=None, metavar="STD", help="Override std deviation of of dataset"
 )
 parser.add_argument(
     "--interpolation",
@@ -203,13 +148,7 @@ parser.add_argument(
     metavar="POOL",
     help="Global pool type, one of (fast, avg, max, avgmax, avgmaxc). Model default if None.",
 )
-parser.add_argument(
-    "--log-freq",
-    default=10,
-    type=int,
-    metavar="N",
-    help="batch logging frequency (default: 10)",
-)
+parser.add_argument("--log-freq", default=10, type=int, metavar="N", help="batch logging frequency (default: 10)")
 parser.add_argument(
     "--checkpoint",
     default="",
@@ -220,12 +159,7 @@ parser.add_argument(
 parser.add_argument("--pretrained", dest="pretrained", action="store_true", help="use pre-trained model")
 parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
 parser.add_argument("--test-pool", dest="test_pool", action="store_true", help="enable test time pool")
-parser.add_argument(
-    "--no-prefetcher",
-    action="store_true",
-    default=False,
-    help="disable fast prefetcher",
-)
+parser.add_argument("--no-prefetcher", action="store_true", default=False, help="disable fast prefetcher")
 parser.add_argument(
     "--pin-mem",
     action="store_true",
@@ -289,12 +223,7 @@ parser.add_argument(
     type=str,
     help="Select jit fuser. One of ('', 'te', 'old', 'nvfuser')",
 )
-parser.add_argument(
-    "--fast-norm",
-    default=False,
-    action="store_true",
-    help="enable experimental fast-norm",
-)
+parser.add_argument("--fast-norm", default=False, action="store_true", help="enable experimental fast-norm")
 parser.add_argument("--reparam", default=False, action="store_true", help="Reparameterize model")
 parser.add_argument("--model-kwargs", nargs="*", default={}, action=ParseKwargs)
 
@@ -314,12 +243,7 @@ scripting_group.add_argument(
     const="inductor",
     help="Enable compilation w/ specified backend (default: inductor).",
 )
-scripting_group.add_argument(
-    "--aot-autograd",
-    default=False,
-    action="store_true",
-    help="Enable AOT Autograd support.",
-)
+scripting_group.add_argument("--aot-autograd", default=False, action="store_true", help="Enable AOT Autograd support.")
 
 parser.add_argument("--drop", type=float, default=0.0, metavar="PCT", help="Dropout rate (default: 0.)")
 parser.add_argument(
@@ -329,20 +253,8 @@ parser.add_argument(
     metavar="PCT",
     help="Drop connect rate, DEPRECATED, use drop-path (default: None)",
 )
-parser.add_argument(
-    "--drop-path",
-    type=float,
-    default=None,
-    metavar="PCT",
-    help="Drop path rate (default: None)",
-)
-parser.add_argument(
-    "--drop-block",
-    type=float,
-    default=None,
-    metavar="PCT",
-    help="Drop block rate (default: None)",
-)
+parser.add_argument("--drop-path", type=float, default=None, metavar="PCT", help="Drop path rate (default: None)")
+parser.add_argument("--drop-block", type=float, default=None, metavar="PCT", help="Drop block rate (default: None)")
 parser.add_argument(
     "--results-dir",
     default="",
@@ -394,7 +306,7 @@ def init_feats_dir(save_dir="./output/features"):
 
 def merge_feat_files(load_dir="./output/features", infer_mode="val", file_infos=None):
     files = sorted(os.listdir(load_dir))
-    feats, gts = [], []
+    feats = []
     for file_name in files:
         file_path = os.path.join(load_dir, file_name)
         data = np.load(file_path)
@@ -402,12 +314,7 @@ def merge_feat_files(load_dir="./output/features", infer_mode="val", file_infos=
     merge_feats = np.concatenate(feats)
     merge_fpaths, merge_gts = zip(*(file_infos))
     merge_gts = np.array(merge_gts)
-    np.savez(
-        f"{load_dir}-{infer_mode}.npz",
-        feats=merge_feats,
-        gts=merge_gts,
-        fpaths=merge_fpaths,
-    )
+    np.savez(f"{load_dir}-{infer_mode}.npz", feats=merge_feats, gts=merge_gts, fpaths=merge_fpaths)
 
 
 def extract(args):
@@ -485,12 +392,7 @@ def extract(args):
     param_count = sum([m.numel() for m in model.parameters()])
     _logger.info("Model %s created, param count: %d" % (args.model, param_count))
 
-    data_config = resolve_data_config(
-        vars(args),
-        model=model,
-        use_test_size=not args.use_train_size,
-        verbose=True,
-    )
+    data_config = resolve_data_config(vars(args), model=model, use_test_size=not args.use_train_size, verbose=True)
     test_time_pool = False
     if args.test_pool:
         model, test_time_pool = apply_test_time_pool(model, data_config)

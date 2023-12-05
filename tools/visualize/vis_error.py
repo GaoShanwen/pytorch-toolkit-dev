@@ -74,10 +74,10 @@ def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size=
     img = cv2.imread(q_file)
     color = (255, 0, 0)
     img = cv2AddChineseText(img, q_name, [2, 2], color, text_size)
+    H, W, _ = img.shape
     new_height = min(640, int(H * (480 / W)))  # 保持原来的长宽比
     img = cv2.resize(img, (480, new_height))  # 调整大小
-    H, W, _ = img.shape
-    sum_img[0:H, 0:W, :] = img
+    sum_img[0:new_height, 0:480, :] = img
     start_h, start_w = 0, 0
     for i, (pred_file, pred_label) in enumerate(zip(pred_files, pred_labels)):
         img = cv2.imread(pred_file)
@@ -88,7 +88,7 @@ def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size=
         img = cv2AddChineseText(img, g_name, [2, 2], color, text_size)
         H, W, _ = img.shape
         if scores is not None:
-            img = cv2AddChineseText(img, f"{scores[i]}", [2, H - text_size - 2], color, text_size)
+            img = cv2AddChineseText(img, f"{scores[i]:.5f}", [2, H - text_size - 2], color, text_size)
         start_w += 482
         if start_w >= 2408:
             start_h += 642
@@ -155,28 +155,8 @@ if __name__ == "__main__":
 
     p_label = g_label[I]
     tp1_errors = np.where(p_label[:, 0] != q_label)[0]
-    # tp1_errors = []
-    # for i, p in enumerate(p_label):
-    #     black_num = np.where(p==9)[0].shape[0]
-    #     save_cats = len(set(p))
-    #     if not black_num and save_cats==1:
-    #         tp1_errors.append(i)
-    # tp1_errors = np.where(query_label!=9)[0] #np.array(np.arang(query_label.shape[0]))
-    # label_map = None
     print(f"choose {tp1_errors.shape[0]} infer errors from {q_label.shape[0]} imgs")
-    new_q_label, new_q_files = q_label[tp1_errors], q_files[tp1_errors]
-    new_index, new_scores = I[tp1_errors], S[tp1_errors]
-    import pdb
-
-    pdb.set_trace()
-    run_vis2bigimgs(
-        new_index,
-        g_label,
-        g_files,
-        new_q_label,
-        new_q_files,
-        label_map,
-        args.save_root,
-        args.text_size,
-        scores=new_scores,
-    )
+    q_label, q_files = q_label[tp1_errors], q_files[tp1_errors]
+    new_idx, new_scores = I[tp1_errors], S[tp1_errors]
+    save_root, text_size = args.save_root, args.text_size
+    run_vis2bigimgs(new_idx, g_label, g_files, q_label, q_files, label_map, save_root, text_size, new_scores)

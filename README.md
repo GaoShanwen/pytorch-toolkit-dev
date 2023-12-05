@@ -18,24 +18,24 @@ timm-dev branch for classfication or re-identification tasks.
 
 ### Quick Start
 
-#### Install environment
+#### Install Environment
 
 For detailed installation guides, please refer to my [document](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md).
 
-### User Guides
+#### Command Guides
 
 <details>
 
 <summary>Train & Validate</summary>
 
-- **build dataset**
+- **Build Dataset**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # build dataset for train and validate
 <pytorch-toolkit-dev> ~$ ln -s /data/exp-data/* dataset/
 ```
 
-- **Train dataset**
+- **Train Dataset**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # nohup train 4281 cls with 1k pretrain model; resize-256,crop-224,rand aa, re-0.2;
@@ -51,7 +51,7 @@ For detailed installation guides, please refer to my [document](https://github.c
 <pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --model-kwargs reduction_dim=64
 ```
 
-- **Validate dataset**
+- **Validate Dataset**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # validate
@@ -61,7 +61,7 @@ For detailed installation guides, please refer to my [document](https://github.c
         --crop-pct .875
 ```
 
-- **Feature extracte & Eval**
+- **Feature Extracte & Eval**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # feat extracte
@@ -81,11 +81,11 @@ For detailed installation guides, please refer to my [document](https://github.c
 
 <details>
 
-<summary>Visualize training curve</summary>
+<summary>Visualize Training Curve</summary>
 
-- **tensorboard**
+- **Tensorboard**
 
-Open this [tensorboard link](http://localhost:6006/) in web to see after run this commands.
+Watch [tensorboard](http://localhost:6006/) curve in web after run this commands.
 
 ```bash
 <pytorch-toolkit-dev> ~$ # add tensorboard to train output:
@@ -94,9 +94,9 @@ Open this [tensorboard link](http://localhost:6006/) in web to see after run thi
 <pytorch-toolkit-dev> ~$ tensorboard --logdir logs/20231124-000720-regnety_redution_040_ra3_in1k-224
 ```
 
-- **wandb**
+- **Wandb**
 
-Open this [wandb link](https://wandb.ai/) after run this commands.
+Watch [wandb](https://wandb.ai/) curve after run this commands.
 
 ```bash
 <pytorch-toolkit-dev> ~$ # login 
@@ -109,9 +109,9 @@ Open this [wandb link](https://wandb.ai/) after run this commands.
 
 <details>
 
-<summary>Convert pth model to onnx/rknn</summary>
+<summary>Convert Pth Model To ONNX/RKNN</summary>
 
-- **pth->onnx**
+- **Pth->ONNX**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # pth -> onnx
@@ -120,7 +120,7 @@ Open this [wandb link](https://wandb.ai/) after run this commands.
         --checkpoint output/train/20231022-213614-mobilenetv3_redution_large_100-224/model_best.pth.tar 
 ```
 
-- **onnx->rknn**
+- **ONNX->RKNN**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # onnx -> rknn; validate(onnx and rknn, if model is cls model) model
@@ -135,7 +135,7 @@ Open this [wandb link](https://wandb.ai/) after run this commands.
 
 <details>
 
-<summary>Normalize code</summary>
+<summary>Normalize Codes</summary>
 
 ```bash
 <pytorch-toolkit-dev> ~$ # run this command after install black

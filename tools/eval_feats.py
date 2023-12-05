@@ -96,32 +96,37 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, a
     # print(f"original data: {g_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}")
     # g_feats, g_label, g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
     run_eval(g_feats, g_label, q_feats, q_label, class_list, args, acc_file_name="eval_res.csv")
-    # static = feat_tools.run_choose(g_feats, g_label, args)
-    # label_index = load_csv_file(args.label_file)
-    # cats = list(set(g_label))
-    # label_map = {i: label_index[cat].split('/')[0] for i, cat in enumerate(class_list) if i in cats}
-    # new_static = {}
-    # for cat, value in static.items():
-    #     new_value = {}
-    #     for k, v in value.items():
-    #         value_name = label_map[v] if k.endswith("name") else v
-    #         new_value.update({k: value_name})
-    #     new_value.update({"id": class_list[cat]})
-    #     new_static.update({label_map[cat]: new_value})
-    # feat_tools.print_acc_map(new_static, "static.csv")
-    # #################### test knn ####################
-    # index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
-    # D, I = index.search(q_feats, args.topk)
-    # p_label = feat_tools.get_predict_label(D, I, g_label, q_labels, use_knn=False)
-    # original_errors = np.where(p_label[:, 0] != q_labels)[0]
-    # p_label = feat_tools.get_predict_label(D, I, g_label, q_labels, use_knn=True)
-    # knn_errors = np.where(p_label[:, 0] != q_labels)[0]
+    # #################### static topk ####################
+    if args.remove_mode == "static":
+        static = feat_tools.run_choose(g_feats, g_label, args)
+        label_index = load_csv_file(args.label_file)
+        cats = list(set(g_label))
+        label_map = {i: label_index[cat].split('/')[0] for i, cat in enumerate(class_list) if i in cats}
+        new_static = {}
+        for cat, value in static.items():
+            new_value = {}
+            for k, v in value.items():
+                value_name = label_map[v] if k.endswith("name") else v
+                new_value.update({k: value_name})
+            new_value.update({"id": class_list[cat]})
+            new_static.update({label_map[cat]: new_value})
+        feat_tools.print_acc_map(new_static, "static.csv")
+        return
+    #################### test knn ####################
+    if args.use_knn:
+        index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
+        D, I = index.search(q_feats, args.topk)
+        p_label = feat_tools.get_predict_label(D, I, g_label, q_label, use_knn=False)
+        original_errors = np.where(p_label[:, 0] != q_label)[0]
+        p_label = feat_tools.get_predict_label(D, I, g_label, q_label, use_knn=True)
+        knn_errors = np.where(p_label[:, 0] != q_label)[0]
 
-    # e_only_in_knn = np.setdiff1d(knn_errors, original_errors)
-    # print(f"new-errors knn-k={args.topk}: {e_only_in_knn.shape[0]} / {q_labels.shape[0]} | " +
-    #       f"({original_errors.shape[0]} -> {knn_errors.shape[0]})")
-    # new_q_labels, new_q_files = q_labels[e_only_in_knn], q_files[e_only_in_knn]
-    # feat_tools.save_keeps_file(new_q_labels, new_q_files, class_list, f"new_errors-knn.txt")
+        e_only_in_knn = np.setdiff1d(knn_errors, original_errors)
+        print(f"new-errors knn-k={args.topk}: {e_only_in_knn.shape[0]} / {q_label.shape[0]} | "
+            f"({original_errors.shape[0]} -> {knn_errors.shape[0]})")
+        new_q_labels, new_q_files = q_label[e_only_in_knn], q_files[e_only_in_knn]
+        feat_tools.save_keeps_file(new_q_labels, new_q_files, class_list, f"new_errors-knn.txt")
+        return
 
 
 if __name__ == "__main__":

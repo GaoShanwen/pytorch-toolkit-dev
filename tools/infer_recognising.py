@@ -107,12 +107,7 @@ parser.add_argument(
     help="Input image crop mode (squash, border, center). Model default if None.",
 )
 parser.add_argument(
-    "--mean",
-    type=float,
-    nargs="+",
-    default=None,
-    metavar="MEAN",
-    help="Override mean pixel value of dataset"
+    "--mean", type=float, nargs="+", default=None, metavar="MEAN", help="Override mean pixel value of dataset"
 )
 parser.add_argument(
     "--std",

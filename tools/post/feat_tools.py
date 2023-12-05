@@ -142,14 +142,13 @@ def choose_noises(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
     return np.array(keeps)
 
 
-def choose_with_static(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
+def choose_with_static(matrix, labels, _, use_gpu=False, update_times=0):
     all_indics = np.arange(labels.shape[0])
     cats = list(set(labels))
     search_res = {}
     # other_gallery = matrix[others]
-    enable_gpu = use_gpu  # if choose_gallery.shape[0] <= 2048 else False
     others = all_indics
-    index = create_index(matrix, enable_gpu)
+    index = create_index(matrix, use_gpu)
     stride = len(cats) // update_times if update_times else 1
     pbar = tqdm.tqdm(total=len(cats), miniters=stride, maxinterval=600)
     for cat in cats:
@@ -161,56 +160,32 @@ def choose_with_static(matrix, labels, choose_ratio, use_gpu=False, update_times
         # index = create_index(other_gallery, enable_gpu)
 
         choose_gallery = matrix[keeps]
-        choose_num = 10  # min(40, int(keeps.shape[0] * choose_ratio))
-        # if choose_num < 3:
-        #     # print(f"{cat} was passed!")
-        #     continue
+        choose_num = 30  # min(40, int(keeps.shape[0] * choose_ratio))
         _, index_matric = index.search(choose_gallery, choose_num + 1)
         index_res = labels[others[index_matric[:, 1:].reshape(-1)]].tolist()
         first_count = Counter(index_res).most_common()
         search_num = len(index_res)
-        # print(f"choose_num: {choose_num}, search_num : {search_num}")
         cat_static = {"gallery_num": others.shape[0], "query_num": keeps.shape[0]}
         for i, (search_cat, count) in enumerate(first_count[:5]):
             cat_static.update(
                 {
                     f"top{i+1}_name": search_cat,
+                    f"top{i+1}_error": search_num - count,
                     f"top{i+1}_num": count,
                     f"top{i+1}_ratio": count / search_num,
                 }
             )
         search_res.update({cat: cat_static})
         pbar.update(1)
-        # del index
-        # break
     pbar.close()
     return search_res
 
 
 def run_choose(matrix, labels, args):
-    if args.remove_mode == "noise":
-        return choose_noises(
-            matrix,
-            labels,
-            args.threshold,
-            use_gpu=args.use_gpu,
-            update_times=args.update_times,
-        )
-    elif args.remove_mode == "similarity":
-        return choose_similarity(
-            matrix,
-            labels,
-            args.threshold,
-            use_gpu=args.use_gpu,
-            update_times=args.update_times,
-        )
-    elif args.remove_mode == "search_by_other_cat":
-        return choose_with_static(
-            matrix,
-            labels,
-            args.threshold,
-            use_gpu=args.use_gpu,
-            update_times=args.update_times,
-        )
-    else:
-        raise f"{args.remove_mode} is not support yet!"
+    threshold = args.threshold
+    use_gpu = args.use_gpu
+    _times=args.update_times
+    remove_mode = args.remove_mode
+    assert remove_mode in ["noises", "similarity", "static"], f"{remove_mode} is not support yet!"
+    function_name = "choose_with_static" if remove_mode == "static" else f"choose_{remove_mode}"
+    return eval(function_name)(matrix, labels, threshold, use_gpu, _times)

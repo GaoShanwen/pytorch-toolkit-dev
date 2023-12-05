@@ -31,15 +31,10 @@ def create_owner_dataset(
             batch_size,
             seed,
             repeats,
-            **kwargs,
+            **kwargs
         )
-    # split = "train" if is_training else "val"
-    assert split in [
-        "train",
-        "val",
-        "infer",
-    ], f"split must be train/val or infer but you set {split}"
-    if split == "infer":
-        reader = ReaderImagePaths(root, sort=False)
+    split = "train" if is_training else split.replace("validation", "val")
+    assert split in ["train", "val", "infer"], f"split must be train/val or infer but you set {split}"
+    reader = ReaderImagePaths(root, sort=False) if split == "infer" else None
     ds = TxtReaderImageDataset(root, reader=reader, split=split, class_map=class_map, **kwargs)
     return ds

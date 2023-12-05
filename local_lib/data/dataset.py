@@ -16,12 +16,7 @@ class TxtReaderImageDataset(ImageDataset):
         **kwargs,
     ):
         if reader is None or isinstance(reader, str):
-            reader = create_reader(
-                root=root,
-                split=split,
-                class_map=class_map,
-                **kwargs,
-            )
+            reader = create_reader(root=root, split=split, class_map=class_map, **kwargs)
         self.reader = reader
         self.load_bytes = load_bytes
         self.img_mode = img_mode
