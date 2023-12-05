@@ -30,6 +30,7 @@ MANIFEST
 dataset/
 # output files
 wandb/
+debug/
 output
 *.onnx
 *.csv

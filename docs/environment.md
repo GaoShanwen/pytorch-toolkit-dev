@@ -1,5 +1,26 @@
+## 安装环境
+
+如果需要转换模型，需要先安装以下内容：
+
++ [make=4.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装-make-42)
++ [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#下载并解压gcc820)
++ [glib=2.29](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装glibc-229)
++ python=3.8
++ [rknn-tools2=1.5 py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#rknn安装省去)
+
+### Install timm
+
+下面内容安装后，需要安装pytorch，timm等python库用于训练和推理任务。
+
+```bash
+<pytorch-toolkit-dev> ~ $ # install timm and its environment(include rknn-tools2)
+<pytorch-toolkit-dev> ~ $ git clone https://github.com/GaoShanwen/pytorch-toolkit-dev.git
+<pytorch-toolkit-dev> ~ $ git checkout timm-dev
+<pytorch-toolkit-dev> ~ $ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu102
+```
 
 ### 安装gcc和make依赖，先安装低版本用于编译环境
+
 ```bash
     yum install bison wget bzip2 gcc gcc-c++ glib-headers make -y
 ```
@@ -79,5 +100,8 @@
 ```
 
 ### rknn安装，省去
-git clone https://github.com/rockchip-linux/rknn-toolkit2.git
-cd rknn-toolkit2; pip install packages/rknn_toolkit2-1.5.2+b642f30c-cp38-cp38-linux_x86_64.whl --no-deps
+
+```bash
+    git clone https://github.com/rockchip-linux/rknn-toolkit2.git
+    cd rknn-toolkit2; pip install packages/rknn_toolkit2-1.5.2+b642f30c-cp38-cp38-linux_x86_64.whl --no-deps
+```
