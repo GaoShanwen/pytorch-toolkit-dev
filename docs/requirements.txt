@@ -20,6 +20,7 @@ fast-histogram==0.11
 ruamel.yaml==0.17.4
 grad-cam==1.4.8
 pandas==2.0.3
+pymongo==4.6.0
 pymysql==1.1.0
 tensorboard==2.14.0
 wandb==0.12.18
