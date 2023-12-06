@@ -122,17 +122,7 @@ class ReaderImagePaths(Reader):
             f"Found 0 images in subfolders of filenames. "
             f'Supported image extensions are {", ".join(get_img_extensions())}'
         )
-        images_and_targets = list(
-            zip(
-                *(
-                    filenames,
-                    [
-                        None,
-                    ]
-                    * len(filenames),
-                )
-            )
-        )
+        images_and_targets = list(zip(*(filenames, [None] * len(filenames))))
         if sort:
             images_and_targets = sorted(images_and_targets, key=lambda k: natural_key(k[0]))
         self.samples, self.class_to_idx = images_and_targets, class_to_idx
@@ -162,6 +152,3 @@ if __name__ == "__main__":
     with open(anno_path, "r") as f:
         query_files = [line.strip("\n").split(", ")[0] for line in f.readlines()]
     reader = ReaderImagePaths(query_files)
-    import pdb
-
-    pdb.set_trace()

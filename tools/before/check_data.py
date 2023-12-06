@@ -59,12 +59,10 @@ def static_data(train_data, val_data, cat_map):
     check_dict = val_dict  # train_dict
     show_counter = train_counter  # val_counter
 
-    # import pdb; pdb.set_trace()
     print("| =- cat id -= |  ====----    n a m e    ----====  | =- train -= |  =- val -=  |")
     # train_counter = []
     for id, num1 in show_counter:  # .items():
         num2 = check_dict.get(id, "")
-        # import pdb; pdb.set_trace()
         # if num1 <= 30:# and isinstance(num2, str):
         #     continue
         id = id.replace(" ", "")

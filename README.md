@@ -6,17 +6,12 @@ building a multitask training platform based on Pytorch
 
 timm-dev branch for classfication or re-identification tasks.
 
-[![Python](https://img.shields.io/badge/python-3.8.18-3776AB?style=flat-square&logo=python&logoColor=FFFFFF)]()
-[![PyTorch](https://img.shields.io/badge/pytorch-1.10.1+cu102-EE4C2C?style=flat-square&logo=pytorch&logoColor=FFFFFF)](https://github.com/pytorch/pytorch)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.8.1.78-5C3EE8?style=flat-square&logo=OpenCV&logoColor=FFFFFF)]()
-[![ONNX](https://img.shields.io/badge/ONNX-1.14.0-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)]()
-[![tqdm](https://img.shields.io/badge/tqdm-4.64.0-FFC107?style=flat-square&logo=tqdm&logoColor=FFFFFF)]()
-[![YAML](https://img.shields.io/badge/YAML-6.0.1-CB171E?style=flat-square&logo=YAML&logoColor=FFFFFF)]()
-[![wandb](https://img.shields.io/badge/weightsandbiases-0.12.18-FFBE00?style=flat-square&logo=weightsandbiases&logoColor=FFFFFF)]()
-[![mysql](https://img.shields.io/badge/mysql-1.1.0-FFBE00?style=flat-square&logo=mysql&logoColor=FFFFFF)]()
-[![mongodb](https://img.shields.io/badge/mongodb-4.6.0-47A248?style=flat-square&logo=mongodb&logoColor=FFFFFF)]()
-[![numpy](https://img.shields.io/badge/numpy-1.24.4-013243?style=flat-square&logo=numpy&logoColor=FFFFFF)]()
-[![timm](https://img.shields.io/badge/timm-latest-blue.svg)](https://github.com/huggingface/pytorch-image-models/tree/main)
+[![](https://img.shields.io/badge/Python-3.8.18-3776AB?style=flat-square&logo=python&logoColor=FFFFFF)](https://www.python.org)
+[![](https://img.shields.io/badge/PyTorch-1.10.1+cu102-EE4C2C?style=flat-square&logo=pytorch&logoColor=FFFFFF)](https://pytorch.org)
+[![](https://img.shields.io/badge/Timm-0.9.7-blue.svg)](https://github.com/huggingface/pytorch-image-models/tree/main)
+[![](https://img.shields.io/badge/ONNX-1.14.0-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)](https://onnx.ai)
+[![](https://img.shields.io/badge/PyMySQL-1.1.0-FFBE00?style=flat-square&logo=mysql&logoColor=FFFFFF)](https://zetcode.com/python/pymysql/)
+[![](https://img.shields.io/badge/MongoDB-4.6.0-47A248?style=flat-square&logo=mongodb&logoColor=FFFFFF)](https://www.mongodb.com/zh-cn)
 
 <div align="center">
     <img src="https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/demo4reid.jpg" width="80%" alt="" />
@@ -147,7 +142,7 @@ Watch [wandb](https://wandb.ai/) curve after run this commands.
 
 <details>
 
-<summary>Normalize Codes</summary>
+<summary>Normalize Codes Before Commit</summary>
 
 ```bash
 <pytorch-toolkit-dev> ~$ # run this command after install black

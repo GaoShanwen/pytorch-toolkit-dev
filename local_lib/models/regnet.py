@@ -151,6 +151,3 @@ if __name__ == "__main__":
     # optimizer = create_optimizer_v2(m, **optimizer_kwargs(cfg={"lr":0.1}),)
     # save_path = "output/converted_model/regnety_redution_040.ra3_in1k-test.pth.tar"
     # saver._save(save_path, 2, metric=0.01)
-    import pdb
-
-    pdb.set_trace()

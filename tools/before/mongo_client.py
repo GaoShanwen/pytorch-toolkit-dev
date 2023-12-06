@@ -74,7 +74,6 @@ def main():
     product_id_map = {}
     with open(args.label_file) as f:
         for line in f:
-            # import pdb; pdb.set_trace()
             id_record = line.strip().replace('"', "").split(",")
             product_id_map[int(id_record[0])] = id_record[1]
 
@@ -111,8 +110,6 @@ def main():
                 count += 1
             num_img = ImageSet.count_documents({"brand_id": brand_id})  # , 'type':1
             print(f"save num: {count}, origin num: {num_img}")
-
-    # import pdb; pdb.set_trace()
 
     TrainValSet = AIScale["TrainValSet"]  # ; TrainValSet.count_documents({'brand_id':brand_id})
     # save_root = "/home/work/pytorch-cls-project/dataset/zero_dataset"

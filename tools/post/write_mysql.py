@@ -68,7 +68,4 @@ if __name__ == "__main__":
     data = mysql.read_table()
     # mysql.del_table()
     mysql.close_cursor()
-    import pdb
-
-    pdb.set_trace()
     print(data)

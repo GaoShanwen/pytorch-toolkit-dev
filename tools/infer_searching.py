@@ -329,17 +329,12 @@ def run_infer(model, args):
 
     with open(args.cats_file, "r") as f:
         class_list = [line.strip("\n") for line in f.readlines()]
-    assert args.input_mode in [
-        "path",
-        "dir",
-        "file",
-    ], "please set infer_mode to path, dir, or files"
+    assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
             query_files, query_labels = zip(*([line.strip("\n").split(", ") for line in f.readlines()]))
         query_labels = [class_list.index(q_label) for q_label in query_labels]
         query_labels = np.array(query_labels, dtype=int)
-        # import pdb; pdb.set_trace()
     else:
         query_files = (
             os.listdir(args.data_path)
@@ -378,22 +373,13 @@ def run_infer(model, args):
 
     label_index = load_csv_file(args.label_file)
     cats = list(set(gallery_labels))
-    # import pdb; pdb.set_trace()
     label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
     index = create_index(gallery_feature, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     _, I = index.search(query_feats, args.topk)
 
     p_labels = gallery_labels[I]
     query_labels = query_labels if query_labels is not None else p_labels[:, 0]
-    run_vis2bigimgs(
-        I,
-        gallery_labels,
-        gallery_files,
-        query_labels,
-        query_files,
-        label_map,
-        args.save_root,
-    )
+    run_vis2bigimgs(I, gallery_labels, gallery_files, query_labels, query_files, label_map, args.save_root)
 
 
 if __name__ == "__main__":
@@ -401,23 +387,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model = load_model(args)
     run_infer(model, args)
-    # matrix = np.array([
-    #     [1.0, 0.9, 0.2, 0.1],
-    #     [0.2, 1.0, 0.1, 0.9],
-    #     [0.2, 0.9, 1.0, 0.1],
-    #     [0.9, 0.2, 0.1, 1.0]
-    # ])
-
-    # masks = []
-    # for i in range(matrix.shape[0]-1):
-    #     if i in masks:
-    #         continue
-    #     masks += np.where((matrix[i, :] >= 0.8)&(np.arange(matrix.shape[0])>i))[0].tolist()
-    # masks = np.array(masks)
-    # # masks = np.where(
-    # #     (matrix > 0.8)&
-    # #     (np.arange(matrix.shape[1])[:, np.newaxis] > np.arange(matrix.shape[0]))
-    # # )[0]
-    # cat_index = np.arange(matrix.shape[0])
-    # keep = np.setdiff1d(cat_index, cat_index[masks])
-    # print(masks, keep)

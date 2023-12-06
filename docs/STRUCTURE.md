@@ -1,4 +1,4 @@
-## structure of the project
+## Structure of the project
 
 ```bash
 <pytorch-toolkit-dev> <timm-dev>

@@ -83,10 +83,7 @@ def haloregnetz_redution_b(pretrained=False, **kwargs) -> ByobNet:
 
 if __name__ == "__main__":
     import timm
-    import torch
 
     m = timm.create_model("haloregnetz_redution_b.ra3_in1k", pretrained=True, num_classes=100)
+    # import torch
     # o = m(torch.randn(2, 3, 224, 224))
-    import pdb
-
-    pdb.set_trace()
