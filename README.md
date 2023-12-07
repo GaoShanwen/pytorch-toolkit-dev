@@ -19,16 +19,11 @@ timm-dev branch for classfication or re-identification tasks.
 
 ### Supported Functions
 
-<details open>
-<summary>Supported Functions</summary>
-
 - [x] Classfication or re-identification tasks.
 - [x] Visualize training curve(wandb/tensorboard).
 - [x] Visualize models' heatmaps.
 - [x] Convert pth Model to ONNX/RKNN.
 - [x] Normalize codes before commit.
-
-</details>
 
 ### Major Motivation
 
@@ -43,13 +38,13 @@ timm-dev branch for classfication or re-identification tasks.
 <summary>2. 🚀 Enhance codes' reusability.</summary>
 <summary>3. 🛠️ Minimize our project.</summary>
 
-### Quick Start
+## Quick Start
 
-#### Install Environment
+### Install Environment
 
 For detailed installation guides, please refer to [INSTALL.md](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md).
 
-#### Command Guides
+### Command Guides
 
 <details>
 

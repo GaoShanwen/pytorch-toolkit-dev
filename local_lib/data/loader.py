@@ -9,6 +9,10 @@ from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
 
 class OwnerResize(Resize):
+    def __init__(self, size, interpolation):
+        self.size = size
+        self.interpolation = interpolation
+    
     def forward(self, img):
         """
         Args:
@@ -17,7 +21,7 @@ class OwnerResize(Resize):
         Returns:
             PIL Image or Tensor: Rescaled image.
         """
-        img = cv2.resize(np.array(img), self.size, interpolation=cv2.INTER_CUBIC)
+        img = cv2.resize(np.array(img), self.size, interpolation=self.interpolation)
         return Image.fromarray(img)
 
 
@@ -25,8 +29,7 @@ def owner_transfrom(input_size=[3, 224, 224]):
     img_size = input_size[1:]
     owner_trans = transforms.Compose(
         [
-            # transforms.Resize([224, 224], interpolation=InterpolationMode.BICUBIC, antialias=False),
-            OwnerResize(img_size),
+            OwnerResize(img_size, interpolation=cv2.INTER_CUBIC),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=torch.tensor([0.485, 0.456, 0.406]),
@@ -112,8 +115,15 @@ def create_owner_loader(
     )
     if transfrom_mode == "owner":
         if input_size is None:
-            loader.dataset.transform = owner_transfrom()
+            loader.transform = owner_transfrom()
         else:
-            loader.dataset.transform = owner_transfrom(input_size)
-    print(loader.dataset.transform)
+            loader.transform = owner_transfrom(input_size)
+    print(loader.transform)
     return loader
+
+
+if __name__ == "__main__":
+    img_path = "dataset/test_imgs/1.jpg"
+    input = open(img_path, "rb")  # data_trans().unsqueeze(0)
+    trans_resize = OwnerResize([224, 224])
+    res_img = trans_resize(input)

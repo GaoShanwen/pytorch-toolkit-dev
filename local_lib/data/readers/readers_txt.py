@@ -15,14 +15,7 @@ from timm.data.readers.reader import Reader
 from PIL import Image
 
 
-def read_images_and_targets(
-    anno_path: str,
-    # types: Optional[Union[List, Tuple, Set]] = None,
-    class_to_idx: Optional[Dict] = None,
-    # leaf_name_only: bool = True,
-    sort: bool = True,
-    **kwargs,
-):
+def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None, sort: bool = True, **kwargs):
     """Walk folder recursively to discover images and map them to classes by folder names.
 
     Args:
