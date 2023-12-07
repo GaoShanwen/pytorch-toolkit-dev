@@ -432,7 +432,7 @@ def extract(args):
         cats_path=args.cats_path,
         pass_path=args.pass_path,
     )
-    _logger.info(f"load image number={len(dataset)}")
+    _logger.info(f"load cats:{len(dataset.reader.class_to_idx)}, imgs={len(dataset)}")
 
     crop_pct = 1.0 if test_time_pool else data_config["crop_pct"]
     loader = create_owner_loader(
