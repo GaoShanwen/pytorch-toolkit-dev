@@ -56,7 +56,7 @@ def run_eval(g_feats, g_label, q_feats, q_label, class_list, args, acc_file_name
     feat_tools.run_compute(p_label, q_label, do_output=False)
 
 
-def main(g_feats, g_label, g_files, q_feats, q_label, class_list, args):
+def main(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args):
     run_eval(g_feats, g_label, q_feats, q_label, class_list, args, "eval_res.csv")
 
     if args.remove_mode == "none":
@@ -101,7 +101,7 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, a
         static = feat_tools.run_choose(g_feats, g_label, args)
         label_index = load_csv_file(args.label_file)
         cats = list(set(g_label))
-        label_map = {i: label_index[cat].split('/')[0] for i, cat in enumerate(class_list) if i in cats}
+        label_map = {i: label_index[cat].split("/")[0] for i, cat in enumerate(class_list) if i in cats}
         new_static = {}
         for cat, value in static.items():
             new_value = {}
@@ -122,8 +122,10 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, a
         knn_errors = np.where(p_label[:, 0] != q_label)[0]
 
         e_only_in_knn = np.setdiff1d(knn_errors, original_errors)
-        print(f"new-errors knn-k={args.topk}: {e_only_in_knn.shape[0]} / {q_label.shape[0]} | "
-            f"({original_errors.shape[0]} -> {knn_errors.shape[0]})")
+        print(
+            f"new-errors knn-k={args.topk}: {e_only_in_knn.shape[0]} / {q_label.shape[0]} | "
+            f"({original_errors.shape[0]} -> {knn_errors.shape[0]})"
+        )
         new_q_labels, new_q_files = q_label[e_only_in_knn], q_files[e_only_in_knn]
         feat_tools.save_keeps_file(new_q_labels, new_q_files, class_list, f"new_errors-knn.txt")
         return
@@ -131,7 +133,7 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, a
 
 if __name__ == "__main__":
     args = parse_args()
-    args.param = f"IVF{args.num_classes},Flat"
+    args.param = "IVF4000,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
 
     # 加载npz文件
@@ -143,14 +145,12 @@ if __name__ == "__main__":
     with open(args.cats_file, "r") as f:
         class_list = [line.strip("\n") for line in f.readlines()]
     if args.debug:
-        choose_cats = list(set(g_label))[:15]
+        choose_cats = list(set(g_label))[:50]
         cat_idx = np.where(g_label[:, np.newaxis] == choose_cats)[0]
         g_feats, g_label, g_files = g_feats[cat_idx], g_label[cat_idx], g_files[cat_idx]
 
         cat_idx = np.where(q_label[:, np.newaxis] == choose_cats)[0]
         q_feats, q_label, q_files = q_feats[cat_idx], q_label[cat_idx], q_files[cat_idx]
 
-    if args.run_test:
-        run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args)
-    else:
-        main(g_feats, g_label, g_files, q_feats, q_label, class_list, args)
+    function_name = "run_test" if args.run_test else "main"
+    eval(function_name)(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args)

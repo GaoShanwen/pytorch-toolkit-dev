@@ -80,10 +80,7 @@ class ReaderImageTxt(Reader):
         class_to_idx = None
         if class_map:
             class_to_idx = load_class_map(class_map, root)
-        assert split in [
-            "train",
-            "val",
-        ], f"split must be train/val, but you set is {split}"
+        assert split in ["train", "val"], f"split must be train/val, but you set is {split}"
         anno_path = os.path.join(root, "train.txt") if split == "train" else os.path.join(root, "val.txt")
         self.samples, self.class_to_idx = read_images_and_targets(anno_path, class_to_idx=class_to_idx, **kwargs)
         if len(self.samples) == 0:

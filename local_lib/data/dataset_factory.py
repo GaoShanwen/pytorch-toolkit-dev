@@ -31,7 +31,7 @@ def create_owner_dataset(
             batch_size,
             seed,
             repeats,
-            **kwargs
+            **kwargs,
         )
     split = "train" if is_training else split.replace("validation", "val")
     assert split in ["train", "val", "infer"], f"split must be train/val or infer but you set {split}"

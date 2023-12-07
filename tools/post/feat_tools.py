@@ -34,6 +34,7 @@ def compute_acc_by_cat(p_label, q_label, class_list, label_map=None):
     top1_num, top5_num = run_compute(p_label, q_label)
     acc_map = {
         "all_data": {
+            "cat_index": "",
             "top1_num": top1_num,
             "top1_acc": top1_num / q_label.shape[0],
             "top5_num": top5_num,
@@ -47,6 +48,7 @@ def compute_acc_by_cat(p_label, q_label, class_list, label_map=None):
         top1_num = np.where(p_label[cat_index, 0] == q_label[cat_index])[1].shape[0]
         top5_num = np.unique(np.where(p_label[cat_index, :] == q_label[cat_index, np.newaxis])[1]).shape[0]
         cat_res = {
+            "cat_index": cat,
             "top1_num": top1_num,
             "top1_acc": top1_num / data_num,
             "top5_num": top5_num,
@@ -72,9 +74,11 @@ def save_keeps_file(labels, files, class_list, obj_files):
             f.write(f"{filename}, {label}\n")
 
 
-def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT):
+def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT, L2_flag=False):
     dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
+    if param == "IVF4000,Flat":
+        faiss.ParameterSpace().set_index_parameters(index, "nprobe=400")
     if use_gpu:
         index = faiss.index_cpu_to_gpus_list(index, gpus=[0, 1])  # gpus用于指定使用的gpu号
     index.train(data_embedding)
@@ -90,9 +94,14 @@ def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_
     for cat in cats:
         cat_index = np.where(labels == cat)[0]
         choose_gallery = matrix[cat_index]
-        enable_gpu = use_gpu if choose_gallery.shape[0] <= 2048 else False
+        enable_gpu = use_gpu if cat_index.shape[0] <= 6000 else False
         index = create_index(choose_gallery, enable_gpu)
-        g_g_scores, g_g_indexs = index.search(choose_gallery, choose_gallery.shape[0])
+        final_num = min(cat_index.shape[0], 2048) if cat_index.shape[0] <= 6000 else 4096
+        # if cat_index.shape[0] <= 15000:
+        #     final_num = 6144
+        g_g_scores, g_g_indexs = index.search(choose_gallery, final_num)
+        # if max(g_g_scores[:, final_num-1])>=0.9:
+        #     print(cat, cat_index.shape[0], max(g_g_scores[:, final_num-1]))
         masks = []
         for i in range(cat_index.shape[0] - 1):
             if i in masks:
@@ -103,9 +112,8 @@ def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_
         masks = np.array(masks)
         keeps += np.setdiff1d(cat_index, cat_index[masks]).tolist() if masks.shape[0] else cat_index.tolist()
         pbar.update(1)
-        del index
     pbar.close()
-    return np.array(keeps)  # , masks
+    return np.array(keeps)
 
 
 def get_predict_label(initial_rank, gallery_label, k=5, use_knn=False, use_sgd=False):
@@ -121,23 +129,23 @@ def get_predict_label(initial_rank, gallery_label, k=5, use_knn=False, use_sgd=F
     raise "not support sgd yet!"
 
 
-def choose_noises(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
+def choose_noise(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
+    param, measure = "Flat", faiss.METRIC_L2
+    keeps = []
     cats = list(set(labels))
     stride = len(cats) // update_times if update_times else 1
-    keeps = []
     pbar = tqdm.tqdm(total=len(cats), miniters=stride, maxinterval=600)
     for cat in cats:
         cat_index = np.where(labels == cat)[0]
-        choose_gallery = matrix[cat_index]
-        enable_gpu = use_gpu if choose_gallery.shape[0] <= 2048 else False
-        index = create_index(choose_gallery, enable_gpu)
-        _, index_matric = index.search(choose_gallery, choose_gallery.shape[0])
-        choose_num = int(cat_index.shape[0] * choose_ratio)
-        last_count = Counter(index_matric[:, -choose_num:].reshape(-1).tolist()).most_common()
-        keep = [key for key, _ in last_count][:choose_num]
+        choose_gallery, gallery_num = matrix[cat_index], cat_index.shape[0]
+        index = create_index(choose_gallery, use_gpu, param, measure)
+        choose_num = int(gallery_num * choose_ratio)
+        final_num = min(choose_num, 2048)
+        _, index_matric = index.search(choose_gallery, final_num)
+        last_count = Counter(index_matric.reshape(-1).tolist()).most_common()
+        keep = [key for key, _ in last_count[:choose_num]]
         keeps += cat_index[np.array(keep, dtype=int)].tolist()
         pbar.update(1)
-        del index
     pbar.close()
     return np.array(keeps)
 
@@ -184,8 +192,8 @@ def choose_with_static(matrix, labels, _, use_gpu=False, update_times=0):
 def run_choose(matrix, labels, args):
     threshold = args.threshold
     use_gpu = args.use_gpu
-    _times=args.update_times
+    _times = args.update_times
     remove_mode = args.remove_mode
-    assert remove_mode in ["noises", "similarity", "static"], f"{remove_mode} is not support yet!"
+    assert remove_mode in ["noise", "similarity", "static"], f"{remove_mode} is not support yet!"
     function_name = "choose_with_static" if remove_mode == "static" else f"choose_{remove_mode}"
     return eval(function_name)(matrix, labels, threshold, use_gpu, _times)

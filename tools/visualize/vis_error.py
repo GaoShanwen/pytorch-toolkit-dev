@@ -130,6 +130,19 @@ def save_imgs(files, labels, class_list, save_root):
             f.write(f"{current_file},{obj_path}\n")
 
 
+def search_and_vis(g_feats, g_label, g_files, q_feats, q_label, q_files, args, label_map=None):
+    index = create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
+    S, I = index.search(q_feats, args.topk)
+
+    p_label = g_label[I]
+    tp1_errors = np.where(p_label[:, 0] != q_label)[0]  # np.array(np.arange(q_label.shape[0]))#
+    print(f"choose {tp1_errors.shape[0]} infer errors from {q_label.shape[0]} imgs")
+    q_label, q_files = q_label[tp1_errors], q_files[tp1_errors]
+    new_idx, new_scores = I[tp1_errors], S[tp1_errors]
+    save_root, text_size = args.save_root, args.text_size
+    run_vis2bigimgs(new_idx, g_label, g_files, q_label, q_files, label_map, save_root, text_size, new_scores)
+
+
 if __name__ == "__main__":
     args = parse_args()
     args.param = f"IVF{args.num_classes},Flat"
@@ -139,24 +152,15 @@ if __name__ == "__main__":
     q_feats, q_label, q_files = load_data(args.querys)
     faiss.normalize_L2(g_feats)
     faiss.normalize_L2(q_feats)
-    with open(args.cats_file, "r") as f:
-        class_list = [line.strip("\n") for line in f.readlines()]
 
     if args.debug:
         mask_files = np.load(args.mask_path)
         masks = np.isin(q_files, mask_files)
         keeps = np.array(np.arange(q_files.shape[0]))[~masks]
         q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
+    with open(args.cats_file, "r") as f:
+        class_list = [line.strip("\n") for line in f.readlines()]
     label_index = load_csv_file(args.label_file)
     cats = list(set(g_label))
     label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
-    index = create_index(g_feats, use_gpu=args.use_gpu)
-    S, I = index.search(q_feats, args.topk)
-
-    p_label = g_label[I]
-    tp1_errors = np.where(p_label[:, 0] != q_label)[0]
-    print(f"choose {tp1_errors.shape[0]} infer errors from {q_label.shape[0]} imgs")
-    q_label, q_files = q_label[tp1_errors], q_files[tp1_errors]
-    new_idx, new_scores = I[tp1_errors], S[tp1_errors]
-    save_root, text_size = args.save_root, args.text_size
-    run_vis2bigimgs(new_idx, g_label, g_files, q_label, q_files, label_map, save_root, text_size, new_scores)
+    search_and_vis(g_feats, g_label, q_feats, q_label, q_files, args, label_map)

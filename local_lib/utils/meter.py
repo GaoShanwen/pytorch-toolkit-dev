@@ -30,12 +30,22 @@ class ClassAccuracyMap:
         count = cat_dict["count"] + num
         top1_num = cat_dict["top1_num"] + top1
         top5_num = cat_dict["top5_num"] + top5
-        cat_dict["top1_num"] = top1_num
-        cat_dict["top5_num"] = top5_num
-        cat_dict["top1_val"] = top1_num * 100.0 / count
-        cat_dict["top5_val"] = top5_num * 100.0 / count
-        cat_dict["count"] = count
-        self.obj_dict[name] = cat_dict
+        # cat_dict["top1_num"] = top1_num
+        # cat_dict["top5_num"] = top5_num
+        # cat_dict["top1_val"] = top1_num * 100.0 / count
+        # cat_dict["top5_val"] = top5_num * 100.0 / count
+        # cat_dict["count"] = count
+        # self.obj_dict[name] = cat_dict
+        cat_dict.update(
+            {
+                "top1_num": top1_num,
+                "top5_num": top5_num,
+                "top1_val": top1_num * 100.0 / count,
+                "top5_val": top5_num * 100.0 / count,
+                "count": count,
+            }
+        )
+        self.obj_dict.update({name: cat_dict})
 
     def update(self, output, target, topk=(1, 5)):
         maxk = min(5, output.size()[1])
