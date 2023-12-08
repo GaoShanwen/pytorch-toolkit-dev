@@ -27,16 +27,15 @@ timm-dev branch for classfication or re-identification tasks.
 
 ### Major Motivation
 
-<summary>1.👀 Use the State-of-the-Art AI-classfication toolkit.</summary>
- 
+1.👀 Use the State-of-the-Art AI-classfication toolkit.
  + Various backbones and pretrained models
  + Bag of training tricks
  + Large-scale training configs
  + High efficiency and extensibility
  + Powerful toolkits
- 
-<summary>2.🚀 Enhance codes' reusability.</summary>
-<summary>3.🛠️ Minimize our project.</summary>
+
+2.🚀 Enhance codes' reusability.
+3.🛠️ Minimize our project.
 
 ## Quick Start
 
