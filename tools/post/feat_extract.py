@@ -485,12 +485,8 @@ def extract(args):
     _logger.info(f"feat saved in {args.results_dir}-{args.infer_mode}.npz")
 
 
-def main():
+if __name__ == "__main__":
     setup_default_logging()
     args = parser.parse_args()
 
     extract(args)
-
-
-if __name__ == "__main__":
-    main()

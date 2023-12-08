@@ -23,6 +23,10 @@ class OwnerResize(Resize):
         """
         img = cv2.resize(np.array(img), self.size, interpolation=self.interpolation)
         return Image.fromarray(img)
+    
+    def __repr__(self):
+        interpolate_str = "cv2.INTER_CUBIC"
+        return self.__class__.__name__ + f'(size={self.size}, interpolation={interpolate_str})'
 
 
 def owner_transfrom(input_size=[3, 224, 224]):

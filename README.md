@@ -22,21 +22,21 @@ timm-dev branch for classfication or re-identification tasks.
 - [x] Classfication or re-identification tasks.
 - [x] Visualize training curve(wandb/tensorboard).
 - [x] Visualize models' heatmaps.
-- [x] Convert pth Model to ONNX/RKNN.
+- [x] Convert pth model to onnx/rknn.
 - [x] Normalize codes before commit.
 
 ### Major Motivation
 
-<summary>1. 👀 Use the State-of-the-Art AI-classfication toolkit.</summary>
-
+<summary>1.👀 Use the State-of-the-Art AI-classfication toolkit.</summary>
+ 
  + Various backbones and pretrained models
  + Bag of training tricks
  + Large-scale training configs
  + High efficiency and extensibility
  + Powerful toolkits
-
-<summary>2. 🚀 Enhance codes' reusability.</summary>
-<summary>3. 🛠️ Minimize our project.</summary>
+ 
+<summary>2.🚀 Enhance codes' reusability.</summary>
+<summary>3.🛠️ Minimize our project.</summary>
 
 ## Quick Start
 
