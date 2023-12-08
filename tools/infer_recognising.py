@@ -341,7 +341,7 @@ def run_infer(model, args):
         num_workers=args.workers,
         crop_pct=1.0,
         device=device,
-        transfrom_mode="owner"
+        transfrom_mode="owner",
     )
 
     choices, choices_type = [], []

@@ -6,7 +6,6 @@
 # function: reduce the last fc layers' dim of halonet for reid.
 ######################################################
 import torch.nn as nn
-from typing import Tuple, Optional, Union
 
 from timm.models.byoanet import ByobNet, ByoModelCfg, model_cfgs
 from timm.layers.classifier import _create_fc
@@ -16,32 +15,8 @@ from timm.models._registry import register_model
 
 
 class ByobRedutionNet(ByobNet):
-    def __init__(
-        self,
-        cfg: ByoModelCfg,
-        num_classes: int = 1000,
-        in_chans: int = 3,
-        global_pool: str = "avg",
-        output_stride: int = 32,
-        img_size: Optional[Union[int, Tuple[int, int]]] = None,
-        drop_rate: float = 0.0,
-        drop_path_rate: float = 0.0,
-        zero_init_last: bool = True,
-        reduction_dim=128,
-        **kwargs,
-    ):
-        super(ByobRedutionNet, self).__init__(
-            cfg,  # type: ignore
-            num_classes,
-            in_chans,
-            global_pool,
-            output_stride,
-            img_size,
-            drop_rate,
-            drop_path_rate,
-            zero_init_last,
-            **kwargs,
-        )
+    def __init__(self, cfg: ByoModelCfg, num_classes: int = 1000, reduction_dim=128, **kwargs):
+        super(ByobRedutionNet, self).__init__(cfg, num_classes, **kwargs)  # type: ignore
         del self.head.fc
         self.reduction_dim = reduction_dim
         num_pooled_features = self.num_features * self.head.global_pool.feat_mult()

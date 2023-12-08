@@ -3,7 +3,7 @@
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.09
 # filenaem: readers_txt.py
-# function: create a reader for owner data.(load by txt)
+# function: create a reader for custom data.(load by txt)
 ######################################################
 import os
 from typing import Dict, Optional, List
@@ -12,17 +12,14 @@ from timm.utils.misc import natural_key
 from timm.data.readers.class_map import load_class_map
 from timm.data.readers.img_extensions import get_img_extensions
 from timm.data.readers.reader import Reader
-from PIL import Image
 
 
 def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None, sort: bool = True, **kwargs):
     """Walk folder recursively to discover images and map them to classes by folder names.
 
     Args:
-        folder: root of folder to recrusively search
-        types: types (file extensions) to search for in path
+        anno_path: txtfile of annotation to search for in path
         class_to_idx: specify mapping for class (folder name) to class index if set
-        leaf_name_only: use only leaf-name of folder walk for class names
         sort: re-sort found images by name (for consistent ordering)
 
     Returns:
@@ -99,14 +96,7 @@ class ReaderImageTxt(Reader):
 
 
 class ReaderImagePaths(Reader):
-    def __init__(
-        self,
-        filenames: List,
-        # types: Optional[Union[List, Tuple, Set]] = None,
-        class_to_idx: Optional[Dict] = None,
-        # leaf_name_only: bool = True,
-        sort: bool = True,
-    ):
+    def __init__(self, filenames: List, class_to_idx: Optional[Dict] = None, sort: bool = True):
         super().__init__()
         assert len(filenames), (
             f"Found 0 images in subfolders of filenames. "

@@ -12,58 +12,18 @@ from timm.layers import SelectAdaptivePool2d
 from timm.models.layers import Linear
 from timm.models import MobileNetV3
 from timm.models._efficientnet_blocks import SqueezeExcite
-from timm.models.mobilenetv3 import _gen_mobilenet_v3
+
+# from timm.models.mobilenetv3 import _gen_mobilenet_v3
 from timm.models._builder import build_model_with_cfg, pretrained_cfg_for_features
-from timm.models._efficientnet_builder import (
-    decode_arch_def,
-    round_channels,
-    resolve_act_layer,
-    resolve_bn_args,
-)
+from timm.models._efficientnet_builder import decode_arch_def, round_channels, resolve_act_layer, resolve_bn_args
 from timm.models._registry import register_model
 
 
 class MobileNetV3Redution(MobileNetV3):
     """convert MobiletNet-V3 for reid"""
 
-    def __init__(
-        self,
-        block_args,
-        num_classes=1000,
-        in_chans=3,
-        stem_size=16,
-        fix_stem=False,
-        num_features=1280,
-        head_bias=True,
-        pad_type="",
-        act_layer=None,
-        norm_layer=None,
-        se_layer=None,
-        se_from_exp=True,
-        round_chs_fn=round_channels,
-        drop_rate=0.0,
-        drop_path_rate=0.0,
-        global_pool="avg",
-        reduction_dim=128,
-    ):
-        super(MobileNetV3Redution, self).__init__(
-            block_args,
-            num_classes,
-            in_chans,
-            stem_size,
-            fix_stem,
-            num_features,
-            head_bias,
-            pad_type,
-            act_layer,
-            norm_layer,
-            se_layer,
-            se_from_exp,
-            round_chs_fn,
-            drop_rate,
-            drop_path_rate,
-            global_pool,
-        )
+    def __init__(self, block_args, num_classes=1000, reduction_dim=128, **kwargs):
+        super(MobileNetV3Redution, self).__init__(block_args, num_classes, **kwargs)
         del self.classifier
         self.reduction_dim = reduction_dim
         self.reduction = Linear(self.num_features, self.reduction_dim)
@@ -100,7 +60,7 @@ class MobileNetV3Redution(MobileNetV3):
 def _create_mnv3(variant, pretrained=False, **kwargs):
     model_cls = MobileNetV3Redution
     kwargs_filter = None
-    features_mode = ""
+    features_mode = "cls"
 
     model = build_model_with_cfg(
         model_cls,
@@ -232,9 +192,12 @@ def mobilenetv3_redution_large_100(pretrained=False, **kwargs) -> MobileNetV3:
     return model
 
 
-# if __name__=="__main__":
-#     m = timm.create_model('mobilenetv3_redution_large_100', pretrained=True, num_classes=41)
-#     o = m(torch.randn(2, 3, 224, 224))
-#     load_checkpoint(model, "output/train/20231011-120458-mobilenetv3_large_100-224/model_best.pth.tar", False)
-#     model.reset_classifier(0) # 移除分类层
-#     import pdb; pdb.set_trace()
+if __name__ == "__main__":
+    import timm
+    import torch
+
+    m = timm.create_model("mobilenetv3_redution_large_100", pretrained=True, num_classes=41)
+    o = m(torch.randn(2, 3, 224, 224))
+    # load_checkpoint(model, "output/train/20231011-120458-mobilenetv3_large_100-224/model_best.pth.tar", False)
+    # model.reset_classifier(0) # 移除分类层
+    print(m)

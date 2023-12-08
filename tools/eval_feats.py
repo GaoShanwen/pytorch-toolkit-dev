@@ -85,6 +85,18 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args)
 
 
 def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args):
+    """_summary_
+
+    Args:
+        g_feats (_type_): _description_
+        g_label (_type_): _description_
+        g_files (_type_): _description_
+        q_feats (_type_): _description_
+        q_label (_type_): _description_
+        q_files (_type_): _description_
+        class_list (_type_): _description_
+        args (_type_): _description_
+    """
     run_eval(g_feats, g_label, q_feats, q_label, class_list, args, acc_file_name="")
     mask_files = np.load(args.mask_path)
     masks = np.isin(q_files, mask_files)
@@ -133,7 +145,8 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, a
 
 if __name__ == "__main__":
     args = parse_args()
-    args.param = "IVF4000,Flat"
+    args.param = "Flat"
+    # args.param = "IVF150,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
 
     # 加载npz文件
@@ -145,7 +158,14 @@ if __name__ == "__main__":
     with open(args.cats_file, "r") as f:
         class_list = [line.strip("\n") for line in f.readlines()]
     if args.debug:
-        choose_cats = list(set(g_label))[:50]
+        choose_cats = list(set(g_label))  # [:50]
+        print(f"origain cats number={len(choose_cats)}")
+        with open("dataset/removeredundancy/629_cats.txt", "r") as f:
+            # import pdb; pdb.set_trace()
+            choose_cats = [
+                class_list.index(line.strip("\n")) for line in f.readlines() if line.strip("\n") in class_list
+            ]
+        print(f"final cats number={len(choose_cats)}")
         cat_idx = np.where(g_label[:, np.newaxis] == choose_cats)[0]
         g_feats, g_label, g_files = g_feats[cat_idx], g_label[cat_idx], g_files[cat_idx]
 

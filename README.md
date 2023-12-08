@@ -35,6 +35,7 @@ timm-dev branch for classfication or re-identification tasks.
  + Powerful toolkits
 
 2.🚀 Enhance codes' reusability.
+
 3.🛠️ Minimize our project.
 
 ## Quick Start

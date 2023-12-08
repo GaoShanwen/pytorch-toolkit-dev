@@ -16,30 +16,8 @@ from timm.models._registry import register_model
 class RegNetRedution(RegNet):
     """convert RegNet for reid"""
 
-    def __init__(
-        self,
-        cfg: RegNetCfg,
-        in_chans=3,
-        num_classes=1000,
-        output_stride=32,
-        global_pool="avg",
-        drop_rate=0.0,
-        drop_path_rate=0.0,
-        zero_init_last=True,
-        reduction_dim=128,
-        **kwargs,
-    ):
-        super(RegNetRedution, self).__init__(
-            cfg,  # type: ignore
-            in_chans,
-            num_classes,
-            output_stride,
-            global_pool,
-            drop_rate,
-            drop_path_rate,
-            zero_init_last,
-            **kwargs,
-        )
+    def __init__(self, cfg: RegNetCfg, in_chans=3, num_classes=1000, reduction_dim=128, **kwargs):
+        super(RegNetRedution, self).__init__(cfg, in_chans, num_classes, **kwargs)  # type: ignore
         del self.head.fc
         self.reduction_dim = reduction_dim
         num_pooled_features = self.num_features * self.head.global_pool.feat_mult()
@@ -124,16 +102,17 @@ def regnetz_redution_040(pretrained=False, **kwargs) -> RegNet:
 if __name__ == "__main__":
     import timm
     import torch
-    from timm import utils
 
+    # from timm import utils
     # from timm.optim import create_optimizer_v2, optimizer_kwargs
-    import torch.optim as optim
+    # import torch.optim as optim
 
     # m = timm.create_model('regnety_redution_016.tv2_in1k', pretrained=True, num_classes=100)
     # m = timm.create_model('regnetz_redution_040_h.ra3_in1k', pretrained=True, num_classes=100)
-    # m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
-    m = timm.create_model("regnety_320.swag_ft_in1k", pretrained=True, num_classes=4281)
+    m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
+    # m = timm.create_model("regnety_320.swag_ft_in1k", pretrained=True, num_classes=4281)
     o = m(torch.randn(2, 3, 224, 224))
+    print(m)
     # parameters = m.parameters()
     # optimizer = optim.Adam(parameters)
     # saver = utils.CheckpointSaver(

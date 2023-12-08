@@ -1,3 +1,10 @@
+######################################################
+# author: gaowenjie
+# email: gaowenjie@rongxwy.com
+# date: 2023.12.08
+# filenaem: dataset.py
+# function: create custom dataset(read imgs by txt-file).
+######################################################
 from .readers import create_reader
 from timm.data import ImageDataset
 
@@ -13,7 +20,7 @@ class TxtReaderImageDataset(ImageDataset):
         img_mode="RGB",
         transform=None,
         target_transform=None,
-        **kwargs,
+        **kwargs
     ):
         if reader is None or isinstance(reader, str):
             reader = create_reader(root=root, split=split, class_map=class_map, **kwargs)
