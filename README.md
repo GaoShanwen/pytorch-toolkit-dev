@@ -165,3 +165,7 @@ Watch [wandb](https://wandb.ai/) curve after run this commands.
 ```
 
 </details>
+
+## License
+
+This project is released under the [Apache 2.0 license](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/LICENSE).

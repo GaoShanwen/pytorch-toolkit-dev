@@ -28,10 +28,7 @@ def parse_args():
     parser.add_argument("--label-file", type=str, default="dataset/zero_dataset/label_names.csv")
     parser.add_argument("--cats-file", type=str, default="dataset/removeredundancy/629_cats.txt")
     parser.add_argument(
-        "--pass-remove",
-        action="store_true",
-        default=False,
-        help="pass remove redundancy flag(True: pass, False: run remove)",
+        "--pass-remove", action="store_true", default=False, help="pass remove redundancy flag(False: run remove)"
     )
     parser.add_argument("--pass-cats", type=str, default="dataset/removeredundancy/pass_cats.txt")
     parser.add_argument("--mask-path", type=str, default="blacklist-val.npy")
