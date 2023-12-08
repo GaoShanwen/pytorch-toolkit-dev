@@ -4,12 +4,8 @@
 # date: 2023.11.09
 # filenaem: ready_det_data.py
 # function: copy n-picture from every categoies in
-#     owner data for labeling detection data.
+#     custom data for labeling detection data.
 ######################################################
-import os
-import tqdm
-import numpy as np
-import cv2
 import shutil
 import collections
 

@@ -1,3 +1,10 @@
+######################################################
+# author: gaowenjie
+# email: gaowenjie@rongxwy.com
+# date: 2023.12.08
+# filenaem: reader_factory.py
+# function: create custom reader.
+######################################################
 import os
 from . import ReaderImageTxt
 

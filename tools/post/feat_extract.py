@@ -4,7 +4,7 @@
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.09
 # filenaem: feat_extract.py
-# function: extract the features of owner data (train/val).
+# function: extract the features of custom data (train/val).
 ######################################################
 import argparse
 import logging
@@ -15,7 +15,6 @@ from contextlib import suppress
 from functools import partial
 
 import torch
-import torch.nn as nn
 import torch.nn.parallel
 
 from timm.data import resolve_data_config
@@ -27,9 +26,9 @@ import sys
 
 sys.path.append("./")
 
-from local_lib.models import create_owner_model  # enable local model
-from local_lib.data import create_owner_dataset
-from local_lib.data import create_owner_loader
+from local_lib.models import create_custom_model  # enable local model
+from local_lib.data import create_custom_dataset
+from local_lib.data import create_custom_loader
 
 try:
     from apex import amp
@@ -150,11 +149,7 @@ parser.add_argument(
 )
 parser.add_argument("--log-freq", default=10, type=int, metavar="N", help="batch logging frequency (default: 10)")
 parser.add_argument(
-    "--checkpoint",
-    default="",
-    type=str,
-    metavar="PATH",
-    help="path to latest checkpoint (default: none)",
+    "--checkpoint", default="", type=str, metavar="PATH", help="path to latest checkpoint (default: none)"
 )
 parser.add_argument("--pretrained", dest="pretrained", action="store_true", help="use pre-trained model")
 parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
@@ -180,12 +175,7 @@ parser.add_argument(
     metavar="PATH",
     help="path of pass categories (default: none, current dir)",
 )
-parser.add_argument(
-    "--channels-last",
-    action="store_true",
-    default=False,
-    help="Use channels_last memory layout",
-)
+parser.add_argument("--channels-last", action="store_true", default=False, help="Use channels_last memory layout")
 parser.add_argument("--device", default="cuda", type=str, help="Device (accelerator) to use.")
 parser.add_argument(
     "--amp",
@@ -357,7 +347,7 @@ def extract(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_owner_model(
+    model = create_custom_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.model_classes,
@@ -419,7 +409,7 @@ def extract(args):
         model = torch.nn.DataParallel(model, device_ids=list(range(args.num_gpu)))
 
     root_dir = args.data or args.data_dir
-    dataset = create_owner_dataset(
+    dataset = create_custom_dataset(
         root=root_dir,
         name=args.dataset,
         split=args.split,
@@ -435,7 +425,7 @@ def extract(args):
     _logger.info(f"load cats:{len(dataset.reader.class_to_idx)}, imgs={len(dataset)}")
 
     crop_pct = 1.0 if test_time_pool else data_config["crop_pct"]
-    loader = create_owner_loader(
+    loader = create_custom_loader(
         dataset,
         input_size=data_config["input_size"],
         batch_size=args.batch_size,
@@ -449,7 +439,7 @@ def extract(args):
         pin_memory=args.pin_mem,
         device=device,
         tf_preprocessing=args.tf_preprocessing,
-        transfrom_mode="owner",
+        transfrom_mode="custom",
     )
     pbar = tqdm.tqdm(total=len(loader) - args.start_batch)
 

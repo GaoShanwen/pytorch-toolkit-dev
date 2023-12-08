@@ -4,7 +4,7 @@
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.09
 # filenaem: validate.py
-# function: validate owner valset / trainset.
+# function: validate custom valset / trainset.
 ######################################################
 import argparse
 import csv
@@ -40,8 +40,8 @@ import sys
 
 sys.path.append("./")
 
-from local_lib.models import create_owner_model
-from local_lib.data import create_owner_dataset
+from local_lib.models import create_custom_model
+from local_lib.data import create_custom_dataset
 from local_lib.utils import ClassAccuracyMap
 
 try:
@@ -112,14 +112,7 @@ parser.add_argument(
     metavar="N",
     help="number of data loading workers (default: 4)",
 )
-parser.add_argument(
-    "-b",
-    "--batch-size",
-    default=256,
-    type=int,
-    metavar="N",
-    help="mini-batch size (default: 256)",
-)
+parser.add_argument("-b", "--batch-size", default=256, type=int, metavar="N", help="mini-batch size (default: 256)")
 parser.add_argument(
     "--img-size",
     default=None,
@@ -148,13 +141,7 @@ parser.add_argument(
     default=False,
     help="force use of train input size, even when test size is specified in pretrained cfg",
 )
-parser.add_argument(
-    "--crop-pct",
-    default=None,
-    type=float,
-    metavar="N",
-    help="Input image center crop pct",
-)
+parser.add_argument("--crop-pct", default=None, type=float, metavar="N", help="Input image center crop pct")
 parser.add_argument(
     "--crop-mode",
     default=None,
@@ -410,7 +397,7 @@ def validate(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_owner_model(
+    model = create_custom_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.num_classes,
@@ -466,7 +453,7 @@ def validate(args):
     criterion = nn.CrossEntropyLoss().to(device)
 
     root_dir = args.data or args.data_dir
-    dataset = create_owner_dataset(
+    dataset = create_custom_dataset(
         root=root_dir,
         name=args.dataset,
         split=args.split,

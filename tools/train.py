@@ -4,7 +4,7 @@
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.09
 # filenaem: train.py
-# function: train owner data use timm.
+# function: train custom data use timm.
 ######################################################
 import argparse
 import logging
@@ -50,8 +50,8 @@ import sys
 
 sys.path.append("./")
 
-from local_lib.models import create_owner_model  # for regster local model
-from local_lib.data import create_owner_dataset
+from local_lib.models import create_custom_model  # for regster local model
+from local_lib.data import create_custom_dataset
 from local_lib.utils.hooks import TensorBoardWriter
 
 try:
@@ -968,7 +968,7 @@ def main():
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_owner_model(
+    model = create_custom_model(
         args.model,
         pretrained=args.pretrained,
         in_chans=in_chans,
@@ -1133,7 +1133,7 @@ def main():
     # create the train and eval datasets
     if args.data and not args.data_dir:
         args.data_dir = args.data
-    dataset_train = create_owner_dataset(
+    dataset_train = create_custom_dataset(
         args.dataset,
         root=args.data_dir,
         split=args.train_split,
@@ -1150,7 +1150,7 @@ def main():
     )
     _logger.info(f"Loaded trainset image numer: {len(dataset_train)}.")
 
-    dataset_eval = create_owner_dataset(
+    dataset_eval = create_custom_dataset(
         args.dataset,
         root=args.data_dir,
         split=args.val_split,

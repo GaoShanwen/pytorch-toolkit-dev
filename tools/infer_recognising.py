@@ -23,9 +23,9 @@ import sys
 
 sys.path.append("./")
 
-from local_lib.models import create_owner_model  # enable local model
-from local_lib.data.loader import owner_transfrom, create_owner_loader
-from local_lib.data.dataset_factory import create_owner_dataset
+from local_lib.models import create_custom_model  # enable local model
+from local_lib.data.loader import custom_transfrom, create_custom_loader
+from local_lib.data.dataset_factory import create_custom_dataset
 
 try:
     from apex import amp
@@ -279,7 +279,7 @@ def load_model(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_owner_model(
+    model = create_custom_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.num_classes,
@@ -332,16 +332,16 @@ def run_infer(model, args):
                 args.data_path,
             ]
         )
-    dataset = create_owner_dataset(root=query_files, name="txt_data", split="infer")
+    dataset = create_custom_dataset(root=query_files, name="txt_data", split="infer")
     input_size = [3, args.img_size, args.img_size]
-    loader = create_owner_loader(
+    loader = create_custom_loader(
         dataset,
         input_size=input_size,
         batch_size=args.batch_size,
         num_workers=args.workers,
         crop_pct=1.0,
         device=device,
-        transfrom_mode="owner",
+        transfrom_mode="custom",
     )
 
     choices, choices_type = [], []

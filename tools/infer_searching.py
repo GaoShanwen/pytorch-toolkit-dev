@@ -24,8 +24,8 @@ import sys
 
 sys.path.append("./")
 
-from local_lib.models import create_owner_model  # enable local model
-from local_lib.data.loader import owner_transfrom
+from local_lib.models import create_custom_model  # enable local model
+from local_lib.data.loader import custom_transfrom
 from tools.post.feat_extract import save_feat, init_feats_dir
 from tools.post.feat_tools import load_data
 from tools.visualize.vis_error import load_csv_file, create_index, run_vis2bigimgs
@@ -283,7 +283,7 @@ def load_model(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_owner_model(
+    model = create_custom_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.num_classes,
@@ -346,7 +346,7 @@ def run_infer(model, args):
         query_labels = None
     query_files = np.array(query_files)
 
-    data_trans = owner_transfrom()
+    data_trans = custom_transfrom()
     pbar = tqdm.tqdm(total=query_files.shape[0])
     model.eval()
     init_feats_dir(args.results_dir)

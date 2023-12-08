@@ -52,7 +52,7 @@ def custom_transfrom(input_size=[3, 224, 224]):
 
 def create_custom_loader(dataset, input_size, batch_size, transfrom_mode="trainval", **kwargs):
     loader = create_loader(dataset, input_size, batch_size, **kwargs)
-    if transfrom_mode == "owner":
+    if transfrom_mode == "custom":
         if input_size is None:
             loader.transform = custom_transfrom()
         else:

@@ -3,7 +3,7 @@
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.09
 # filenaem: check_data.py
-# function: check owner data before training.
+# function: check custom data before training.
 ######################################################
 import os
 import tqdm
