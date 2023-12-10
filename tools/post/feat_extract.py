@@ -22,13 +22,8 @@ from timm.layers import apply_test_time_pool, set_fast_norm
 from timm.models import load_checkpoint
 from timm.utils import setup_default_logging, ParseKwargs, reparameterize_model
 
-import sys
-
-sys.path.append("./")
-
 from local_lib.models import create_custom_model  # enable local model
-from local_lib.data import create_custom_dataset
-from local_lib.data import create_custom_loader
+from local_lib.data import create_custom_dataset, create_custom_loader
 
 try:
     from apex import amp

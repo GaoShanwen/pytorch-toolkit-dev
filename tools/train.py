@@ -22,33 +22,13 @@ import yaml
 from torch.nn.parallel import DistributedDataParallel as NativeDDP
 
 from timm import utils
-from timm.data import (
-    create_loader,
-    resolve_data_config,
-    Mixup,
-    FastCollateMixup,
-    AugMixDataset,
-)
+from timm.data import create_loader, resolve_data_config, Mixup, FastCollateMixup, AugMixDataset
 from timm.layers import convert_splitbn_model, convert_sync_batchnorm, set_fast_norm
-from timm.loss import (
-    JsdCrossEntropy,
-    SoftTargetCrossEntropy,
-    BinaryCrossEntropy,
-    LabelSmoothingCrossEntropy,
-)
-from timm.models import (
-    safe_model_name,
-    resume_checkpoint,
-    load_checkpoint,
-    model_parameters,
-)
+from timm.loss import JsdCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy, LabelSmoothingCrossEntropy
+from timm.models import safe_model_name, resume_checkpoint, load_checkpoint, model_parameters
 from timm.optim import create_optimizer_v2, optimizer_kwargs
 from timm.scheduler import create_scheduler_v2, scheduler_kwargs
 from timm.utils import ApexScaler, NativeScaler
-
-import sys
-
-sys.path.append("./")
 
 from local_lib.models import create_custom_model  # for regster local model
 from local_lib.data import create_custom_dataset
@@ -118,7 +98,7 @@ group.add_argument(
     "--train-split",
     metavar="NAME",
     default="train",
-    help="dataset train split (default: train)",
+    help="dataset train split (default: train)"
 )
 group.add_argument(
     "--val-split",

@@ -36,10 +36,6 @@ from timm.utils import (
     reparameterize_model,
 )
 
-import sys
-
-sys.path.append("./")
-
 from local_lib.models import create_custom_model
 from local_lib.data import create_custom_dataset
 from local_lib.utils import ClassAccuracyMap

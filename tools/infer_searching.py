@@ -20,12 +20,9 @@ import torch.nn.parallel
 from timm.models import load_checkpoint
 from timm.utils import setup_default_logging, ParseKwargs
 
-import sys
-
-sys.path.append("./")
-
 from local_lib.models import create_custom_model  # enable local model
 from local_lib.data.loader import custom_transfrom
+
 from tools.post.feat_extract import save_feat, init_feats_dir
 from tools.post.feat_tools import load_data
 from tools.visualize.vis_error import load_csv_file, create_index, run_vis2bigimgs

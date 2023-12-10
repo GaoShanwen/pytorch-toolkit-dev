@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 import sys
 
-sys.path.append("./")
+sys.path.append(".")
 
 from tools.post.feat_tools import load_data, create_index
 
@@ -142,7 +142,8 @@ def search_and_vis(g_feats, g_label, g_files, q_feats, q_label, q_files, args, l
 
 if __name__ == "__main__":
     args = parse_args()
-    args.param = f"IVF{args.num_classes},Flat"
+    # args.param = f"IVF{args.num_classes},Flat"
+    args.param = "IVF150,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
     # 加载npz文件
     g_feats, g_label, g_files = load_data(args.gallerys)
@@ -160,4 +161,4 @@ if __name__ == "__main__":
     label_index = load_csv_file(args.label_file)
     cats = list(set(g_label))
     label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
-    search_and_vis(g_feats, g_label, q_feats, q_label, q_files, args, label_map)
+    search_and_vis(g_feats, g_label, g_files, q_feats, q_label, q_files, args, label_map)

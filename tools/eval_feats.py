@@ -9,10 +9,6 @@ import argparse
 import faiss
 import numpy as np
 
-import sys
-
-sys.path.append("./")
-
 from tools.post.write_mysql import save_keeps2mysql
 from tools.post import feat_tools
 from tools.visualize.vis_error import save_imgs, load_csv_file
@@ -85,18 +81,6 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args)
 
 
 def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, args):
-    """_summary_
-
-    Args:
-        g_feats (_type_): _description_
-        g_label (_type_): _description_
-        g_files (_type_): _description_
-        q_feats (_type_): _description_
-        q_label (_type_): _description_
-        q_files (_type_): _description_
-        class_list (_type_): _description_
-        args (_type_): _description_
-    """
     run_eval(g_feats, g_label, q_feats, q_label, class_list, args, acc_file_name="")
     mask_files = np.load(args.mask_path)
     masks = np.isin(q_files, mask_files)
@@ -145,8 +129,8 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, class_list, a
 
 if __name__ == "__main__":
     args = parse_args()
-    args.param = "Flat"
-    # args.param = "IVF150,Flat"
+    # args.param = "Flat"
+    args.param = "IVF629,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
 
     # 加载npz文件

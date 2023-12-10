@@ -9,7 +9,6 @@ import argparse
 import os
 import tqdm
 from urllib import parse
-from timm.data import dataset
 from shutil import copyfile
 
 import pymongo

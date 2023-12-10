@@ -12,15 +12,9 @@ import timm
 from timm import utils
 from timm.utils.model import reparameterize_model
 
-# from timm.utils.onnx import onnx_export
-
 from typing import Optional, Tuple, List
 
-import sys
-
-sys.path.append("./")
-
-import local_lib.models  # for regster local model
+from local_lib.models import create_custom_model  # for regster local model
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument("output", metavar="ONNX_FILE", help="output model filename")
@@ -218,7 +212,7 @@ def main():
     print("==> Creating PyTorch {} model".format(args.model))
     # NOTE exportable=True flag disables autofn/jit scripted activations and uses Conv2dSameExport layers
     # for models using SAME padding
-    model = timm.create_model(
+    model = create_custom_model(
         args.model,
         num_classes=args.num_classes,
         in_chans=3,

@@ -6,8 +6,6 @@
 # function: check custom data before training.
 ######################################################
 import os
-import tqdm
-from PIL import Image
 import collections
 
 
@@ -34,11 +32,10 @@ def load_csv_file(label_file):
 
 
 def check_data(filenames):
-    for filename in filenames:  # tqdm.tqdm(filenames):
+    for filename in filenames:
         if not os.path.exists(filename):
             print(filename)
         try:
-            # Image.open(filename).verify()
             with open(filename, "rb") as f:
                 f.seek(-2, 2)
                 if not f.read() == b"\xff\xd9":

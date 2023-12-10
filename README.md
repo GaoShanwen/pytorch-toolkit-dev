@@ -14,13 +14,14 @@ timm-dev branch for classfication or re-identification tasks.
 [![](https://img.shields.io/badge/MongoDB-4.6.0-47A248?style=flat-square&logo=mongodb&logoColor=FFFFFF)](https://www.mongodb.com/zh-cn)
 
 <div align="center">
-    <img src="https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/demo4reid.jpg" width="80%" alt="" />
+    <img src="https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/demo4reid.jpg" width="70%" alt="" />
 </div>
 
 ### Supported Functions
 
 - [x] Classfication or re-identification tasks.
 - [x] Visualize training curve(wandb/tensorboard).
+- [ ] Remove similarity or noise and knn, optuna for reid.
 - [x] Visualize models' heatmaps.
 - [x] Convert pth model to onnx/rknn.
 - [x] Normalize codes before commit.
@@ -169,3 +170,7 @@ Watch [wandb](https://wandb.ai/) curve after run this commands.
 ## License
 
 This project is released under the [Apache 2.0 license](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/LICENSE).
+
+## Contribute
+
+Feel free to create a pull request if you find any bugs or want to contribute (e.g., more datasets and more network structures).
