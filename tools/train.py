@@ -94,12 +94,7 @@ parser.add_argument(
     default="",
     help='dataset type + name ("<type>/<name>") (default: ImageFolder or ImageTar if empty)',
 )
-group.add_argument(
-    "--train-split",
-    metavar="NAME",
-    default="train",
-    help="dataset train split (default: train)"
-)
+group.add_argument("--train-split", metavar="NAME", default="train", help="dataset train split (default: train)")
 group.add_argument(
     "--val-split",
     metavar="NAME",

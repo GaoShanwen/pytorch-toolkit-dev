@@ -20,6 +20,7 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.parallel
+import yaml
 
 from timm.data import create_loader, resolve_data_config, RealLabelsImagenet
 from timm.layers import apply_test_time_pool, set_fast_norm
@@ -67,6 +68,14 @@ _logger = logging.getLogger("validate")
 
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
+parser.add_argument(
+    "-c",
+    "--config",
+    default="",
+    type=str,
+    metavar="FILE",
+    help="YAML config file specifying default arguments",
+)
 parser.add_argument(
     "data",
     nargs="?",
@@ -350,6 +359,23 @@ parser.add_argument(
 )
 
 
+def _parse_args():
+    # Do we have a config file to parse?
+    args_config, remaining = parser.parse_known_args()
+    if args_config.config:
+        with open(args_config.config, "r") as f:
+            cfg = yaml.safe_load(f)
+            parser.set_defaults(**cfg)
+
+    # The main arg parser parses the rest of the args, the usual
+    # defaults will have been overridden if config file specified.
+    args = parser.parse_args(remaining)
+
+    # Cache the args as a text string to save them in the output dir later
+    args_text = yaml.safe_dump(args.__dict__, default_flow_style=False)
+    return args, args_text
+
+
 def validate(args):
     # might as well try to validate something
     args.pretrained = args.pretrained or not args.checkpoint
@@ -607,7 +633,8 @@ _NON_IN1K_FILTERS = ["*_in21k", "*_in22k", "*in12k", "*_dino", "*fcmae", "*seer"
 
 def main():
     setup_default_logging()
-    args = parser.parse_args()
+    args, _ = _parse_args()
+    # args = parser.parse_args()
     model_cfgs = []
     model_names = []
     if os.path.isdir(args.checkpoint):
