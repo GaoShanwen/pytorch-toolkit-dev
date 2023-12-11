@@ -6,9 +6,41 @@
 
 - **Build Dataset**
 
+Run this comand, make sure your folder format is follow:
+
 ```bash
 <pytorch-toolkit-dev> ~$ # build dataset for train and validate
 <pytorch-toolkit-dev> ~$ ln -s /data/exp-data/* dataset/
+```
+
+```bash
+<pytorch-toolkit-dev> <timm-dev branch>
+    ├── cfgs
+    │   └── base-regnety_redution_040.ra3_in1k.yaml
+    ├── dataset
+    │   ├── 1.jpg
+    │   ├── <your datasets> # train/validate data
+    │   ├── simsun.ttc # chinese fonts
+    │   └── README.md
+    ├── docs
+    │   ├── environment.md
+    │   └── structure.md
+    ├── local_lib
+    │   ├── data
+    │   ├── models
+    │   └── utils
+    ├── output 
+    │   └── train # .pth model path
+    ├── README.md
+    ├── requirements.txt
+    └── tools
+        ├── before
+        ├── convert
+        ├── eval_feats.py
+        ├── post
+        ├── train.py
+        ├── validate.py
+        └── visualize
 ```
 
 - **Train Dataset**
