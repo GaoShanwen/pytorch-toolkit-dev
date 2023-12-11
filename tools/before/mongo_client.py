@@ -8,6 +8,7 @@
 import argparse
 import os
 import tqdm
+import numpy as np
 from urllib import parse
 from shutil import copyfile
 
@@ -60,8 +61,9 @@ def parse_args():
         return v.lower() in ("true", "t", "1")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--brand_id", type=str)
-    parser.add_argument("--label_file", type=str)
+    parser.add_argument("--brand_id", type=str, default="0")
+    parser.add_argument("--label_file", type=str, default="dataset/zero_dataset/label_names.csv")
+    parser.add_argument("--save_root", type=str, default="dataset/removeredundancy2")
 
     return parser.parse_args()
 
@@ -80,6 +82,7 @@ def main():
     mongo_client = connect_mongodb()
     AIScale = mongo_client["AIScale"]
     brand_id = args.brand_id
+    save_root = args.save_root
     # ImageSet = AIScale['OrderSet']
 
     # step 3.2: calculate
@@ -88,9 +91,11 @@ def main():
 
     def save_files(ImageSet, save_path, data_dir, brand_id, product_id_map):
         count = 0
+        images = ImageSet.find({"brand_id": brand_id}, no_cursor_timeout=True)
+        pbar = tqdm.tqdm(total=ImageSet.count_documents({"brand_id": brand_id}))
         with open(save_path, "w") as f:
-            images = ImageSet.find({"brand_id": brand_id}, no_cursor_timeout=True)
-            for data_record in tqdm.tqdm(images):
+            for data_record in images:
+                pbar.update(1)
                 product_id = data_record["product_id"]
                 if int(product_id) not in product_id_map.keys():
                     continue
@@ -98,7 +103,6 @@ def main():
                 if not os.path.exists(image_path):
                     continue
                 try:
-                    # Image.open(filename).verify()
                     with open(image_path, "rb") as img_f:
                         img_f.seek(-2, 2)
                         if not img_f.read() == b"\xff\xd9":
@@ -107,12 +111,11 @@ def main():
                     continue
                 f.write(f"{image_path},{product_id}\n")
                 count += 1
+            pbar.close()
             num_img = ImageSet.count_documents({"brand_id": brand_id})  # , 'type':1
             print(f"save num: {count}, origin num: {num_img}")
 
     TrainValSet = AIScale["TrainValSet"]  # ; TrainValSet.count_documents({'brand_id':brand_id})
-    # save_root = "/home/work/pytorch-cls-project/dataset/zero_dataset"
-    save_root = "dataset/removeredundancy"
     trainval_files = os.path.join(save_root, "trainval.txt")
     save_files(TrainValSet, trainval_files, data_dir, brand_id, product_id_map)
     ValSet = AIScale["ValSet"]
@@ -122,18 +125,16 @@ def main():
 
     def choose_trainset(src_files, check_files, obj_files):
         with open(check_files, "r") as f:
-            check_lines = [line.strip() for line in f.readlines()]
+            check_lines = np.array([line.strip() for line in f.readlines()])
         with open(src_files, "r") as f:
-            src_lines = [line.strip() for line in f.readlines()]
+            src_lines = np.array([line.strip() for line in f.readlines()])
+
+        masks = np.isin(src_lines, check_lines)
+        save_lines = src_lines[~masks]
         with open(obj_files, "w") as f:
-            for lines in tqdm.tqdm(src_lines):
-                if lines in check_lines:
-                    continue
+            for lines in tqdm.tqdm(save_lines):
                 f.write(f"{lines}\n")
-        with open(obj_files, "r") as f:
-            count = len(f.readlines())
-        num_img = len(src_lines) - len(check_lines)
-        print(f"save num: {count}, origin num: {num_img}")
+        print(f"save {len(src_lines)} imgs in {obj_files}")
 
     choose_trainset(trainval_files, val_files, train_files)
 

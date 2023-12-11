@@ -16,25 +16,24 @@
 ```bash
 <pytorch-toolkit-dev> ~$ # nohup train 4281 cls with 1k pretrain model; resize-256,crop-224,rand aa, re-0.2;
         OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 nohup python -m torch.distributed.launch \
-        --nproc_per_node=2 --master_port=40401 tools/train.py --dataset txt_data --data-dir dataset/zero_dataset \
-        --model mobilenetv3_redution_large_100 -b 256 --epochs 60 --decay-epochs 2.4 --sched cosine --decay-rate .973 \
-        --opt rmsproptf --opt-eps .001 -j 4 --warmup-lr 1e-5 --warmup-epochs 5 --weight-decay 1e-5 --model-ema \
-        --model-ema-decay 0.9999 --aa rand-m9-mstd0.5 --scale 0.4 1. --remode pixel --reprob 0.2 --amp --lr-base .001875 \
-        --lr-noise 0.07 0.15 --pretrained --num-classes 4281 &
+        --nproc_per_node=2 --master_port=40401 tools/train.py --config cfgs/blacklist/regnety_redution_040.ra3_in1k.yaml \
+        --options pretrained=True num-classes=4281 log-wandb=True
 <pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --model mobilenetv3_redution_large_100.miil_in21k_ft_in1k
-<pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --pass-path dataset/zero_dataset/pass_cats2.txt --num-classes 4091
+<pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --config cfgs/removeredundancy/regnety_redution_040.ra3_in1k.yaml
 <pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --cats-path dataset/zero_dataset/save_cats2.txt
-<pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --model-kwargs reduction_dim=64
+<pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --options model-kwargs="reduction_dim=64"
 ```
 
 - **Validate Dataset**
 
 ```bash
 <pytorch-toolkit-dev> ~$ # validate
-        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=7 python tools/validate.py --dataset txt_data \
-        --data-dir dataset/zero_dataset --model mobilenetv3_redution_large_100 -b 256 -j 2 --img-size 224 \
-        --num-classes 4281 --checkpoint output/train/20231019-183009-mobilenetv3_redution_large_100-224/model_best.pth.tar \
-        --crop-pct .875
+        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/validate.py \
+        --config cfgs/removeredundancy/regnety_redution_040.ra3_in1k.yaml --options num_gpu=2 \
+        checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar \
+        retry=True device=cuda use_ema=True num_classes=629 reparam=False use_train_size=False test_pool=False \
+        aot_autograd=False split=validation infer_mode=val tf_preprocessing=False valid_labels='' real_labels='' \
+        results_file='' results_format=csv
 ```
 
 - **Feature Extracte & Eval**

@@ -6,7 +6,6 @@
 # filenaem: validate.py
 # function: validate custom valset / trainset.
 ######################################################
-import argparse
 import csv
 import glob
 import json
@@ -20,7 +19,6 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.parallel
-import yaml
 
 from timm.data import create_loader, resolve_data_config, RealLabelsImagenet
 from timm.layers import apply_test_time_pool, set_fast_norm
@@ -33,13 +31,12 @@ from timm.utils import (
     set_jit_fuser,
     decay_batch_step,
     check_batch_size_retry,
-    ParseKwargs,
     reparameterize_model,
 )
 
 from local_lib.models import create_custom_model
 from local_lib.data import create_custom_dataset
-from local_lib.utils import ClassAccuracyMap
+from local_lib.utils import ClassAccuracyMap, parse_args
 
 try:
     from apex import amp
@@ -65,315 +62,6 @@ except ImportError as e:
 has_compile = hasattr(torch, "compile")
 
 _logger = logging.getLogger("validate")
-
-
-parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
-parser.add_argument(
-    "-c",
-    "--config",
-    default="",
-    type=str,
-    metavar="FILE",
-    help="YAML config file specifying default arguments",
-)
-parser.add_argument(
-    "data",
-    nargs="?",
-    metavar="DIR",
-    const=None,
-    help="path to dataset (*deprecated*, use --data-dir)",
-)
-parser.add_argument("--data-dir", metavar="DIR", help="path to dataset (root dir)")
-parser.add_argument(
-    "--dataset",
-    metavar="NAME",
-    default="",
-    help='dataset type + name ("<type>/<name>") (default: ImageFolder or ImageTar if empty)',
-)
-parser.add_argument(
-    "--split",
-    metavar="NAME",
-    default="validation",
-    help="dataset split (default: validation)",
-)
-parser.add_argument(
-    "--dataset-download",
-    action="store_true",
-    default=False,
-    help="Allow download of dataset for torch/ and tfds/ datasets that support it.",
-)
-parser.add_argument(
-    "--model",
-    "-m",
-    metavar="NAME",
-    default="dpn92",
-    help="model architecture (default: dpn92)",
-)
-parser.add_argument(
-    "-j",
-    "--workers",
-    default=4,
-    type=int,
-    metavar="N",
-    help="number of data loading workers (default: 4)",
-)
-parser.add_argument("-b", "--batch-size", default=256, type=int, metavar="N", help="mini-batch size (default: 256)")
-parser.add_argument(
-    "--img-size",
-    default=None,
-    type=int,
-    metavar="N",
-    help="Input image dimension, uses model default if empty",
-)
-parser.add_argument(
-    "--in-chans",
-    type=int,
-    default=None,
-    metavar="N",
-    help="Image input channels (default: None => 3)",
-)
-parser.add_argument(
-    "--input-size",
-    default=None,
-    nargs=3,
-    type=int,
-    metavar="N N N",
-    help="Input all image dimensions (d h w, e.g. --input-size 3 224 224), uses model default if empty",
-)
-parser.add_argument(
-    "--use-train-size",
-    action="store_true",
-    default=False,
-    help="force use of train input size, even when test size is specified in pretrained cfg",
-)
-parser.add_argument("--crop-pct", default=None, type=float, metavar="N", help="Input image center crop pct")
-parser.add_argument(
-    "--crop-mode",
-    default=None,
-    type=str,
-    metavar="N",
-    help="Input image crop mode (squash, border, center). Model default if None.",
-)
-parser.add_argument(
-    "--mean",
-    type=float,
-    nargs="+",
-    default=None,
-    metavar="MEAN",
-    help="Override mean pixel value of dataset",
-)
-parser.add_argument(
-    "--std",
-    type=float,
-    nargs="+",
-    default=None,
-    metavar="STD",
-    help="Override std deviation of of dataset",
-)
-parser.add_argument(
-    "--interpolation",
-    default="",
-    type=str,
-    metavar="NAME",
-    help="Image resize interpolation type (overrides model)",
-)
-parser.add_argument("--num-classes", type=int, default=None, help="Number classes in dataset")
-parser.add_argument("--num-choose", type=int, default=None, help="Number choose in dataset")
-parser.add_argument(
-    "--class-map",
-    default="",
-    type=str,
-    metavar="FILENAME",
-    help='path to class to idx mapping file (default: "")',
-)
-parser.add_argument(
-    "--gp",
-    default=None,
-    type=str,
-    metavar="POOL",
-    help="Global pool type, one of (fast, avg, max, avgmax, avgmaxc). Model default if None.",
-)
-parser.add_argument(
-    "--log-freq",
-    default=10,
-    type=int,
-    metavar="N",
-    help="batch logging frequency (default: 10)",
-)
-parser.add_argument(
-    "--checkpoint",
-    default="",
-    type=str,
-    metavar="PATH",
-    help="path to latest checkpoint (default: none)",
-)
-parser.add_argument("--pretrained", dest="pretrained", action="store_true", help="use pre-trained model")
-parser.add_argument("--num-gpu", type=int, default=1, help="Number of GPUS to use")
-parser.add_argument("--test-pool", dest="test_pool", action="store_true", help="enable test time pool")
-parser.add_argument(
-    "--infer-mode",
-    default="val",
-    type=str,
-    metavar="NAME",
-    help="the dirs to inference.",
-)
-parser.add_argument(
-    "--no-prefetcher",
-    action="store_true",
-    default=False,
-    help="disable fast prefetcher",
-)
-parser.add_argument(
-    "--pin-mem",
-    action="store_true",
-    default=False,
-    help="Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.",
-)
-parser.add_argument(
-    "--cats-path",
-    default="",
-    type=str,
-    metavar="PATH",
-    help="path of dataset categories (default: none, current dir)",
-)
-parser.add_argument(
-    "--pass-path",
-    default="dataset/zero_dataset/pass_cats.txt",
-    type=str,
-    metavar="PATH",
-    help="path of pass categories (default: none, current dir)",
-)
-parser.add_argument(
-    "--compute-by-cat",
-    action="store_true",
-    default=False,
-    help="use compute accuracy by cats",
-)
-parser.add_argument(
-    "--channels-last",
-    action="store_true",
-    default=False,
-    help="Use channels_last memory layout",
-)
-parser.add_argument("--device", default="cuda", type=str, help="Device (accelerator) to use.")
-parser.add_argument(
-    "--amp",
-    action="store_true",
-    default=False,
-    help="use NVIDIA Apex AMP or Native AMP for mixed precision training",
-)
-parser.add_argument(
-    "--amp-dtype",
-    default="float16",
-    type=str,
-    help="lower precision AMP dtype (default: float16)",
-)
-parser.add_argument(
-    "--amp-impl",
-    default="native",
-    type=str,
-    help='AMP impl to use, "native" or "apex" (default: native)',
-)
-parser.add_argument(
-    "--tf-preprocessing",
-    action="store_true",
-    default=False,
-    help="Use Tensorflow preprocessing pipeline (require CPU TF installed",
-)
-parser.add_argument(
-    "--use-ema",
-    dest="use_ema",
-    action="store_true",
-    help="use ema version of weights if present",
-)
-parser.add_argument(
-    "--fuser",
-    default="",
-    type=str,
-    help="Select jit fuser. One of ('', 'te', 'old', 'nvfuser')",
-)
-parser.add_argument(
-    "--fast-norm",
-    default=False,
-    action="store_true",
-    help="enable experimental fast-norm",
-)
-parser.add_argument("--reparam", default=False, action="store_true", help="Reparameterize model")
-parser.add_argument("--model-kwargs", nargs="*", default={}, action=ParseKwargs)
-
-
-scripting_group = parser.add_mutually_exclusive_group()
-scripting_group.add_argument(
-    "--torchscript",
-    default=False,
-    action="store_true",
-    help="torch.jit.script the full model",
-)
-scripting_group.add_argument(
-    "--torchcompile",
-    nargs="?",
-    type=str,
-    default=None,
-    const="inductor",
-    help="Enable compilation w/ specified backend (default: inductor).",
-)
-scripting_group.add_argument(
-    "--aot-autograd",
-    default=False,
-    action="store_true",
-    help="Enable AOT Autograd support.",
-)
-
-parser.add_argument(
-    "--results-file",
-    default="",
-    type=str,
-    metavar="FILENAME",
-    help="Output csv file for validation results (summary)",
-)
-parser.add_argument(
-    "--results-format",
-    default="csv",
-    type=str,
-    help="Format for results file one of (csv, json) (default: csv).",
-)
-parser.add_argument(
-    "--real-labels",
-    default="",
-    type=str,
-    metavar="FILENAME",
-    help="Real labels JSON file for imagenet evaluation",
-)
-parser.add_argument(
-    "--valid-labels",
-    default="",
-    type=str,
-    metavar="FILENAME",
-    help="Valid label indices txt file for validation of partial label space",
-)
-parser.add_argument(
-    "--retry",
-    default=False,
-    action="store_true",
-    help="Enable batch size decay & retry for single model validation",
-)
-
-
-def _parse_args():
-    # Do we have a config file to parse?
-    args_config, remaining = parser.parse_known_args()
-    if args_config.config:
-        with open(args_config.config, "r") as f:
-            cfg = yaml.safe_load(f)
-            parser.set_defaults(**cfg)
-
-    # The main arg parser parses the rest of the args, the usual
-    # defaults will have been overridden if config file specified.
-    args = parser.parse_args(remaining)
-
-    # Cache the args as a text string to save them in the output dir later
-    args_text = yaml.safe_dump(args.__dict__, default_flow_style=False)
-    return args, args_text
 
 
 def validate(args):
@@ -633,8 +321,7 @@ _NON_IN1K_FILTERS = ["*_in21k", "*_in22k", "*in12k", "*_dino", "*fcmae", "*seer"
 
 def main():
     setup_default_logging()
-    args, _ = _parse_args()
-    # args = parser.parse_args()
+    args, _ = parse_args()
     model_cfgs = []
     model_names = []
     if os.path.isdir(args.checkpoint):

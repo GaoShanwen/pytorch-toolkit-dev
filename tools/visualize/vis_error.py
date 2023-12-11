@@ -50,9 +50,7 @@ def load_csv_file(label_file):
                 id_record = line.strip().replace('"', "").split(",")
                 product_id_map[id_record[0]] = id_record[1]
             except:
-                import pdb
-
-                pdb.set_trace()
+                print(f"line={line} is error!")
     return product_id_map
 
 

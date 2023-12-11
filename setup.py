@@ -6,6 +6,7 @@ requirements = [
     "tqdm",
     "timm",
     "pandas",
+    "argparse",
     "requests",
     "tensorboard",
     "setuptools",
@@ -20,6 +21,6 @@ setup(
     url="https://github.com/GaoShanwen/pytorch-toolkit-dev/tree/timm-dev",
     description="Build a multi-task training platform based on Pytorch",
     license="Apache-2.0",
-    packages=find_packages(exclude=("cfgs", "dataset", "docs", "results")),
+    packages=find_packages(exclude=("cfgs", "dataset", "docs", "local_lib")),
     install_requires=requirements,
 )
