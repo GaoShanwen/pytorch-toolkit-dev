@@ -29,11 +29,8 @@
 ```bash
 <pytorch-toolkit-dev> ~$ # validate
         OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/validate.py \
-        --config cfgs/removeredundancy/regnety_redution_040.ra3_in1k.yaml --options num_gpu=2 \
-        checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar \
-        retry=True device=cuda use_ema=True num_classes=629 reparam=False use_train_size=False test_pool=False \
-        aot_autograd=False split=validation infer_mode=val tf_preprocessing=False valid_labels='' real_labels='' \
-        results_file='' results_format=csv
+        --config cfgs/base-regnety_redution_040.ra3_in1k.yaml --options num_gpu=2 num_classes=629 infer_mode=val num_classes=629 \
+        checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar
 ```
 
 - **Feature Extracte & Eval**
