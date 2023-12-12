@@ -57,6 +57,7 @@ except ImportError:
     has_wandb = False
 
 has_compile = hasattr(torch, "compile")
+_logger = logging.getLogger("train")
 
 
 def main():
@@ -70,7 +71,6 @@ def main():
     args.prefetcher = not args.no_prefetcher
     args.grad_accum_steps = max(1, args.grad_accum_steps)
     device = utils.init_distributed_device(args)
-    _logger = logging.getLogger("train")
     if args.distributed:
         _logger.info(
             "Training in distributed mode with multiple processes, 1 device per process."

@@ -47,32 +47,21 @@ For detailed installation guides, please refer to [INSTALL.md](https://github.co
 
 ### Command Guides
 
-<details open>
-
-<summary>Train & Validate with Training Curve</summary>
++ Train & Validate with Training Curve
 
 Refer to [README-Train/Val Models](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/tools/README.md) for details.
 
-</details>
-
-<details open>
-
-<summary>Convert Pth Model To ONNX/RKNN</summary>
++ Convert Pth Model To ONNX/RKNN
 
 Refer to [README-Convert Models](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/tools/README.md) for details.
 
-</details>
-
-<details open>
-
-<summary>Normalize Codes Before Commit</summary>
++ Normalize Codes Before Commit
 
 ```bash
 <pytorch-toolkit-dev> ~$ # run this command after install black
 <pytorch-toolkit-dev> ~$ black --line-length=120 ./
 ```
 
-</details>
 
 ## License
 

@@ -134,7 +134,7 @@ def main():
         with open(obj_files, "w") as f:
             for lines in tqdm.tqdm(save_lines):
                 f.write(f"{lines}\n")
-        print(f"save {len(src_lines)} imgs in {obj_files}")
+        print(f"save {len(save_lines)} imgs in {obj_files}")
 
     choose_trainset(trainval_files, val_files, train_files)
 

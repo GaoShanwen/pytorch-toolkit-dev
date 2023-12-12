@@ -88,7 +88,7 @@ no_ddp_bb: false
 no_prefetcher: false
 no_resume_opt: false
 num_choose: null
-num_classes: 6
+num_classes: 10
 opt: rmsproptf
 opt_betas: null
 opt_eps: 0.001

@@ -45,8 +45,10 @@ def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None,
     if kwargs.get("num_choose", None):
         num_choose = kwargs["num_choose"]
         choose_cats = save_cats[num_choose[0] : num_choose[1]]
+    # with open(anno_path, "r") as f:
+    #     lines = [line.strip().split(", ") for line in f.readlines() if line.startswith("/data/AI-scales/images")]
     with open(anno_path, "r") as f:
-        lines = [line.strip().split(", ") for line in f.readlines() if line.startswith("/data/AI-scales/images")]
+        lines = [line.strip().split(", ") for line in f.readlines()]
     filenames, labels = zip(
         *[(filename, label) for filename, label in lines if choose_cats is None or label in choose_cats]
     )
