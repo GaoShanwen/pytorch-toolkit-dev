@@ -150,3 +150,5 @@ valid_labels: ''
 real_labels: ''
 results_file: ''
 results_format: csv
+compute_by_cat: true
+log_freq: 10

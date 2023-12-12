@@ -66,7 +66,7 @@ _logger = logging.getLogger("validate")
 
 def validate(args):
     # might as well try to validate something
-    args.pretrained = args.pretrained or not args.checkpoint
+    args.pretrained = args.pretrained and not args.checkpoint
     args.prefetcher = not args.no_prefetcher
 
     if torch.cuda.is_available():

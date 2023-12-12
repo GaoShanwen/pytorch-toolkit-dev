@@ -62,7 +62,7 @@ Run this comand, make sure your folder format is follow:
 <pytorch-toolkit-dev> ~$ # validate
         OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/validate.py \
         --config cfgs/base-regnety_redution_040.ra3_in1k.yaml --options num_gpu=2 \
-        checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar num_classes=629 infer_mode=val
+        checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar infer_mode=val
 ```
 
 - **Feature Extracte & Eval**

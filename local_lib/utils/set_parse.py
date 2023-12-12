@@ -22,7 +22,7 @@ def merge_from_dict(args, merge_key="options"):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train a model")
+    parser = argparse.ArgumentParser(description="Train/Validate a model")
     parser.add_argument("--config", type=str, help="train config file path")
     parser.add_argument("--resume", type=str, default="", help="resume from checkpoint path directory.")
     parser.add_argument("--amp", action="store_true", help="enable automatic-mixed-precision training")
