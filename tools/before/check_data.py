@@ -11,7 +11,7 @@ import collections
 
 def load_data(anno_path):
     with open(anno_path, "r") as f:
-        lines = [line.strip().split(", ") for line in f.readlines()]  # if line.startswith("/data/AI-scales/images")
+        lines = [line.strip().split(",") for line in f.readlines()]  # if line.startswith("/data/AI-scales/images")
     filenames, labels = zip(*(lines))
     return filenames, labels
 
@@ -70,26 +70,27 @@ def static_data(train_data, val_data, cat_map):
 
 
 if __name__ == "__main__":
-    # load_train_path = "./dataset/blacklist2/train.txt"
-    # img_root = "dataset/blacklist2"
-    # with open(load_train_path, "w") as write_f:
-    #     for folder in sorted(os.listdir(img_root)):
-    #         if folder.endswith(".txt"):
-    #             continue
-    #         folder_dir = os.path.join(img_root, folder)
-    #         for img_name in os.listdir(folder_dir):
-    #             img_path = os.path.join(folder_dir, img_name)
-    #             write_f.writelines(f"{img_path}, {folder}\n")
-    # train_files, train_labels = load_data(load_train_path)
-
-    # load_train_path = "./dataset/zero_dataset/train.txt"
-    load_train_path = "./dataset/removeredundancy/train.txt"
+    load_train_path = "./dataset/blacklist2/train.txt"
+    img_root = "dataset/blacklist2"
+    with open(load_train_path, "w") as write_f:
+        for folder in sorted(os.listdir(img_root)):
+            if folder.endswith(".txt"):
+                continue
+            folder_dir = os.path.join(img_root, folder)
+            for img_name in os.listdir(folder_dir):
+                img_path = os.path.join(folder_dir, img_name)
+                write_f.writelines(f"{img_path}, {folder}\n")
     train_files, train_labels = load_data(load_train_path)
-    # check_data(train_files)
-    # load_val_path = "./dataset/zero_dataset/val.txt"
-    load_val_path = "./dataset/removeredundancy/val.txt"
-    val_files, val_labels = load_data(load_val_path)
-    # check_data(val_files)
-    label_file = "./dataset/zero_dataset/label_names.csv"
-    label_map = load_csv_file(label_file)
-    static_data(train_labels, val_labels, label_map)
+
+    # # load_train_path = "./dataset/zero_dataset/train.txt"
+    # root_dir = "dataset/zero_600w"
+    # load_train_path = os.path.join(root_dir, "train.txt")
+    # train_files, train_labels = load_data(load_train_path)
+    # # check_data(train_files)
+    # # load_val_path = "./dataset/zero_dataset/val.txt"
+    # load_val_path = os.path.join(root_dir, "val.txt")
+    # val_files, val_labels = load_data(load_val_path)
+    # # check_data(val_files)
+    # label_file = "./dataset/zero_dataset/label_names.csv"
+    # label_map = load_csv_file(label_file)
+    # static_data(train_labels, val_labels, label_map)

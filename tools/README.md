@@ -59,10 +59,20 @@ Run this comand, make sure your folder format is follow:
 - **Validate Dataset**
 
 ```bash
-<pytorch-toolkit-dev> ~$ # validate
+<pytorch-toolkit-dev> ~$ # run validate
         OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/validate.py \
         --config cfgs/base-regnety_redution_040.ra3_in1k.yaml --options num_gpu=2 \
         checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar infer_mode=val
+<pytorch-toolkit-dev> ~$ # run recognize
+        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/infer_searching.py \
+        --config cfgs/base-regnety_redution_040.ra3_in1k-infer.yaml --options num_gpu=2 \
+        checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar \
+        results_dir=output/feats/regnety_040 save_root=output/temp input_mode=file data_path=dataset/function_test/test.txt topk=30
+<pytorch-toolkit-dev> ~$ # run search by gallery
+        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/infer_recognising.py \
+        --config cfgs/blacklist/regnety_redution_040.ra3_in1k.yaml --options data_dir=dataset/blacklist2 batch_size=512 \
+        checkpoint=output/train/blacklist2/model_best.pth.tar num_gpu=2 infer_mode=val results_dir=output/vis/blacklist \
+        input_mode=file data_path=dataset/blacklist2/val.txt cats_path=dataset/blacklist/10_cats.txt need_cats=dataset/blacklist/need_cats.txt
 ```
 
 - **Feature Extracte & Eval**

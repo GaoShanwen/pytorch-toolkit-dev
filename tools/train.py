@@ -288,7 +288,7 @@ def main():
         cats_path=args.cats_path,
         pass_path=args.pass_path,
     )
-    _logger.info(f"Loaded trainset image numer: {len(dataset_train)}.")
+    _logger.info(f"Loaded trainset: cats={len(dataset_train.reader.class_to_idx)}, imgs={len(dataset_train)}")
 
     dataset_eval = create_custom_dataset(
         args.dataset,
@@ -303,7 +303,7 @@ def main():
         cats_path=args.cats_path,
         pass_path=args.pass_path,
     )
-    _logger.info(f"Loaded valset image numer: {len(dataset_eval)}.")
+    _logger.info(f"Loaded valset: cats={len(dataset_eval.reader.class_to_idx)}, imgs={len(dataset_eval)}")
 
     # setup mixup / cutmix
     collate_fn = None

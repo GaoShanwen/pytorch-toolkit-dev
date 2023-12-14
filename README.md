@@ -20,8 +20,9 @@ timm-dev branch for classfication or re-identification tasks.
 ### Supported Functions
 
 - [x] Classfication or re-identification tasks.
-- [x] Visualize training curve(wandb/tensorboard).
-- [ ] Remove similarity or noise and knn, optuna for reid.
+- [x] Visualize training curve (wandb / tensorboard).
+- [ ] Remove similarity or noise data, optuna-weighted k-nearest neighbor for reid.
+- [ ] Visualize precision-recall/receiver-operating-characteristic curve.
 - [x] Visualize models' heatmaps.
 - [x] Convert pth model to onnx/rknn.
 - [x] Normalize codes before commit.
@@ -69,4 +70,4 @@ This project is released under the [Apache 2.0 license](https://github.com/GaoSh
 
 ## Contribute
 
-Feel free to create a pull request if you find any bugs or want to contribute (e.g., more datasets and more network structures).
+Feel free to create a pull request if you want to contribute (e.g. networks or tricks).

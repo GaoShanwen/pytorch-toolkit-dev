@@ -75,7 +75,7 @@ def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size=
     sum_img[0:new_height, 0:480, :] = img
     start_h, start_w = 0, 0
     for i, (pred_file, pred_label) in enumerate(zip(pred_files, pred_labels)):
-        img = cv2.imread(pred_file)
+        img = cv2.imread(pred_file) if os.path.exists(pred_file) else np.ones((640, 480), dtype=np.uint8) * 255
         new_height = min(640, int(H * (480 / W)))  # 保持原来的长宽比
         img = cv2.resize(img, (480, new_height))  # 调整大小
         g_name = label_map[pred_label] if label_map is not None else str(pred_label)

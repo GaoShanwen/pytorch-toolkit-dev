@@ -103,7 +103,7 @@ def run_infer(model, args):
             if args.input_mode == "dir"
             else [args.data_path]
         )
-    _logger.info(f"load {len(query_files)} imgs")
+    _logger.info(f"Loaded {len(query_files)} imgs")
     if args.cats_path and args.need_cats:
         with open(args.cats_path, "r") as f:
             class_list = [line.strip("\n") for line in f.readlines()]

@@ -77,8 +77,8 @@ def save_keeps_file(labels, files, class_list, obj_files):
 def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT, L2_flag=False):
     dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
-    if param.startswith("IVF"):
-        faiss.ParameterSpace().set_index_parameters(index, "nprobe=3")
+    # if param.startswith("IVF"):
+    #     faiss.ParameterSpace().set_index_parameters(index, "nprobe=3")
     if use_gpu:
         index = faiss.index_cpu_to_gpus_list(index, gpus=[0, 1])  # gpus用于指定使用的gpu号
     index.train(data_embedding)

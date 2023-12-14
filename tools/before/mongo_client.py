@@ -24,7 +24,7 @@ def connect_mongodb():
     user = parse.quote_plus("RXTech")
     pwd = parse.quote_plus("ZMKM@Retail01")
     uri = "mongodb://{0}:{1}@{2}:{3}/".format(user, pwd, server, port)
-    mongo_client = pymongo.MongoClient(uri)
+    mongo_client = pymongo.MongoClient(uri, connect=False)
 
     return mongo_client
 
