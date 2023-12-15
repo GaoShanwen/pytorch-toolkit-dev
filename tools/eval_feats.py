@@ -9,6 +9,10 @@ import argparse
 import faiss
 import numpy as np
 
+import sys
+
+sys.path.append(".")
+
 from tools.post.write_mysql import save_keeps2mysql
 from tools.post import feat_tools
 from tools.visualize.vis_error import save_imgs, load_csv_file

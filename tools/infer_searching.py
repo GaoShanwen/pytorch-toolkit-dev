@@ -114,7 +114,9 @@ def run_infer(model, args):
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
             query_files, query_labels = zip(*([line.strip("\n").split(", ") for line in f.readlines()]))
-        query_labels = [class_list.index(q_label) if q_label in class_list else int(q_label) for q_label in query_labels]
+        query_labels = [
+            class_list.index(q_label) if q_label in class_list else int(q_label) for q_label in query_labels
+        ]
         query_labels = np.array(query_labels, dtype=int)
     else:
         query_files = (
@@ -123,7 +125,7 @@ def run_infer(model, args):
             else [args.data_path]
         )
         query_labels = None
-    
+
     # query_files = np.array(query_files)
     dataset = create_custom_dataset(root=query_files, name="txt_data", split="infer")
     input_size = [3, args.img_size, args.img_size]
@@ -145,7 +147,7 @@ def run_infer(model, args):
         for batch_idx, (input, _) in enumerate(loader):
             # import pdb; pdb.set_trace()
             # input = data_trans(Image.open(input).convert("RGB")).unsqueeze(0)
-            if device=="cuda":
+            if device == "cuda":
                 input = input.to(device)
 
             with amp_autocast():
@@ -154,7 +156,7 @@ def run_infer(model, args):
             pbar.update(1)
     pbar.close()
 
-    args.param = f'IVF629,Flat'
+    args.param = f"IVF629,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
     # args.param, args.measure = "Flat", faiss.METRIC_INNER_PRODUCT
     # 加载npz文件
@@ -163,7 +165,7 @@ def run_infer(model, args):
     query_feats = load_feats(args.results_dir)
     faiss.normalize_L2(query_feats)
 
-    searched_data = np.load('output/feats/searched_res-148c.npy')
+    searched_data = np.load("output/feats/searched_res-148c.npy")
     choose_idx = np.unique(searched_data[:, 1:].reshape(-1), return_index=True)[0]
     # import pdb; pdb.set_trace()
     gallery_feature = gallery_feature[choose_idx]
