@@ -1,13 +1,5 @@
 ## 安装环境
 
-如果需要转换模型，需要先安装以下内容：
-
-+ [make=4.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装-make-42)
-+ [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#下载并解压gcc820)
-+ [glib=2.29](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装glibc-229)
-+ python=3.8
-+ [rknn-tools2=1.5 py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#rknn安装省去)
-
 ### Install timm
 
 下面内容安装后，需要安装pytorch，timm等python库用于训练和推理任务。
@@ -19,6 +11,13 @@
 <pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu102
 <pytorch-toolkit-dev> ~$ python setup.py install
 ```
+
+如果需要转换模型，则需另外安装以下内容：
+
++ [make=4.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装-make-42)
++ [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#下载并解压gcc820)
++ [glib=2.29](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装glibc-229)
++ [rknn-tools2=1.5 py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#rknn安装)
 
 ### 安装gcc和make依赖，先安装低版本用于编译环境
 
@@ -84,23 +83,7 @@
     LD_PRELOAD=/lib64/libc-2.28.so ln -s /lib64/libc-2.28.so /lib64/libc.so.6
 ```
 
-### zsh安装
-
-```bash
-    yum install -y zsh
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    # 改～/.zshrc文件(主题、conda)
-```
-
-### git sshkey获取
-
-```bash
-    ssh-keygen -t rsa -C '<your-email>' -f ~/.ssh/id_rsa
-    # 选overwrite
-    cat ~/.ssh/id_rsa.pub
-```
-
-### rknn安装，省去
+### rknn安装
 
 ```bash
     git clone https://github.com/rockchip-linux/rknn-toolkit2.git

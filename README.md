@@ -11,7 +11,6 @@ timm-dev branch for classfication or re-identification tasks.
 [![](https://img.shields.io/badge/Timm-0.9.7-blue.svg)](https://github.com/huggingface/pytorch-image-models/tree/main)
 [![](https://img.shields.io/badge/ONNX-1.14.0-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)](https://onnx.ai)
 [![](https://img.shields.io/badge/PyMySQL-1.1.0-FFBE00?style=flat-square&logo=mysql&logoColor=FFFFFF)](https://zetcode.com/python/pymysql/)
-[![](https://img.shields.io/badge/MongoDB-4.6.0-47A248?style=flat-square&logo=mongodb&logoColor=FFFFFF)](https://www.mongodb.com/zh-cn)
 
 <div align="center">
     <img src="https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/demo4reid.jpg" width="70%" alt="" />
