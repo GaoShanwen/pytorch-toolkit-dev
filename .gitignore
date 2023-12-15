@@ -36,6 +36,14 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Input
+dataset/
+# unused file
+tools/before
+debug/
+# output
+output
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
