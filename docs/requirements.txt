@@ -39,9 +39,9 @@ onnxoptimizer==0.2.7
 # Tools --------------------------------------
 faiss-gpu==1.7.2
 grad-cam==1.4.8
-pymongo==4.6.0
-pymysql==1.1.0
 black==23.11.0
+pymysql==1.1.0
+# pymongo==4.6.0
 
 # Extras --------------------------------------
 psutil  # system utilization

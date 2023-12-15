@@ -28,9 +28,11 @@ MANIFEST
 
 # input files
 dataset/
+# nouse codes
+tools/before/
+debug/
 # output files
 wandb/
-debug/
 output
 *.onnx
 *.csv
