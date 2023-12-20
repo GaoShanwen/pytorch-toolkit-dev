@@ -24,13 +24,6 @@ opencv-python-headless==4.8.1.78
 pandas==2.0.3
 # seaborn>=0.11.0
 
-# Logging -------------------------------------
-tensorboard==2.14.0
-wandb==0.12.18
-# dvclive>=2.12.0
-# clearml
-# comet
-
 # Export --------------------------------------
 onnx==1.14.0
 onnxruntime==1.14.0
@@ -39,9 +32,18 @@ onnxoptimizer==0.2.7
 # Tools --------------------------------------
 faiss-gpu==1.7.2
 grad-cam==1.4.8
+optuna==3.5.0
 black==23.11.0
 pymysql==1.1.0
 # pymongo==4.6.0
+
+# Logging -------------------------------------
+tensorboard==2.14.0
+wandb==0.12.18
+optuna-dashboard==0.14.0
+# dvclive>=2.12.0
+# clearml
+# comet
 
 # Extras --------------------------------------
 psutil  # system utilization

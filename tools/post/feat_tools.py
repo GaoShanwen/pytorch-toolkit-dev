@@ -22,6 +22,13 @@ def load_data(file_path):
 
 
 def run_compute(p_label, q_label, do_output=True, k=5):
+    blacklist = np.array([
+        110110110001, 110110110002, 110110110003, 110110110004, 110110110005, 
+        110110110006, 110110110007, 110110110008, 110110110009, 
+    ])
+    masks = np.any(np.isin(p_label, blacklist), axis=1)
+    p_label, q_label = p_label[~masks], q_label[~masks]
+
     tp1_num = np.where(p_label[:, 0] == q_label)[0].shape[0]
     tp5_num = np.unique(np.where(p_label[:, :k] == q_label[:, np.newaxis])[0]).shape[0]
     if do_output:
@@ -30,16 +37,16 @@ def run_compute(p_label, q_label, do_output=True, k=5):
     print(f"top5-knn(k={k}): {tp5_num}/{q_label.shape[0]}|{tp5_num/q_label.shape[0]}")
 
 
-def compute_acc_by_cat(p_label, q_label, class_list, label_map=None):
+def compute_acc_by_cat(p_label, q_label, label_map=None):
     top1_num, top5_num = run_compute(p_label, q_label)
     acc_map = {
         "all_data": {
-            "cat_index": "",
             "top1_num": top1_num,
             "top1_acc": top1_num / q_label.shape[0],
             "top5_num": top5_num,
             "top5_acc": top5_num / q_label.shape[0],
             "data_num": q_label.shape[0],
+            "name": "",
         }
     }
     val_dict = dict(Counter(q_label))
@@ -48,7 +55,6 @@ def compute_acc_by_cat(p_label, q_label, class_list, label_map=None):
         top1_num = np.where(p_label[cat_index, 0] == q_label[cat_index])[1].shape[0]
         top5_num = np.unique(np.where(p_label[cat_index, :] == q_label[cat_index, np.newaxis])[1]).shape[0]
         cat_res = {
-            "cat_index": cat,
             "top1_num": top1_num,
             "top1_acc": top1_num / data_num,
             "top5_num": top5_num,
@@ -57,7 +63,7 @@ def compute_acc_by_cat(p_label, q_label, class_list, label_map=None):
         }
         if label_map is not None:
             cat_res.update({"name": label_map[cat]})
-        acc_map[class_list[cat]] = cat_res
+        acc_map[cat] = cat_res
     return acc_map
 
 
@@ -67,18 +73,17 @@ def print_acc_map(acc_map, csv_name):
     # print(df)
 
 
-def save_keeps_file(labels, files, class_list, obj_files):
+def save_keeps_file(labels, files, obj_files):
     with open(obj_files, "w") as f:
-        for label_index, filename in zip(labels, files):
-            label = class_list[label_index]
+        for label, filename in zip(labels, files):
             f.write(f"{filename}, {label}\n")
 
 
 def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT, L2_flag=False):
     dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
-    # if param.startswith("IVF"):
-    #     faiss.ParameterSpace().set_index_parameters(index, "nprobe=3")
+    if param.startswith("IVF"):
+        faiss.ParameterSpace().set_index_parameters(index, "nprobe=3")
     if use_gpu:
         index = faiss.index_cpu_to_gpus_list(index, gpus=[0, 1])  # gpus用于指定使用的gpu号
     index.train(data_embedding)
@@ -86,7 +91,7 @@ def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METR
     return index
 
 
-def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
+def intra_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
     cats = list(set(labels))
     stride = len(cats) // update_times if update_times else 1
     keeps = []
@@ -116,17 +121,79 @@ def choose_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_
     return np.array(keeps)
 
 
-def get_predict_label(initial_rank, gallery_label, k=5, use_knn=False, use_sgd=False):
+def inter_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
+    masks = []
+    split_times = 10
+    step = labels.shape[0] // split_times
+    index = create_index(matrix, use_gpu)
+    for i in tqdm.tqdm(range(split_times)):
+        search_feats = matrix[i * step: (i + 1) * step]
+        g_g_scores, g_g_indexs = index.search(search_feats, 2048)
+        for j in range(g_g_indexs.shape[0] - 1):
+            pos = i * step + j
+            if pos in masks:
+                continue
+            # 找到大于阈值的得分, 定位到位置
+            mask_index = np.where((g_g_scores[j, :] >= samilar_thresh) & (g_g_indexs[j, :] > pos))[0]
+            masks += g_g_indexs[j, mask_index].tolist()
+    return np.setdiff1d(np.arange(labels.shape[0]), np.array(masks))
+
+
+def softmax(x):  
+    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))  
+    return e_x / e_x.sum(axis=1, keepdims=True)  
+
+
+def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
+    """_summary_
+
+    Args:
+        scores (np.array): the scores topk(pictures-level)
+        plabels (_type_): the categories topk(pictures-level)
+        choose_pic (int, optional): input topk for pictures. Defaults to 30.
+        final_cat (int, optional): output topk for categories. Defaults to 5.
+
+    Returns:
+        index_res: the categories topk(categories-level)
+    """
+    weight = np.array([
+        10.201, 4.021, 2.44, 1.364, 0.667, 1.5, 
+        2.047, 0.079, 0.898, 0.298, -0.438, 0.3, 
+        -0.671, 1.163, 0.952, 0.371, -0.573, 0.504, 
+        -0.621, -0.175, 1.074, 0.98, -0.787, 0.313, 
+        0.296, -1.303, 0.564, -0.269, 0.042, 0.553
+    ])
+    bias = np.array([0.771, -0.327, 0.388, -0.122, -0.639])
+    input_x, index_cats = [], []
+    for score, plabel in zip(scores, plabels):
+        final_l = Counter(plabel.tolist()).most_common()[:final_cat]
+        final_l = [l for l, _ in final_l] + [np.nan] * (final_cat - len(final_l))
+        input = np.zeros((final_cat, choose_pic))
+        for i, (l, s) in enumerate(zip(plabel, score)):
+            if l not in final_l:
+                continue
+            input[final_l.index(l), i] = s
+        input_x.append(input)
+        index_cats.append(final_l)
+    _scores = np.dot(input_x, weight) + bias
+    final_scores = softmax(_scores.reshape(-1, 5))
+    index_cats = np.array(index_cats)
+    I = np.argsort(final_scores, axis=1)[:, ::-1]
+    return index_cats[np.arange(index_cats.shape[0])[:, None], I]
+
+
+def get_predict_label(scores, initial_rank, gallery_label, k=5, use_knn=False, weighted=False):
     if not use_knn:
         return gallery_label[initial_rank]
     res = []
-    if not use_sgd:
+    if not weighted:
         for initial in initial_rank:
             sorted_counter = Counter(gallery_label[initial].tolist()).most_common()
             res += [[counter[0] for counter in sorted_counter[:k]]]
         res = [sublist + [np.nan] * (k - len(sublist)) for sublist in res]
         return np.array(res)
-    raise "not support sgd yet!"
+    res = create_matrix(scores, gallery_label[initial_rank], choose_pic=30, final_cat=k)
+    return np.array(res)
 
 
 def choose_noise(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
@@ -194,6 +261,6 @@ def run_choose(matrix, labels, args):
     use_gpu = args.use_gpu
     _times = args.update_times
     remove_mode = args.remove_mode
-    assert remove_mode in ["noise", "similarity", "static"], f"{remove_mode} is not support yet!"
-    function_name = "choose_with_static" if remove_mode == "static" else f"choose_{remove_mode}"
-    return eval(function_name)(matrix, labels, threshold, use_gpu, _times)
+    assert remove_mode in ["choose_noise", "intra_similarity", "inter_similarity", "choose_with_static"], \
+        f"{remove_mode} is not support yet!"
+    return eval(remove_mode)(matrix, labels, threshold, use_gpu, _times)
