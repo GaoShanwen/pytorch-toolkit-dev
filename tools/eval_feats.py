@@ -169,7 +169,7 @@ if __name__ == "__main__":
         cat_idx = np.where(q_label[:, np.newaxis] == choose_cats)[0]
         q_feats, q_label, q_files = q_feats[cat_idx], q_label[cat_idx], q_files[cat_idx]
 
-    g_feats, g_label, g_files = add_blacklist(g_feats, g_label, g_files)
+    # g_feats, g_label, g_files = add_blacklist(g_feats, g_label, g_files)
     faiss.normalize_L2(g_feats)
     faiss.normalize_L2(q_feats)
     function_name = "run_test" if args.run_test else "main"

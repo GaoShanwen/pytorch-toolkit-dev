@@ -79,14 +79,11 @@ Run this comand, make sure your folder format is follow:
 
 ```bash
 <pytorch-toolkit-dev> ~$ # feat extracte
-        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=7 python tools/post/feat_extract.py --dataset txt_data --data-dir dataset/zero_dataset \
-        --model mobilenetv3_redution_large_100 -b 256 -j 2 --img-size 224 --results-dir output/feats/mobilenet_large_100 --num-classes 4281 \
-        --checkpoint output/train/20231019-183009-mobilenetv3_redution_large_100-224/model_best.pth.tar --crop-pct 1. --infer-mode train
-
-        CUDA_VISIBLE_DEVICES=5,6 python tools/post/feat_extract.py --dataset txt_data --data-dir dataset/removeredundancy --model regnety_redution_040.ra3_in1k \
-        -b 512 -j 4 --img-size 224 --cats-path dataset/removeredundancy/save_cats.txt --pass-path '' --num-classes 629 --num-choose 0 629 \
-        --checkpoint output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar --results-dir output/feats/regnety_040 \
-        --no-prefetcher --num-gpu 2 --infer-mode train
+        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/post/feat_extract.py \
+        --config cfgs/base-regnety_redution_040.ra3_in1k.yaml --options model_classes=629 data_classes=10 \
+        checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar \
+        cats_path=dataset/blacklist2/10_cats.txt batch_size=512 num_gpu=2 results_dir=output/feats/blacklist \
+        infer_mode=train data_dir=dataset/blacklist2
 <pytorch-toolkit-dev> ~$ # eval features
         python tools/eval_feats.py -g output/feats/mobilenet_large_100-train.npz -q output/feats/mobilenet_large_100-val.npz
 ```

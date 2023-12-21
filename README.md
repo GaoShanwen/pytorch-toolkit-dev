@@ -54,7 +54,7 @@ Refer to [README-Train/Val Models](https://github.com/GaoShanwen/pytorch-toolkit
 
 + Convert Pth Model To ONNX/RKNN
 
-Refer to [README-Convert Models](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/tools/post/README.md) for details.
+Refer to [README-Convert Models](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/tools/deploy/README.md) for details.
 
 + Normalize Codes Before Commit
 

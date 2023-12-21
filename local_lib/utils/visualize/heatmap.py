@@ -11,7 +11,7 @@ import cv2
 import os
 import torch.nn as nn
 import torchvision.transforms as transforms
-from timm.models import create_model, load_checkpoint
+from timm.models import load_checkpoint
 
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -34,11 +34,7 @@ from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from timm.utils import ParseKwargs
 
-import sys
-
-sys.path.append("./")
-
-import local_lib.models
+from local_lib.models import create_custom_model
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument("output", metavar="save_root", help="output picture root")
@@ -103,7 +99,7 @@ def visualize_CAM(model, model_name, img_path, save_root):
 if __name__ == "__main__":
     args = parser.parse_args()
     model_name = args.model
-    model = create_model(model_name, num_classes=args.num_classes, in_chans=3, global_pool=None, **args.model_kwargs)
+    model = create_custom_model(model_name, num_classes=args.num_classes, in_chans=3, global_pool=None, **args.model_kwargs)
     load_checkpoint(model, args.checkpoint, args.use_ema)
 
     # 加载一张测试图像

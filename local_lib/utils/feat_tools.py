@@ -6,35 +6,15 @@
 # function: the functions tools for feat extract or eval.
 ######################################################
 import tqdm
+import math
 import faiss
 import numpy as np
 import pandas as pd
 from collections import Counter
 
 
-def load_data(file_path):
-    with np.load(file_path) as data:
-        # 从npz文件中获取数组
-        feas = data["feats"].astype("float32")
-        labels = data["gts"]
-        fpaths = data["fpaths"]
-    return feas, labels, fpaths
-
-
 def run_compute(p_label, q_label, do_output=True, k=5):
-    blacklist = np.array(
-        [
-            110110110001,
-            110110110002,
-            110110110003,
-            110110110004,
-            110110110005,
-            110110110006,
-            110110110007,
-            110110110008,
-            110110110009,
-        ]
-    )
+    blacklist = np.arange(110110110001, 110110110010)
     masks = np.any(np.isin(p_label, blacklist), axis=1)
     p_label, q_label = p_label[~masks], q_label[~masks]
 
@@ -82,12 +62,6 @@ def print_acc_map(acc_map, csv_name):
     # print(df)
 
 
-def save_keeps_file(labels, files, obj_files):
-    with open(obj_files, "w") as f:
-        for label, filename in zip(labels, files):
-            f.write(f"{filename}, {label}\n")
-
-
 def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT, L2_flag=False):
     dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
@@ -133,7 +107,7 @@ def intra_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_t
 def inter_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
     split_times = 10
     data_num = labels.shape[0]
-    step = data_num // split_times
+    step = math.ceil(data_num / split_times)
     masks = np.logical_not(np.ones((data_num)))
     index = create_index(matrix, use_gpu)
     pbar = tqdm.tqdm(total=data_num)
@@ -146,16 +120,12 @@ def inter_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_t
             if masks[pos]:
                 continue
             # 找到大于阈值的得分, 定位到位置
-            threshold = 0.94 if pos < 3800 else samilar_thresh
+            threshold = 0.9 if pos < 3765 else samilar_thresh
             mask_index = np.where((g_g_scores[j, :] >= threshold) & (g_g_indexs[j, :] > pos))[0]
             masks[g_g_indexs[j, mask_index]] = True
     pbar.close()
+    masks[np.arange(3765)] = False
     return np.where(masks == False)[0]
-
-
-def softmax(x):
-    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-    return e_x / e_x.sum(axis=1, keepdims=True)
 
 
 def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
@@ -189,6 +159,10 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
             input[final_l.index(l), i] = s
         input_x.append(input)
         index_cats.append(final_l)
+    
+    def softmax(x):
+        e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return e_x / e_x.sum(axis=1, keepdims=True)
     _scores = np.dot(input_x, weight) + bias
     final_scores = softmax(_scores.reshape(-1, 5))
     index_cats = np.array(index_cats)

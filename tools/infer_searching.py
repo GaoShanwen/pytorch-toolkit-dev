@@ -6,11 +6,9 @@
 # filenaem: feat_extract.py
 # function: run model to searching imgs and save (train/val).
 ######################################################
-import argparse
 import logging
 import os
 import tqdm
-from PIL import Image
 import numpy as np
 from contextlib import suppress
 import faiss
@@ -23,16 +21,10 @@ from timm.utils import setup_default_logging
 from local_lib.models import create_custom_model
 from local_lib.data.loader import create_custom_loader
 from local_lib.data.dataset_factory import create_custom_dataset
-from local_lib.utils import parse_args
-from local_lib.utils.file_tools import load_data, load_csv_file
+from local_lib.utils.file_tools import load_data, load_csv_file, save_feat, init_feats_dir
 from local_lib.utils.feat_tools import create_index
 from local_lib.utils.visualize import run_vis2bigimgs
-
-import sys
-
-sys.path.append(".")
-
-from tools.post.feat_extract import save_feat, init_feats_dir
+from local_lib.utils import parse_args
 
 
 _logger = logging.getLogger("Extract feature")
@@ -50,7 +42,7 @@ def load_feats(load_dir="./output/features"):
 
 def load_model(args):
     # might as well try to validate something
-    args.pretrained = args.pretrained or not args.checkpoint
+    args.pretrained = args.pretrained and not args.checkpoint
 
     if torch.cuda.is_available():
         torch.backends.cuda.matmul.allow_tf32 = True
@@ -146,8 +138,6 @@ def run_infer(model, args):
     init_feats_dir(args.results_dir)
     with torch.no_grad():
         for batch_idx, (input, _) in enumerate(loader):
-            # import pdb; pdb.set_trace()
-            # input = data_trans(Image.open(input).convert("RGB")).unsqueeze(0)
             if device == "cuda":
                 input = input.to(device)
 
@@ -156,32 +146,36 @@ def run_infer(model, args):
             save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
             pbar.update(1)
     pbar.close()
+    return query_labels
 
-    args.param = f"IVF629,Flat"
+
+def run_search(query_labels, args):
     # args.param = "Flat"
+    args.param = f"IVF629,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
     # 加载npz文件
     gallery_feature, gallery_labels, gallery_files = load_data(args.gallerys)
-    faiss.normalize_L2(gallery_feature)
     query_feats = load_feats(args.results_dir)
+    faiss.normalize_L2(gallery_feature)
     faiss.normalize_L2(query_feats)
 
     searched_data = np.load("output/feats/searched_res-148c.npy")
     choose_idx = np.unique(searched_data[:, 1:].reshape(-1), return_index=True)[0]
-    # import pdb; pdb.set_trace()
     gallery_feature = gallery_feature[choose_idx]
     index = create_index(gallery_feature, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     _, I = index.search(query_feats, args.topk)
 
-    # res = np.concatenate((query_labels[:, np.newaxis], I), axis=1)
-    # np.save('output/feats/searched_res-148c.npy', res)
+    base_name = os.path.basename(args.data_path)
+    if base_name == "search":
+        res = np.concatenate((query_labels[:, np.newaxis], I), axis=1)
+        np.save('output/feats/searched_res-148c.npy', res)
+        return
 
     search_res = {data[0]: data[1:].tolist() for data in searched_data}
     tp_nums = 0
     for q_l, g_idx in zip(query_labels, I):
         g_searhed = search_res[q_l]
         pred_tp = np.in1d(choose_idx[g_idx], g_searhed)
-        # import pdb; pdb.set_trace()
         if pred_tp.any():
             tp_nums += 1
     print(tp_nums, query_labels.shape[0])
@@ -198,4 +192,5 @@ if __name__ == "__main__":
     setup_default_logging()
     args, _ = parse_args()
     model = load_model(args)
-    run_infer(model, args)
+    q_labels = run_infer(model, args)
+    run_search(q_labels, args)
