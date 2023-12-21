@@ -37,8 +37,9 @@ def softmax(X):
     partition = X_exp.sum(1, keepdim=True)
     return X_exp / partition  # 这里应用了广播机制
 
+
 def cross_entropy(y_hat, y):
-    return - torch.log(y_hat[range(len(y_hat)), y])
+    return -torch.log(y_hat[range(len(y_hat)), y])
 
 
 if __name__ == "__main__":
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     x, y = [], []
     for score, plabel, gt in zip(scores, plabels, gts):
         final_l = collections.Counter(plabel.tolist()).most_common()[:5]
-        final_l = [l for l, _ in final_l] + [-1]*(5 - len(final_l))
+        final_l = [l for l, _ in final_l] + [-1] * (5 - len(final_l))
         random.shuffle(final_l)
         if gt not in final_l:
             continue
@@ -64,7 +65,7 @@ if __name__ == "__main__":
     tensors = [torch.from_numpy(arr).type(torch.FloatTensor) for arr in x]
     x = torch.cat(tensors, dim=0).view(-1, 5, 30)
     y = torch.from_numpy(np.array(y)).unsqueeze(1)
-    
+
     # 将数据划分为训练集和验证集
     x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2, random_state=42)
 
@@ -98,8 +99,8 @@ if __name__ == "__main__":
             optimizer.step()
         if epoch % 100 == 0:
             print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}")
-    
-    def evaluate_accuracy(net, data_iter):  #@save
+
+    def evaluate_accuracy(net, data_iter):  # @save
         """计算在指定数据集上模型的精度"""
         if isinstance(net, torch.nn.Module):
             net.eval()  # 将模型设置为评估模式
@@ -107,12 +108,12 @@ if __name__ == "__main__":
         with torch.no_grad():
             for X, y in data_iter:
                 metric.add(accuracy(net(X), y), y.numel())
-        
+
         # import pdb; pdb.set_trace()
         return metric[0] / metric[1]
+
     test_iter = zip(x_val, y_val)
     test_acc = evaluate_accuracy(net, test_iter)
-    print("weights: ", W.detach().view(-1).numpy().round(decimals=3))#.tolist()
-    print("biais: ", b.detach().view(-1).numpy().round(decimals=3))#.tolist()
+    print("weights: ", W.detach().view(-1).numpy().round(decimals=3))  # .tolist()
+    print("biais: ", b.detach().view(-1).numpy().round(decimals=3))  # .tolist()
     print("test_acc: ", test_acc)
-    

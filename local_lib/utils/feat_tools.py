@@ -22,10 +22,19 @@ def load_data(file_path):
 
 
 def run_compute(p_label, q_label, do_output=True, k=5):
-    blacklist = np.array([
-        110110110001, 110110110002, 110110110003, 110110110004, 110110110005, 
-        110110110006, 110110110007, 110110110008, 110110110009, 
-    ])
+    blacklist = np.array(
+        [
+            110110110001,
+            110110110002,
+            110110110003,
+            110110110004,
+            110110110005,
+            110110110006,
+            110110110007,
+            110110110008,
+            110110110009,
+        ]
+    )
     masks = np.any(np.isin(p_label, blacklist), axis=1)
     p_label, q_label = p_label[~masks], q_label[~masks]
 
@@ -122,26 +131,31 @@ def intra_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_t
 
 
 def inter_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
-    masks = []
     split_times = 10
-    step = labels.shape[0] // split_times
+    data_num = labels.shape[0]
+    step = data_num // split_times
+    masks = np.logical_not(np.ones((data_num)))
     index = create_index(matrix, use_gpu)
-    for i in tqdm.tqdm(range(split_times)):
-        search_feats = matrix[i * step: (i + 1) * step]
+    pbar = tqdm.tqdm(total=data_num)
+    for i in range(split_times):
+        search_feats = matrix[i * step : (i + 1) * step]
         g_g_scores, g_g_indexs = index.search(search_feats, 2048)
         for j in range(g_g_indexs.shape[0] - 1):
+            pbar.update(1)
             pos = i * step + j
-            if pos in masks:
+            if masks[pos]:
                 continue
             # 找到大于阈值的得分, 定位到位置
-            mask_index = np.where((g_g_scores[j, :] >= samilar_thresh) & (g_g_indexs[j, :] > pos))[0]
-            masks += g_g_indexs[j, mask_index].tolist()
-    return np.setdiff1d(np.arange(labels.shape[0]), np.array(masks))
+            threshold = 0.94 if pos < 3800 else samilar_thresh
+            mask_index = np.where((g_g_scores[j, :] >= threshold) & (g_g_indexs[j, :] > pos))[0]
+            masks[g_g_indexs[j, mask_index]] = True
+    pbar.close()
+    return np.where(masks == False)[0]
 
 
-def softmax(x):  
-    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))  
-    return e_x / e_x.sum(axis=1, keepdims=True)  
+def softmax(x):
+    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return e_x / e_x.sum(axis=1, keepdims=True)
 
 
 def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
@@ -261,6 +275,10 @@ def run_choose(matrix, labels, args):
     use_gpu = args.use_gpu
     _times = args.update_times
     remove_mode = args.remove_mode
-    assert remove_mode in ["choose_noise", "intra_similarity", "inter_similarity", "choose_with_static"], \
-        f"{remove_mode} is not support yet!"
+    assert remove_mode in [
+        "choose_noise",
+        "intra_similarity",
+        "inter_similarity",
+        "choose_with_static",
+    ], f"{remove_mode} is not support yet!"
     return eval(remove_mode)(matrix, labels, threshold, use_gpu, _times)

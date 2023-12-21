@@ -8,13 +8,12 @@
 ######################################################
 import logging
 import os
-import shutil
 import tqdm
-from PIL import Image
-import numpy as np
-from contextlib import suppress
 import torch
+import shutil
+import numpy as np
 import torch.nn.parallel
+from contextlib import suppress
 
 from timm.models import load_checkpoint
 from timm.utils import setup_default_logging

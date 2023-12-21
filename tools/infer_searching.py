@@ -24,14 +24,15 @@ from local_lib.models import create_custom_model
 from local_lib.data.loader import create_custom_loader
 from local_lib.data.dataset_factory import create_custom_dataset
 from local_lib.utils import parse_args
+from local_lib.utils.file_tools import load_data, load_csv_file
+from local_lib.utils.feat_tools import create_index
+from local_lib.utils.visualize import run_vis2bigimgs
 
 import sys
 
 sys.path.append(".")
 
 from tools.post.feat_extract import save_feat, init_feats_dir
-from tools.post.feat_tools import load_data
-from tools.visualize.vis_error import load_csv_file, create_index, run_vis2bigimgs
 
 
 _logger = logging.getLogger("Extract feature")
@@ -157,8 +158,8 @@ def run_infer(model, args):
     pbar.close()
 
     args.param = f"IVF629,Flat"
+    # args.param = "Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
-    # args.param, args.measure = "Flat", faiss.METRIC_INNER_PRODUCT
     # 加载npz文件
     gallery_feature, gallery_labels, gallery_files = load_data(args.gallerys)
     faiss.normalize_L2(gallery_feature)

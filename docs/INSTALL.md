@@ -15,9 +15,10 @@
 如果需要转换模型，则需另外安装以下内容：
 
 + [make=4.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装-make-42)
-+ [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#下载并解压gcc820)
++ [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装gcc820)
 + [glib=2.29](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装glibc-229)
-+ [rknn-tools2=1.5 py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#rknn安装)
++ [rknn-tools2=1.5 py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装rknn)
++ [apex=0.1](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#apex安装)
 
 ### 安装gcc和make依赖，先安装低版本用于编译环境
 
@@ -40,7 +41,7 @@
     make -v
 ```
 
-### 下载并解压gcc8.2.0
+### 安装gcc8.2.0
 
 ```bash
     cd <your-workspace>
@@ -83,9 +84,20 @@
     LD_PRELOAD=/lib64/libc-2.28.so ln -s /lib64/libc-2.28.so /lib64/libc.so.6
 ```
 
-### rknn安装
+### 安装rknn
 
 ```bash
     git clone https://github.com/rockchip-linux/rknn-toolkit2.git
     cd rknn-toolkit2; pip install packages/rknn_toolkit2-1.5.2+b642f30c-cp38-cp38-linux_x86_64.whl --no-deps
+```
+
+### 安装apex(进行中...)
+
+```bash
+    git clone -b master https://gitee.com/ascend/apex.git && cd apex/
+    bash scripts/build.sh --python=3.8
+    pip install -r requirements.txt --no-deps -t p/root/anaconda3/envs/py38/lib/python3.8/site-packages
+    pip3 uninstall apex
+    pip3 install --upgrade apex-0.1+ascend-{version}.whl
+    pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 ```

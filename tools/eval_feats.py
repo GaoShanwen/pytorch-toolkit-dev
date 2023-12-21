@@ -9,13 +9,9 @@ import argparse
 import faiss
 import numpy as np
 
-import sys
-
-sys.path.append(".")
-
-from tools.post.write_mysql import save_keeps2mysql
-from tools.post import feat_tools
-from tools.visualize.vis_error import save_imgs, load_csv_file
+from local_lib.utils import feat_tools
+from local_lib.utils.visualize import save_imgs
+from local_lib.utils.file_tools import save_keeps2mysql, load_csv_file
 
 
 def parse_args():
@@ -138,6 +134,7 @@ def add_blacklist(feats, labels, files):
                 f"dataset/blacklist2/{label:08d}", f"/data/AI-scales/images/0/backflow/{label+110110110001}"
             )
         )
+    print(f"Loaded blacklist: {exp_label.shape[0]}")
     exp_label += 110110110001
     feats = np.concatenate((exp_feats, feats), axis=0) if feats is not None else feats
     labels = np.concatenate((exp_label, labels)) if labels is not None else labels
@@ -172,7 +169,7 @@ if __name__ == "__main__":
         cat_idx = np.where(q_label[:, np.newaxis] == choose_cats)[0]
         q_feats, q_label, q_files = q_feats[cat_idx], q_label[cat_idx], q_files[cat_idx]
 
-    # g_feats, g_label, g_files = add_blacklist(g_feats, g_label, g_files)
+    g_feats, g_label, g_files = add_blacklist(g_feats, g_label, g_files)
     faiss.normalize_L2(g_feats)
     faiss.normalize_L2(q_feats)
     function_name = "run_test" if args.run_test else "main"
