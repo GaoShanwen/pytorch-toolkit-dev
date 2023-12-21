@@ -155,18 +155,21 @@ def run_search(query_labels, args):
     args.measure = faiss.METRIC_INNER_PRODUCT
     # 加载npz文件
     gallery_feature, gallery_labels, gallery_files = load_data(args.gallerys)
+    gallery_feature = gallery_feature[3765:]
     query_feats = load_feats(args.results_dir)
     faiss.normalize_L2(gallery_feature)
     faiss.normalize_L2(query_feats)
 
-    searched_data = np.load("output/feats/searched_res-148c.npy")
-    choose_idx = np.unique(searched_data[:, 1:].reshape(-1), return_index=True)[0]
-    gallery_feature = gallery_feature[choose_idx]
+    base_name = os.path.basename(args.data_path)
+    if base_name[:-4] != "search":
+        searched_data = np.load("output/feats/searched_res-148c.npy")
+        choose_idx = np.arange(gallery_feature.shape[0])
+        # choose_idx = np.unique(searched_data[:, 1:].reshape(-1), return_index=True)[0]
+        gallery_feature = gallery_feature[choose_idx]
     index = create_index(gallery_feature, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     _, I = index.search(query_feats, args.topk)
 
-    base_name = os.path.basename(args.data_path)
-    if base_name == "search":
+    if base_name[:-4] == "search":
         res = np.concatenate((query_labels[:, np.newaxis], I), axis=1)
         np.save('output/feats/searched_res-148c.npy', res)
         return
@@ -178,7 +181,7 @@ def run_search(query_labels, args):
         pred_tp = np.in1d(choose_idx[g_idx], g_searhed)
         if pred_tp.any():
             tp_nums += 1
-    print(tp_nums, query_labels.shape[0])
+    print(f"{tp_nums} / {query_labels.shape[0]}")
 
     # p_labels = gallery_labels[I]
     # cats = list(set(gallery_labels))

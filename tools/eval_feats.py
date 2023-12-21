@@ -11,6 +11,7 @@ import numpy as np
 
 from local_lib.utils import feat_tools
 from local_lib.utils.visualize import save_imgs
+from local_lib.utils.file_tools import load_data
 from local_lib.utils.file_tools import save_keeps2mysql, load_csv_file
 
 
@@ -149,8 +150,8 @@ if __name__ == "__main__":
     args.measure = faiss.METRIC_INNER_PRODUCT
 
     # 加载npz文件
-    g_feats, g_label, g_files = feat_tools.load_data(args.gallerys)
-    q_feats, q_label, q_files = feat_tools.load_data(args.querys)
+    g_feats, g_label, g_files = load_data(args.gallerys)
+    q_feats, q_label, q_files = load_data(args.querys)
 
     with open(args.cats_file, "r") as f:
         class_list = np.array([int(line.strip("\n")) for line in f.readlines()])
