@@ -9,7 +9,6 @@ import tqdm
 import math
 import faiss
 import numpy as np
-import pandas as pd
 from collections import Counter
 
 
@@ -56,12 +55,6 @@ def compute_acc_by_cat(p_label, q_label, label_map=None):
     return acc_map
 
 
-def print_acc_map(acc_map, csv_name):
-    df = pd.DataFrame(acc_map).transpose()
-    df.to_csv(csv_name)
-    # print(df)
-
-
 def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT, L2_flag=False):
     dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
@@ -88,8 +81,6 @@ def intra_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_t
         # if cat_index.shape[0] <= 15000:
         #     final_num = 6144
         g_g_scores, g_g_indexs = index.search(choose_gallery, final_num)
-        # if max(g_g_scores[:, final_num-1])>=0.9:
-        #     print(cat, cat_index.shape[0], max(g_g_scores[:, final_num-1]))
         masks = []
         for i in range(cat_index.shape[0] - 1):
             if i in masks:
@@ -120,11 +111,9 @@ def inter_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_t
             if masks[pos]:
                 continue
             # 找到大于阈值的得分, 定位到位置
-            threshold = 0.9 if pos < 3765 else samilar_thresh
-            mask_index = np.where((g_g_scores[j, :] >= threshold) & (g_g_indexs[j, :] > pos))[0]
+            mask_index = np.where((g_g_scores[j, :] >= samilar_thresh) & (g_g_indexs[j, :] > pos))[0]
             masks[g_g_indexs[j, mask_index]] = True
     pbar.close()
-    masks[np.arange(3765)] = False
     return np.where(masks == False)[0]
 
 
@@ -205,30 +194,22 @@ def choose_noise(matrix, labels, choose_ratio, use_gpu=False, update_times=0):
     return np.array(keeps)
 
 
-def choose_with_static(matrix, labels, _, use_gpu=False, update_times=0):
+def choose_with_static(matrix, labels, _, use_gpu=False, update_times=0, choose_num=30):
     all_indics = np.arange(labels.shape[0])
     cats = list(set(labels))
     search_res = {}
-    # other_gallery = matrix[others]
-    others = all_indics
     index = create_index(matrix, use_gpu)
     stride = len(cats) // update_times if update_times else 1
     pbar = tqdm.tqdm(total=len(cats), miniters=stride, maxinterval=600)
     for cat in cats:
         keeps = np.where(labels == cat)[0]
-        # in_set = np.in1d(all_indics, keeps)
-        # others = all_indics[~in_set]
-        # other_gallery = matrix[others]
-        # enable_gpu = use_gpu #if choose_gallery.shape[0] <= 2048 else False
-        # index = create_index(other_gallery, enable_gpu)
-
         choose_gallery = matrix[keeps]
-        choose_num = 30  # min(40, int(keeps.shape[0] * choose_ratio))
+        
         _, index_matric = index.search(choose_gallery, choose_num + 1)
-        index_res = labels[others[index_matric[:, 1:].reshape(-1)]].tolist()
+        index_res = labels[all_indics[index_matric[:, 1:].reshape(-1)]].tolist()
         first_count = Counter(index_res).most_common()
         search_num = len(index_res)
-        cat_static = {"gallery_num": others.shape[0], "query_num": keeps.shape[0]}
+        cat_static = {"query_num": keeps.shape[0]}
         for i, (search_cat, count) in enumerate(first_count[:5]):
             cat_static.update(
                 {

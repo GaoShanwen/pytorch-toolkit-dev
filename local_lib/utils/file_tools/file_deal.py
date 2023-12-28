@@ -1,5 +1,13 @@
-import numpy as np
 import os
+import numpy as np
+import pandas as pd
+
+
+def print_acc_map(acc_map, csv_name):
+    df = pd.DataFrame(acc_map).transpose()
+    df.to_csv(csv_name)
+    # print(df)
+
 
 def load_data(file_path):
     with np.load(file_path) as data:
@@ -42,7 +50,7 @@ def init_feats_dir(save_dir="./output/features"):
     os.makedirs(save_dir)
 
 
-def merge_feat_files(load_dir="./output/features", infer_mode="val", file_infos=None):
+def merge_feat_files(load_dir="./output/features", infer_mode="val", file_infos=None, convert_map=None):
     files = sorted(os.listdir(load_dir))
     feats = []
     for file_name in files:
@@ -52,4 +60,6 @@ def merge_feat_files(load_dir="./output/features", infer_mode="val", file_infos=
     merge_feats = np.concatenate(feats)
     merge_fpaths, merge_gts = zip(*(file_infos))
     merge_gts = np.array(merge_gts)
+    if convert_map is not None:
+        merge_gts = convert_map[merge_gts]
     np.savez(f"{load_dir}-{infer_mode}.npz", feats=merge_feats, gts=merge_gts, fpaths=merge_fpaths)

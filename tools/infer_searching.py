@@ -9,6 +9,7 @@
 import logging
 import os
 import tqdm
+import shutil
 import numpy as np
 from contextlib import suppress
 import faiss
@@ -21,11 +22,10 @@ from timm.utils import setup_default_logging
 from local_lib.models import create_custom_model
 from local_lib.data.loader import create_custom_loader
 from local_lib.data.dataset_factory import create_custom_dataset
-from local_lib.utils.file_tools import load_data, load_csv_file, save_feat, init_feats_dir
-from local_lib.utils.feat_tools import create_index
+from local_lib.utils.file_tools import load_data, load_csv_file, save_feat, init_feats_dir, print_acc_map
+from local_lib.utils.feat_tools import create_index, get_predict_label
 from local_lib.utils.visualize import run_vis2bigimgs
 from local_lib.utils import parse_args
-
 
 _logger = logging.getLogger("Extract feature")
 
@@ -146,54 +146,133 @@ def run_infer(model, args):
             save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
             pbar.update(1)
     pbar.close()
-    return query_labels
+    return query_labels, query_files
 
 
-def run_search(query_labels, args):
+def load_names(label_file):
+    product_id_map = {}
+    with open(label_file) as f:
+        for line in f:
+            try:
+                id_record = line.strip().replace('"', "").split(",")
+                product_id_map.update({int(id_record[1]): id_record[2]})
+            except:
+                print(f"line={line} is error!")
+    return product_id_map
+
+
+def static_search_res(I, g_labels, q_labels):
+    from collections import Counter
+    cats = list(set(q_labels))
+    label_index = load_csv_file(args.label_file)
+    label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
+    q_maps = load_names("dataset/function_test/1029.csv")
+    search_res = {}
+    for cat in cats:
+        keeps = np.where(q_labels == cat)[0]
+        choose_idx = np.unique(I[keeps].reshape(-1))
+        index_res = g_labels[choose_idx].tolist()
+        first_count = Counter(index_res).most_common()
+        search_num = len(index_res)
+        cat_static = {"query_num": keeps.shape[0], "index": cat}
+        for i, (search_cat, count) in enumerate(first_count[:5]):
+            cat_static.update(
+                {
+                    f"top{i+1}_name": label_map[search_cat] if search_cat in label_map else search_cat,
+                    f"top{i+1}_ratio": count / search_num,
+                }
+            )
+        search_res.update({q_maps[cat]: cat_static})
+    return search_res
+
+
+def copy_error(I, g_labels, q_labels, g_files, save_root="output/temp"):
+    from collections import Counter
+    choose_dict = {
+        "甜玉米S": ["糯玉米（彩）"]
+    }
+    cats = list(set(q_labels))
+    label_index = load_csv_file(args.label_file)
+    label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
+    q_maps = load_names("dataset/function_test/1029.csv")
+    for cat in cats:
+        if q_maps[cat] not in choose_dict.keys():
+            continue
+        keeps = np.where(q_labels == cat)[0]
+        choose_idx = np.unique(I[keeps].reshape(-1))
+        index_res = g_labels[choose_idx].tolist()
+        first_count = Counter(index_res).most_common()
+        for searched_cat, _ in first_count[:5]:
+            if label_map[searched_cat] not in choose_dict[q_maps[cat]]:
+                continue
+            need_index = np.where(g_labels[I[keeps]] == searched_cat)#[0]
+            need_index = I[keeps][need_index]
+            # import pdb; pdb.set_trace()
+            save_dir = os.path.join(save_root, label_map[searched_cat])
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            for file_path in g_files[need_index]:
+                if not os.path.exists(file_path):
+                    continue
+                shutil.copy(file_path, save_dir)
+
+
+def run_search(q_labels, query_files, args):
     # args.param = "Flat"
     args.param = f"IVF629,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
     # 加载npz文件
-    gallery_feature, gallery_labels, gallery_files = load_data(args.gallerys)
-    gallery_feature = gallery_feature[3765:]
+    g_feats, g_labels, g_files = load_data(args.gallerys)
+    # gallery_feature = gallery_feature[3765:]
     query_feats = load_feats(args.results_dir)
-    faiss.normalize_L2(gallery_feature)
+    faiss.normalize_L2(g_feats)
     faiss.normalize_L2(query_feats)
 
     base_name = os.path.basename(args.data_path)
-    if base_name[:-4] != "search":
-        searched_data = np.load("output/feats/searched_res-148c.npy")
-        choose_idx = np.arange(gallery_feature.shape[0])
-        # choose_idx = np.unique(searched_data[:, 1:].reshape(-1), return_index=True)[0]
-        gallery_feature = gallery_feature[choose_idx]
-    index = create_index(gallery_feature, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
+    # if base_name[:-4] in ["search", "1029"]:
+    #     searched_data = np.load("output/feats/searched_res-148c.npy")
+    #     choose_idx = np.arange(g_feats.shape[0])
+    #     g_feats = g_feats[choose_idx]
+    index = create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     _, I = index.search(query_feats, args.topk)
 
-    if base_name[:-4] == "search":
-        res = np.concatenate((query_labels[:, np.newaxis], I), axis=1)
-        np.save('output/feats/searched_res-148c.npy', res)
+    static_res = static_search_res(I, g_labels, q_labels)
+    print_acc_map(static_res, "1029_static.csv")
+    # copy_error(I, g_labels, q_labels, g_files)
+    import pdb; pdb.set_trace()
+    if base_name[:-4] in ["search", "1029"]:
+        res = np.concatenate((q_labels[:, np.newaxis], I), axis=1)
+        # np.save('output/feats/searched_res-148c.npy', res)
+        np.save('output/feats/searched_res-1029.npy', res)
         return
 
-    search_res = {data[0]: data[1:].tolist() for data in searched_data}
-    tp_nums = 0
-    for q_l, g_idx in zip(query_labels, I):
-        g_searhed = search_res[q_l]
-        pred_tp = np.in1d(choose_idx[g_idx], g_searhed)
-        if pred_tp.any():
-            tp_nums += 1
-    print(f"{tp_nums} / {query_labels.shape[0]}")
+    # search_res = {data[0]: data[1:].tolist() for data in searched_data}
+    # tp_nums = 0
+    # for q_l, g_idx in zip(q_labels, I):
+    #     g_searhed = search_res[q_l]
+    #     pred_tp = np.in1d(choose_idx[g_idx], g_searhed)
+    #     if pred_tp.any():
+    #         tp_nums += 1
+    # print(f"{tp_nums} / {q_labels.shape[0]}")
+
+    blacklist = np.arange(110110110001, 110110110010)
+    masks = np.any(np.isin(g_labels[I], blacklist), axis=1)
+    choose_num = np.where(masks == True)[0]
+    import pdb; pdb.set_trace()
+    for i in choose_num:
+        shutil.copy(query_files[i], args.save_root)
 
     # p_labels = gallery_labels[I]
     # cats = list(set(gallery_labels))
     # label_index = load_csv_file(args.label_file)
     # label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
-    # query_labels = query_labels if query_labels is not None else p_labels[:, 0]
-    # run_vis2bigimgs(I, gallery_labels, gallery_files, query_labels, query_files, label_map, args.save_root)
+    # q_labels = q_labels if q_labels is not None else p_labels[:, 0]
+    # run_vis2bigimgs(I, gallery_labels, gallery_files, q_labels, query_files, label_map, args.save_root)
 
 
 if __name__ == "__main__":
     setup_default_logging()
     args, _ = parse_args()
     model = load_model(args)
-    q_labels = run_infer(model, args)
-    run_search(q_labels, args)
+    q_labels, q_files = run_infer(model, args)
+    run_search(q_labels, q_files, args)

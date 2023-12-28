@@ -7,7 +7,7 @@
 # function: extract the features of custom data (train/val).
 ######################################################
 import logging
-import os
+import numpy as np
 import tqdm
 from contextlib import suppress
 from functools import partial
@@ -22,7 +22,8 @@ from timm.utils import setup_default_logging, reparameterize_model
 
 from local_lib.models import create_custom_model  # enable local model
 from local_lib.data import create_custom_dataset, create_custom_loader
-from local_lib.utils import parse_args, save_feat, init_feats_dir, merge_feat_files
+from local_lib.utils import parse_args
+from local_lib.utils.file_tools import save_feat, init_feats_dir, merge_feat_files
 
 try:
     from apex import amp
@@ -184,7 +185,7 @@ def extract(args):
         tf_preprocessing=args.tf_preprocessing,
         transfrom_mode="custom",
     )
-    pbar = tqdm.tqdm(total=len(loader) - args.start_batch)
+    pbar = tqdm.tqdm(total=len(loader))
 
     model.eval()
     with torch.no_grad():
@@ -195,11 +196,8 @@ def extract(args):
         with amp_autocast():
             model(input)
 
-        if not args.start_batch:
-            init_feats_dir(args.results_dir)
+        init_feats_dir(args.results_dir)
         for batch_idx, (input, target) in enumerate(loader):
-            if batch_idx < args.start_batch:
-                continue
             if args.no_prefetcher:
                 target = target.to(device)
                 input = input.to(device)
@@ -212,9 +210,14 @@ def extract(args):
             save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
             pbar.update(1)
 
-    del pbar
+    pbar.close()
     img_files = dataset.reader.samples
-    merge_feat_files(args.results_dir, args.infer_mode, img_files)
+    class_to_idx = dataset.reader.class_to_idx
+    cat_list = None
+    if (np.array(sorted(list(class_to_idx.values()))) == np.arange(args.data_classes)).all():
+        cat_list = np.array(list(map(int, class_to_idx.keys())))
+    _logger.info(f"cat_list are {cat_list}.")
+    merge_feat_files(args.results_dir, args.infer_mode, img_files, cat_list)
     _logger.info(f"feat saved in {args.results_dir}-{args.infer_mode}.npz")
 
 

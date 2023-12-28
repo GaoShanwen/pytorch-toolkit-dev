@@ -27,6 +27,8 @@ def cv2AddChineseText(img, text, position, text_color, text_size):
 def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size=24, scores=None):
     sum_img = np.full((1282, 2408, 3), 255, dtype=np.uint8)  # 生成全白大图
     q_name = label_map[q_label] if label_map is not None else str(q_label)
+    if not os.path.exists(q_file):
+        return None
     img = cv2.imread(q_file)
     color = (255, 0, 0)
     img = cv2AddChineseText(img, q_name, [2, 2], color, text_size)
@@ -58,6 +60,7 @@ def run_vis2bigimgs(
 ):
     pbar = tqdm.tqdm(total=q_labels.shape[0])
     for ind, (q_label, q_file) in enumerate(zip(q_labels, q_files)):
+        pbar.update(1)
         q_name = label_map[q_label] if label_map is not None else str(q_label)
         obj_dir = os.path.join(save_root, q_name.split("/")[0])
         if not os.path.exists(obj_dir):
@@ -67,10 +70,10 @@ def run_vis2bigimgs(
         pred_files, pred_labels = g_files[topks], g_labels[topks]
         index_scores = scores[ind] if scores is not None else None
         sum_img = draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size, scores=index_scores)
-
+        if sum_img is None:
+            continue
         obj_path = os.path.join(obj_dir, q_file.split("/")[-1])
         cv2.imwrite(obj_path, sum_img)
-        pbar.update(1)
     pbar.close()
 
 

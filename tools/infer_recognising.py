@@ -152,8 +152,8 @@ def run_infer(model, args):
             choices_num = np.where(choices_type == cat)[0].shape[0]
             print(f"cat={cat} num: {choices_num}")
 
-    save_imgs(choices_files, choices_type, args.results_dir)
-    # np.savez(f"blacklist-{args.infer_mode}.npz", files=choices_files, labels=choices_type)
+    # save_imgs(choices_files, choices_type, args.results_dir)
+    np.savez(f"blacklist-{args.infer_mode}.npz", files=choices_files, labels=choices_type)
 
 
 if __name__ == "__main__":

@@ -50,9 +50,19 @@ if __name__ == "__main__":
         masks = np.isin(q_files, mask_files)
         keeps = np.array(np.arange(q_files.shape[0]))[~masks]
         q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
+    
     with open(args.cats_file, "r") as f:
-        class_list = [line.strip("\n") for line in f.readlines()]
+        class_list = np.array([int(line.strip("\n")) for line in f.readlines()])
+    q_label = class_list[q_label]
+    need_cats = np.array([
+        10000003015, 9999151125, 999925408, 9999150874, 9999151657, 
+        999925207, 999920270, 9999151662, 10000000302, 9999150297, 
+        9999150301, 999925228, 999925212
+    ])
+    keep = np.isin(q_label, need_cats)
+    keeps = np.array(np.arange(q_files.shape[0]))[keep]
+    q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
+
     label_index = load_csv_file(args.label_file)
-    cats = list(set(g_label))
-    label_map = {i: label_index[cat] for i, cat in enumerate(class_list) if i in cats}
+    label_map = {int(cat): name for cat, name in label_index.items()}
     search_and_vis(g_feats, g_label, g_files, q_feats, q_label, q_files, args, label_map)

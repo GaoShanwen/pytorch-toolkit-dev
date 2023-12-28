@@ -11,8 +11,7 @@ import numpy as np
 
 from local_lib.utils import feat_tools
 from local_lib.utils.visualize import save_imgs
-from local_lib.utils.file_tools import load_data
-from local_lib.utils.file_tools import save_keeps2mysql, load_csv_file
+from local_lib.utils.file_tools import load_data, save_keeps2mysql, load_csv_file, print_acc_map
 
 
 def parse_args():
@@ -23,25 +22,25 @@ def parse_args():
     parser.add_argument("--label-file", type=str, default="dataset/zero_dataset/label_names.csv")
     parser.add_argument("--cats-file", type=str, default="dataset/removeredundancy/629_cats.txt")
     parser.add_argument("--pass-cats", type=str, default="dataset/removeredundancy/pass_cats.txt")
-    parser.add_argument("--mask-path", type=str, default="blacklist-val.npy")
+    parser.add_argument("--remove-mode", type=str, default="none", help="remove mode(eq:noise, or similarity)!")
+    parser.add_argument("--mask-path", type=str, default="", help="blacklist-train.npz")
     parser.add_argument("--use-gpu", action="store_true", default=False)
     parser.add_argument("--use-knn", action="store_true", default=False)
     parser.add_argument("--run-test", action="store_true", default=False)
     parser.add_argument("--weighted", action="store_true", default=False)
     parser.add_argument("--save-detail", action="store_true", default=False)
     parser.add_argument("--pass-mapping", action="store_true", default=False)
-    parser.add_argument("--remove-mode", type=str, default="none", help="remove mode(eq:noise, or similarity)!")
-    parser.add_argument("--debug", action="store_true", default=False)
     parser.add_argument("--save-sql", action="store_true", default=False)
+    parser.add_argument("--debug", action="store_true", default=False)
+    parser.add_argument("--threshold", type=float, default=0.9)
     parser.add_argument("--num-classes", type=int, default=629)
     parser.add_argument("--update-times", type=int, default=0)
-    parser.add_argument("--threshold", type=float, default=0.9)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=5)
     return parser.parse_args()
 
 
-def run_eval(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv"):
+def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv"):
     index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     D, I = index.search(q_feats, args.topk)
     p_label = feat_tools.get_predict_label(D, I, g_label, use_knn=args.use_knn, weighted=args.weighted)
@@ -49,13 +48,19 @@ def run_eval(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.c
         label_index = load_csv_file(args.label_file)
         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
         acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, label_map)
-        feat_tools.print_acc_map(acc_map, acc_file_name)
+        print_acc_map(acc_map, acc_file_name)
     feat_tools.run_compute(p_label, q_label, do_output=False)
 
 
 def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
-    run_eval(g_feats, g_label, q_feats, q_label, args, "eval_res.csv")
-
+    eval_server(g_feats, g_label, q_feats, q_label, args, "eval_res.csv")
+    if args.mask_path:
+        data = np.load(args.mask_path)
+        # import pdb; pdb.set_trace()
+        masks = np.isin(g_files, data["files"])
+        keeps = np.array(np.arange(g_files.shape[0]))[~masks]
+        print(f"original data: {g_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}")
+        g_feats, g_label, g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
     if args.remove_mode == "none":
         if args.save_sql:
             save_keeps2mysql(g_feats, g_label, g_files, update_times=args.update_times)
@@ -75,25 +80,40 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
     np.savez(save_path, feats=new_g_feats, gts=new_g_label, fpaths=new_g_files)
     if args.save_sql:
         save_keeps2mysql(new_g_feats, new_g_label, new_g_files, update_times=args.update_times)
-    # feat_tools.save_keeps_file(new_g_label, new_g_files, f"train-th{args.threshold}.txt")
     csv_name = f"eval_res-{args.remove_mode}-{args.threshold}.csv" if args.save_detail else ""
-    run_eval(new_g_feats, new_g_label, q_feats, q_label, args, csv_name)
+    eval_server(new_g_feats, new_g_label, q_feats, q_label, args, csv_name)
+
+
+def return_samilirity_cats(static_v, th):
+    return {static_v[f"top{idx}_name"]: static_v[f"top{idx}_ratio"] for idx in range(2, 6) if static_v[f"top{idx}_ratio"]>=th}
+
+
+def print_static(static_res, th=0.01):
+    cats = list(static_res.keys())
+    masks = np.logical_not(np.ones(len(static_res)))
+    
+    for i, (k, v) in enumerate(static_res.items()):
+        if masks[i]:
+            continue
+        check_objs = list(return_samilirity_cats(v, th).items())
+        print(f"{k}: {check_objs}")
+        masks[i] = True
+        while len(check_objs):
+            obj = check_objs.pop(0)[0]
+            idx = cats.index(obj)
+            if masks[idx]:
+                continue
+            searched = list(return_samilirity_cats(static_res[obj], th).items())
+            print(f"{obj}: {searched}")
+            check_objs += searched
+            masks[idx] = True
+        print()
+        # import pdb; pdb.set_trace()
 
 
 def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
-    run_eval(g_feats, g_label, q_feats, q_label, args, acc_file_name="")
-    mask_files = np.load(args.mask_path)
-    masks = np.isin(q_files, mask_files)
-    keeps = np.array(np.arange(q_files.shape[0]))[~masks]
-    print(f"original data: {q_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}")
-    q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
-    # masks = np.isin(g_files, mask_files)
-    # keeps = np.array(np.arange(g_files.shape[0]))[~masks]
-    # print(f"original data: {g_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}")
-    # g_feats, g_label, g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
-    run_eval(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv")
     # #################### static topk ####################
-    if args.remove_mode == "static":
+    if args.remove_mode == "choose_with_static":
         static = feat_tools.run_choose(g_feats, g_label, args)
         label_index = load_csv_file(args.label_file)
         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
@@ -104,39 +124,15 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
                 value_name = label_map[v] if k.endswith("name") else v
                 new_value.update({k: value_name})
             new_static.update({label_map[cat]: new_value})
-        feat_tools.print_acc_map(new_static, "static.csv")
+        print_static(new_static, 0.01)
+        print_acc_map(new_static, "static.csv")
         return
-    #################### test knn ####################
-    if args.use_knn:
-        index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
-        D, I = index.search(q_feats, args.topk)
-        p_label = feat_tools.get_predict_label(D, I, g_label, q_label, use_knn=False)
-        original_errors = np.where(p_label[:, 0] != q_label)[0]
-        p_label = feat_tools.get_predict_label(D, I, g_label, q_label, use_knn=True)
-        knn_errors = np.where(p_label[:, 0] != q_label)[0]
-
-        e_only_in_knn = np.setdiff1d(knn_errors, original_errors)
-        print(
-            f"new-errors knn-k={args.topk}: {e_only_in_knn.shape[0]} / {q_label.shape[0]} | "
-            f"({original_errors.shape[0]} -> {knn_errors.shape[0]})"
-        )
-        new_q_labels, new_q_files = q_label[e_only_in_knn], q_files[e_only_in_knn]
-        feat_tools.save_keeps_file(new_q_labels, new_q_files, f"new_errors-knn.txt")
-        return
+    eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="")
 
 
-def add_blacklist(feats, labels, files):
-    feat_path = "output/feats/blacklist-train.npz"
-    exp_feats, exp_label, exp_files = feat_tools.load_data(feat_path)
-    exp_f = []
-    for label, file_path in zip(exp_label, exp_files):
-        exp_f.append(
-            file_path.replace(
-                f"dataset/blacklist2/{label:08d}", f"/data/AI-scales/images/0/backflow/{label+110110110001}"
-            )
-        )
+def expend_feats(feats, labels, files, feat_path):
+    exp_feats, exp_label, exp_files = load_data(feat_path)
     print(f"Loaded blacklist: {exp_label.shape[0]}")
-    exp_label += 110110110001
     feats = np.concatenate((exp_feats, feats), axis=0) if feats is not None else feats
     labels = np.concatenate((exp_label, labels)) if labels is not None else labels
     files = np.concatenate((exp_files, files)) if files is not None else files
@@ -158,19 +154,22 @@ if __name__ == "__main__":
         g_label = g_label if args.pass_mapping else class_list[g_label]
         q_label = class_list[q_label]
 
+    if not args.pass_mapping:
+        feat_paths = ["output/feats/add_2c-train.npz", "output/feats/blacklist-train.npz"]
+        for feat_path in feat_paths:
+            g_feats, g_label, g_files = expend_feats(g_feats, g_label, g_files, feat_path)
     if args.debug:
-        choose_cats = list(set(g_label))  # [:50]
-        print(f"origain cats number={len(choose_cats)}")
-        with open("dataset/removeredundancy/629_cats.txt", "r") as f:
+        with open(args.pass_cats, "r") as f:
             choose_cats = [int(line.strip("\n")) for line in f.readlines()]
-        print(f"final cats number={len(choose_cats)}")
-        cat_idx = np.where(g_label[:, np.newaxis] == choose_cats)[0]
-        g_feats, g_label, g_files = g_feats[cat_idx], g_label[cat_idx], g_files[cat_idx]
+        print(f"remove cats number={len(choose_cats)}")
+        masks = np.isin(g_label, choose_cats)
+        g_feats, g_label, g_files = g_feats[~masks], g_label[~masks], g_files[~masks]
 
-        cat_idx = np.where(q_label[:, np.newaxis] == choose_cats)[0]
-        q_feats, q_label, q_files = q_feats[cat_idx], q_label[cat_idx], q_files[cat_idx]
+        masks = np.isin(q_label, choose_cats)
+        q_feats, q_label, q_files = q_feats[~masks], q_label[~masks], q_files[~masks]
+    cats = list(set(g_label))
+    print(f"Loaded cats number={len(cats)}, img number={g_label.shape[0]}")
 
-    # g_feats, g_label, g_files = add_blacklist(g_feats, g_label, g_files)
     faiss.normalize_L2(g_feats)
     faiss.normalize_L2(q_feats)
     function_name = "run_test" if args.run_test else "main"
