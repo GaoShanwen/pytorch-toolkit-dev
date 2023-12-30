@@ -11,7 +11,7 @@ torchvision==0.11.2+cu102
 pyyaml==6.0.1
 huggingface_hub==0.18.0
 safetensors==0.4.0
-timm==0.9.7
+timm==0.9.12
 scipy==1.5.4
 requests==2.27.1
 protobuf==3.20.3
@@ -33,13 +33,14 @@ onnxoptimizer==0.2.7
 faiss-gpu==1.7.2
 grad-cam==1.4.8
 optuna==3.5.0
-black==23.11.0
+black==22.12.0 # black==22.* for dev/linter.sh
+isort==4.3.21 # isort==4.3.21 for dev/linter.sh
 pymysql==1.1.0
 # pymongo==4.6.0
 
 # Logging -------------------------------------
-tensorboard==2.14.0
-wandb==0.12.18
+# tensorboard==2.14.0
+wandb==0.12.18 # wandb==0.12.18 to support auto stop
 optuna-dashboard==0.14.0
 # dvclive>=2.12.0
 # clearml

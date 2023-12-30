@@ -68,9 +68,7 @@ class VisualizeResults:
         return sum_img
 
     def vis_one_classify(self, q_name, q_file, pred_names, pred_files, scores=None):
-        if not os.path.exists(q_file):
-            return None
-        set_height, set_width = self.size
+        set_height, set_width = self.img_size
         img = cv2.imread(q_file)
         H, W, _ = img.shape
         new_height = min(set_height, int(H * (set_width / W)))  # 保持原来的长宽比
