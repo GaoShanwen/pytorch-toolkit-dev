@@ -146,8 +146,7 @@ def expend_feats(feats, labels, files, feat_path):
 
 if __name__ == "__main__":
     args = parse_args()
-    # args.param = "Flat"
-    args.param = "IVF629,Flat"
+    args.param = "IVF629,Flat"  # "Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
 
     # 加载npz文件

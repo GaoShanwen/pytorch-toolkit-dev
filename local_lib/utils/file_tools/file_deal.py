@@ -19,13 +19,15 @@ def load_data(file_path):
     return feas, labels, fpaths
 
 
-def load_csv_file(label_file):
+def load_csv_file(label_file, to_int=False, frist_name=False):
     product_id_map = {}
     with open(label_file) as f:
         for line in f:
             try:
                 id_record = line.strip().replace('"', "").split(",")
-                product_id_map[id_record[0]] = id_record[1]
+                product_id = int(id_record[0]) if to_int else id_record[0]
+                product_name = id_record[1].split("/")[0] if frist_name else id_record[1]
+                product_id_map[product_id] = product_name
             except:
                 print(f"line={line} is error!")
     return product_id_map
