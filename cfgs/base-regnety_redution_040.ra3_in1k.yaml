@@ -143,12 +143,13 @@ reparam: false
 use_train_size: false
 test_pool: false
 aot_autograd: false
+log_freq: 10
 split: validation
-infer_mode: val
 tf_preprocessing: false
+infer_mode: val
 valid_labels: ''
 real_labels: ''
 results_file: ''
 results_format: csv
 compute_by_cat: true
-log_freq: 10
+label_file: "dataset/zero_dataset/label_names.csv"

@@ -1,9 +1,10 @@
 import os
+
 import numpy as np
 import pandas as pd
 
 
-def print_acc_map(acc_map, csv_name):
+def save_dict2csv(acc_map, csv_name):
     df = pd.DataFrame(acc_map).transpose()
     df.to_csv(csv_name)
     # print(df)

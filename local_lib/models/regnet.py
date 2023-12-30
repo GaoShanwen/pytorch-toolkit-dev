@@ -6,11 +6,11 @@
 # function: reduce the last fc layers' dim of regnet for reid.
 ######################################################
 import torch.nn as nn
-from timm.models import RegNet, RegNetCfg
 from timm.layers.classifier import _create_fc
-from timm.models.regnet import model_cfgs, _filter_fn
+from timm.models import RegNet, RegNetCfg
 from timm.models._builder import build_model_with_cfg
 from timm.models._registry import register_model
+from timm.models.regnet import _filter_fn, model_cfgs
 
 
 class RegNetRedution(RegNet):

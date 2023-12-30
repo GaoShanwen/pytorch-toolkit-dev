@@ -6,12 +6,13 @@
 # function: eval the accuracy of features in .npz-file.
 ######################################################
 import argparse
+
 import faiss
 import numpy as np
 
 from local_lib.utils import feat_tools
+from local_lib.utils.file_tools import load_csv_file, load_data, save_dict2csv, save_keeps2mysql
 from local_lib.utils.visualize import save_imgs
-from local_lib.utils.file_tools import load_data, save_keeps2mysql, load_csv_file, print_acc_map
 
 
 def parse_args():
@@ -48,7 +49,7 @@ def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_re
         label_index = load_csv_file(args.label_file)
         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
         acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, label_map)
-        print_acc_map(acc_map, acc_file_name)
+        save_dict2csv(acc_map, acc_file_name)
     feat_tools.run_compute(p_label, q_label, do_output=False)
 
 
@@ -85,13 +86,17 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
 
 
 def return_samilirity_cats(static_v, th):
-    return {static_v[f"top{idx}_name"]: static_v[f"top{idx}_ratio"] for idx in range(2, 6) if static_v[f"top{idx}_ratio"]>=th}
+    return {
+        static_v[f"top{idx}_name"]: static_v[f"top{idx}_ratio"]
+        for idx in range(2, 6)
+        if static_v[f"top{idx}_ratio"] >= th
+    }
 
 
 def print_static(static_res, th=0.01):
     cats = list(static_res.keys())
     masks = np.logical_not(np.ones(len(static_res)))
-    
+
     for i, (k, v) in enumerate(static_res.items()):
         if masks[i]:
             continue
@@ -125,7 +130,7 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
                 new_value.update({k: value_name})
             new_static.update({label_map[cat]: new_value})
         print_static(new_static, 0.01)
-        print_acc_map(new_static, "static.csv")
+        save_dict2csv(new_static, "static.csv")
         return
     eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="")
 

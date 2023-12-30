@@ -19,23 +19,22 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.parallel
-
-from timm.data import create_loader, resolve_data_config, RealLabelsImagenet
+from timm.data import create_loader, resolve_data_config
 from timm.layers import apply_test_time_pool, set_fast_norm
-from timm.models import load_checkpoint, is_model, list_models
+from timm.models import is_model, list_models, load_checkpoint
 from timm.utils import (
-    accuracy,
     AverageMeter,
-    natural_key,
-    setup_default_logging,
-    set_jit_fuser,
-    decay_batch_step,
+    accuracy,
     check_batch_size_retry,
+    decay_batch_step,
+    natural_key,
     reparameterize_model,
+    set_jit_fuser,
+    setup_default_logging,
 )
 
+from local_lib.data import RealLabelsCustomData, create_custom_dataset
 from local_lib.models import create_custom_model
-from local_lib.data import create_custom_dataset
 from local_lib.utils import ClassAccuracyMap, parse_args
 
 try:
@@ -183,8 +182,10 @@ def validate(args):
     else:
         valid_labels = None
 
-    if args.real_labels:
-        real_labels = RealLabelsImagenet(dataset.filenames(basename=True), real_json=args.real_labels)
+    # if args.real_labels:
+    #     real_labels = RealLabelsCustomData(dataset.filenames(basename=True), real_file=args.real_labels)
+    if args.results_file:
+        real_labels = RealLabelsCustomData(dataset.filenames(basename=False), reader=dataset.reader)
     else:
         real_labels = None
 
@@ -209,7 +210,7 @@ def validate(args):
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
-    acc_map = ClassAccuracyMap(dataset.reader.class_to_idx)
+    acc_map = ClassAccuracyMap(dataset.reader.class_to_idx, args.label_file)
     model.eval()
     with torch.no_grad():
         # warmup, reduce variability of first batch time, especially for comparing torchscript vs non
@@ -250,23 +251,16 @@ def validate(args):
             end = time.time()
 
             if batch_idx % args.log_freq == 0:
+                rate_avg = input.size(0) / batch_time.avg
                 _logger.info(
-                    "Test: [{0:>4d}/{1}]  "
-                    "Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s, {rate_avg:>7.2f}/s)  "
-                    "Loss: {loss.val:>7.4f} ({loss.avg:>6.4f})  "
-                    "Acc@1: {top1.val:>7.3f} ({top1.avg:>7.3f})  "
-                    "Acc@5: {top5.val:>7.3f} ({top5.avg:>7.3f})".format(
-                        batch_idx,
-                        len(loader),
-                        batch_time=batch_time,
-                        rate_avg=input.size(0) / batch_time.avg,
-                        loss=losses,
-                        top1=top1,
-                        top5=top5,
-                    )
+                    f"Test: [{batch_idx:>4d}/{len(loader)}]  "
+                    f"Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s, {rate_avg:>7.2f}/s)  "
+                    f"Loss: {losses.val:>7.4f} ({losses.avg:>6.4f})  "
+                    f"Acc@1: {top1.val:>7.3f} ({top1.avg:>7.3f})  "
+                    f"Acc@5: {top5.val:>7.3f} ({top5.avg:>7.3f})"
                 )
 
-    if real_labels is not None:
+    if args.results_file:
         # real labels mode replaces topk values at the end
         top1a, top5a = real_labels.get_accuracy(k=1), real_labels.get_accuracy(k=5)
     else:
@@ -285,9 +279,8 @@ def validate(args):
     if args.compute_by_cat:
         acc_map.save_to_csv(args.infer_mode)
     _logger.info(
-        " * Acc@1 {:.3f} ({:.3f}) Acc@5 {:.3f} ({:.3f})".format(
-            results["top1"], results["top1_err"], results["top5"], results["top5_err"]
-        )
+        f" * Acc@1 {results['top1']:.3f} ({results['top1_err']:.3f})"
+        f" Acc@5 {results['top5']:.3f} ({results['top5_err']:.3f})"
     )
 
     return results

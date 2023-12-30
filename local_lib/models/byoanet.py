@@ -6,12 +6,10 @@
 # function: reduce the last fc layers' dim of halonet for reid.
 ######################################################
 import torch.nn as nn
-
-from timm.models.byoanet import ByobNet, ByoModelCfg, model_cfgs
 from timm.layers.classifier import _create_fc
-from timm.models._registry import register_model
 from timm.models._builder import build_model_with_cfg
 from timm.models._registry import register_model
+from timm.models.byoanet import ByobNet, ByoModelCfg, model_cfgs
 
 
 class ByobRedutionNet(ByobNet):

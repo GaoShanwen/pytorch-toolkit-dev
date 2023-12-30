@@ -6,11 +6,11 @@
 # function: convert onnx model to rknn model.
 ######################################################
 import argparse
-import cv2
-import onnxruntime
-import numpy as np
-from rknn.api import RKNN
 
+import cv2
+import numpy as np
+import onnxruntime
+from rknn.api import RKNN
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument("output", metavar="RKNN_FILE", help="output model filename")

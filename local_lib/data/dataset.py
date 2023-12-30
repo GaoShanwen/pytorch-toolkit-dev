@@ -5,8 +5,9 @@
 # filenaem: dataset.py
 # function: create custom dataset(read imgs by txt-file).
 ######################################################
-from .readers import create_reader
 from timm.data import ImageDataset
+
+from .readers import create_reader
 
 
 class TxtReaderImageDataset(ImageDataset):

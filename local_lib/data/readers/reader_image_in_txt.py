@@ -6,12 +6,12 @@
 # function: create a reader for custom data.(load by txt)
 ######################################################
 import os
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
-from timm.utils.misc import natural_key
 from timm.data.readers.class_map import load_class_map
 from timm.data.readers.img_extensions import get_img_extensions
 from timm.data.readers.reader import Reader
+from timm.utils.misc import natural_key
 
 
 def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None, sort: bool = True, **kwargs):

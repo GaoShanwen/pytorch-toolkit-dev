@@ -60,7 +60,7 @@ Refer to [README-Convert Models](https://github.com/GaoShanwen/pytorch-toolkit-d
 
 ```bash
 <pytorch-toolkit-dev> ~$ # run this command after install black
-<pytorch-toolkit-dev> ~$ black --line-length=120 ./
+<pytorch-toolkit-dev> ~$ sh dev/linter.sh
 ```
 
 ## License

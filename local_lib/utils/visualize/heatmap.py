@@ -6,32 +6,19 @@
 # function: visual the heatmap by model.
 ######################################################
 import argparse
-import torch
-import cv2
 import os
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
-from timm.models import load_checkpoint
-
-import matplotlib.pyplot as plt
 from PIL import Image
-import numpy as np
-from pytorch_grad_cam import (
-    GradCAM,
-    ScoreCAM,
-    GradCAMPlusPlus,
-    AblationCAM,
-    XGradCAM,
-    EigenCAM,
-    FullGrad,
-)
-from pytorch_grad_cam.utils.image import (
-    show_cam_on_image,
-    deprocess_image,
-    preprocess_image,
-)
+from pytorch_grad_cam import AblationCAM, EigenCAM, FullGrad, GradCAM, GradCAMPlusPlus, ScoreCAM, XGradCAM
+from pytorch_grad_cam.utils.image import deprocess_image, preprocess_image, show_cam_on_image
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
-from pytorch_grad_cam.utils.image import show_cam_on_image
+from timm.models import load_checkpoint
 from timm.utils import ParseKwargs
 
 from local_lib.models import create_custom_model
@@ -99,7 +86,9 @@ def visualize_CAM(model, model_name, img_path, save_root):
 if __name__ == "__main__":
     args = parser.parse_args()
     model_name = args.model
-    model = create_custom_model(model_name, num_classes=args.num_classes, in_chans=3, global_pool=None, **args.model_kwargs)
+    model = create_custom_model(
+        model_name, num_classes=args.num_classes, in_chans=3, global_pool=None, **args.model_kwargs
+    )
     load_checkpoint(model, args.checkpoint, args.use_ema)
 
     # 加载一张测试图像

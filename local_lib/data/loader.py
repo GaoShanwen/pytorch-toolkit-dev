@@ -5,11 +5,11 @@
 # filenaem: loader.py
 # function: custom dataloader, to create the same input with rknn.
 ######################################################
-from timm.data import create_loader
-import torch
 import cv2
-from PIL import Image
 import numpy as np
+import torch
+from PIL import Image
+from timm.data import create_loader
 from torchvision import transforms
 from torchvision.transforms import Resize
 

@@ -7,23 +7,22 @@
 # function: extract the features of custom data (train/val).
 ######################################################
 import logging
-import numpy as np
-import tqdm
 from contextlib import suppress
 from functools import partial
 
+import numpy as np
 import torch
 import torch.nn.parallel
-
+import tqdm
 from timm.data import resolve_data_config
 from timm.layers import apply_test_time_pool, set_fast_norm
 from timm.models import load_checkpoint
-from timm.utils import setup_default_logging, reparameterize_model
+from timm.utils import reparameterize_model, setup_default_logging
 
-from local_lib.models import create_custom_model  # enable local model
 from local_lib.data import create_custom_dataset, create_custom_loader
+from local_lib.models import create_custom_model  # enable local model
 from local_lib.utils import parse_args
-from local_lib.utils.file_tools import save_feat, init_feats_dir, merge_feat_files
+from local_lib.utils.file_tools import init_feats_dir, merge_feat_files, save_feat
 
 try:
     from apex import amp

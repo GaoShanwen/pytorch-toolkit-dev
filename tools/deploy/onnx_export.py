@@ -6,13 +6,12 @@
 # function: convert pth model to onnx model.
 ######################################################
 import argparse
-import torch
+from typing import List, Optional, Tuple
 
 import timm
+import torch
 from timm import utils
 from timm.utils.model import reparameterize_model
-
-from typing import Optional, Tuple, List
 
 from local_lib.models import create_custom_model  # for regster local model
 

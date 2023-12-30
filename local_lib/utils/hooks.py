@@ -5,8 +5,9 @@
 # filenaem: hooks.py
 # function: add tensorboard to train.py.
 ######################################################
-from torch.utils.tensorboard import SummaryWriter
 import time
+
+from torch.utils.tensorboard import SummaryWriter
 
 
 class TensorBoardWriter(object):

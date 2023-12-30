@@ -101,3 +101,11 @@
     pip3 install --upgrade apex-0.1+ascend-{version}.whl
     pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 ```
+
+### 环境安装问题
+
+可以参考该[博客](https://blog.csdn.net/qq_42076902/article/details/129261266)解决如下问题：
+
+```bash
+    AttributeError: module ‘distutils‘ has no attribute ‘version‘
+```

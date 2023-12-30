@@ -6,17 +6,18 @@
 # function: reduce the last fc layers' dim of mobilenetv3 for reid.
 ######################################################
 from functools import partial
+
 import torch.nn as nn
 import torch.nn.functional as F
 from timm.layers import SelectAdaptivePool2d
-from timm.models.layers import Linear
 from timm.models import MobileNetV3
-from timm.models._efficientnet_blocks import SqueezeExcite
 
 # from timm.models.mobilenetv3 import _gen_mobilenet_v3
 from timm.models._builder import build_model_with_cfg, pretrained_cfg_for_features
-from timm.models._efficientnet_builder import decode_arch_def, round_channels, resolve_act_layer, resolve_bn_args
+from timm.models._efficientnet_blocks import SqueezeExcite
+from timm.models._efficientnet_builder import decode_arch_def, resolve_act_layer, resolve_bn_args, round_channels
 from timm.models._registry import register_model
+from timm.models.layers import Linear
 
 
 class MobileNetV3Redution(MobileNetV3):

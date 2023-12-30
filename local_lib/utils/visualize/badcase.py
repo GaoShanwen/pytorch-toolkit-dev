@@ -2,25 +2,26 @@
 # author: gaowenjie
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.16
-# filenaem: vis_error.py
+# filenaem: badcase.py
 # function: visualize the error picture
 ######################################################
-import shutil
 import os
+import shutil
+
 import cv2
-import tqdm
 import numpy as np
+import tqdm
 from PIL import Image, ImageDraw, ImageFont
 
 from local_lib.utils.feat_tools import create_index
 
 
-def cv2AddChineseText(img, text, position, text_color, text_size):
-    if isinstance(img, np.ndarray):  # OpenCV图片类型转为Image
+def vis_text(img, text, position, text_color, text_size):
+    if isinstance(img, np.ndarray):  # 判断是否OpenCV图片类型
         img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img)
-    fontStyle = ImageFont.truetype("./dataset/simsun.ttc", text_size, encoding="utf-8")
-    draw.text(position, text, text_color, font=fontStyle)
+    fontText = ImageFont.truetype("dataset/simsun.ttc", text_size, encoding="utf-8")
+    draw.text(position, text, text_color, font=fontText)
     return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
 
@@ -31,10 +32,10 @@ def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size=
         return None
     img = cv2.imread(q_file)
     color = (255, 0, 0)
-    img = cv2AddChineseText(img, q_name, [2, 2], color, text_size)
     H, W, _ = img.shape
     new_height = min(640, int(H * (480 / W)))  # 保持原来的长宽比
     img = cv2.resize(img, (480, new_height))  # 调整大小
+    img = vis_text(img, q_name, [2, 2], color, text_size)
     sum_img[0:new_height, 0:480, :] = img
     start_h, start_w = 0, 0
     for i, (pred_file, pred_label) in enumerate(zip(pred_files, pred_labels)):
@@ -43,10 +44,10 @@ def draw2big_pic(q_file, q_label, pred_files, pred_labels, label_map, text_size=
         img = cv2.resize(img, (480, new_height))  # 调整大小
         g_name = label_map[pred_label] if label_map is not None else str(pred_label)
         color = (255, 0, 0) if q_label == pred_label else (0, 255, 0)
-        img = cv2AddChineseText(img, g_name, [2, 2], color, text_size)
+        img = vis_text(img, g_name, [2, 2], color, text_size)
         H, W, _ = img.shape
         if scores is not None:
-            img = cv2AddChineseText(img, f"{scores[i]:.5f}", [2, H - text_size - 2], color, text_size)
+            img = vis_text(img, f"{scores[i]:.5f}", [2, H - text_size - 2], color, text_size)
         start_w += 482
         if start_w >= 2408:
             start_h += 642

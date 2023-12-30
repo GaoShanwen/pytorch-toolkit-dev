@@ -5,11 +5,12 @@
 # filenaem: feat_tools.py
 # function: the functions tools for feat extract or eval.
 ######################################################
-import tqdm
 import math
+from collections import Counter
+
 import faiss
 import numpy as np
-from collections import Counter
+import tqdm
 
 
 def run_compute(p_label, q_label, do_output=True, k=5):
@@ -129,13 +130,40 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
     Returns:
         index_res: the categories topk(categories-level)
     """
-    weight = np.array([
-        10.201, 4.021, 2.44, 1.364, 0.667, 1.5, 
-        2.047, 0.079, 0.898, 0.298, -0.438, 0.3, 
-        -0.671, 1.163, 0.952, 0.371, -0.573, 0.504, 
-        -0.621, -0.175, 1.074, 0.98, -0.787, 0.313, 
-        0.296, -1.303, 0.564, -0.269, 0.042, 0.553
-    ])
+    weight = np.array(
+        [
+            10.201,
+            4.021,
+            2.44,
+            1.364,
+            0.667,
+            1.5,
+            2.047,
+            0.079,
+            0.898,
+            0.298,
+            -0.438,
+            0.3,
+            -0.671,
+            1.163,
+            0.952,
+            0.371,
+            -0.573,
+            0.504,
+            -0.621,
+            -0.175,
+            1.074,
+            0.98,
+            -0.787,
+            0.313,
+            0.296,
+            -1.303,
+            0.564,
+            -0.269,
+            0.042,
+            0.553,
+        ]
+    )
     bias = np.array([0.771, -0.327, 0.388, -0.122, -0.639])
     input_x, index_cats = [], []
     for score, plabel in zip(scores, plabels):
@@ -148,10 +176,11 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
             input[final_l.index(l), i] = s
         input_x.append(input)
         index_cats.append(final_l)
-    
+
     def softmax(x):
         e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
         return e_x / e_x.sum(axis=1, keepdims=True)
+
     _scores = np.dot(input_x, weight) + bias
     final_scores = softmax(_scores.reshape(-1, 5))
     index_cats = np.array(index_cats)
@@ -204,7 +233,7 @@ def choose_with_static(matrix, labels, _, use_gpu=False, update_times=0, choose_
     for cat in cats:
         keeps = np.where(labels == cat)[0]
         choose_gallery = matrix[keeps]
-        
+
         _, index_matric = index.search(choose_gallery, choose_num + 1)
         index_res = labels[all_indics[index_matric[:, 1:].reshape(-1)]].tolist()
         first_count = Counter(index_res).most_common()

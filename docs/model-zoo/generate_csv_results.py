@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 results = {
     "results-imagenet.csv": [
         "results-imagenet-real.csv",

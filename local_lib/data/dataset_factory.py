@@ -5,9 +5,10 @@
 # filenaem: dataset_factory.py
 # function: create custom dataset.
 ######################################################
+from timm.data import create_dataset
+
 from .dataset import TxtReaderImageDataset
 from .readers import ReaderImagePaths
-from timm.data import create_dataset
 
 
 def create_custom_dataset(name, root, split="val", class_map=None, is_training=False, **kwargs):

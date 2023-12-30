@@ -8,21 +8,20 @@
 ######################################################
 import logging
 import os
-import tqdm
-import torch
 import shutil
-import numpy as np
-import torch.nn.parallel
 from contextlib import suppress
 
+import numpy as np
+import torch
+import torch.nn.parallel
+import tqdm
 from timm.models import load_checkpoint
 from timm.utils import setup_default_logging
 
-from local_lib.models import create_custom_model
-from local_lib.data.loader import create_custom_loader
 from local_lib.data.dataset_factory import create_custom_dataset
+from local_lib.data.loader import create_custom_loader
+from local_lib.models import create_custom_model
 from local_lib.utils.set_parse import parse_args
-
 
 _logger = logging.getLogger("validate")
 

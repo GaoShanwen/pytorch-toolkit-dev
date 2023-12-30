@@ -5,39 +5,41 @@
 # filenaem: meter.py
 # function: eval accuracy of every classes.
 ######################################################
-import torch
 import collections
+
 import pandas as pd
+import torch
+
+from .file_tools import load_csv_file
 
 
 class ClassAccuracyMap:
     """Computes and stores the accuracy current value"""
 
-    def __init__(self, label_map):
+    def __init__(self, label_map, index_to_name=None):
         self.label_map = {value: key for key, value in label_map.items()}
+        if index_to_name is not None:
+            assert isinstance(index_to_name, str), f"index_to_name must be str, but you set {type(index_to_name)}"
+            self.index_to_name = {k: v.split("/")[0] for k, v in load_csv_file(index_to_name).items()}
         self.reset()
 
     def reset(self):
         self.obj_dict = {}
 
     def update_cat(self, cat, top1, top5, num):
-        name = self.label_map[cat] if cat != "all" else cat
-        if name not in self.obj_dict.keys():
+        index = self.label_map[cat] if cat != "all" else cat
+        name = self.index_to_name[index] if index in self.index_to_name else ""
+        if index not in self.obj_dict.keys():
             key_names = ["top1_num", "top1_val", "top5_num", "top5_val", "count"]
             cat_dict = {key_name: 0 for key_name in key_names}
         else:
-            cat_dict = self.obj_dict[name]
+            cat_dict = self.obj_dict[index]
         count = cat_dict["count"] + num
         top1_num = cat_dict["top1_num"] + top1
         top5_num = cat_dict["top5_num"] + top5
-        # cat_dict["top1_num"] = top1_num
-        # cat_dict["top5_num"] = top5_num
-        # cat_dict["top1_val"] = top1_num * 100.0 / count
-        # cat_dict["top5_val"] = top5_num * 100.0 / count
-        # cat_dict["count"] = count
-        # self.obj_dict[name] = cat_dict
         cat_dict.update(
             {
+                "name": name,
                 "top1_num": top1_num,
                 "top5_num": top5_num,
                 "top1_val": top1_num * 100.0 / count,
@@ -45,7 +47,7 @@ class ClassAccuracyMap:
                 "count": count,
             }
         )
-        self.obj_dict.update({name: cat_dict})
+        self.obj_dict.update({index: cat_dict})
 
     def update(self, output, target, topk=(1, 5)):
         maxk = min(5, output.size()[1])
