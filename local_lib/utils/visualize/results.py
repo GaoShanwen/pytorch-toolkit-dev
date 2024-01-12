@@ -11,6 +11,8 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
+_RED = (255, 0, 0)
+_GREEN = (0, 255, 0)
 
 def vis_text(img, text, position, text_color, text_size):
     if isinstance(img, np.ndarray):  # 判断是否OpenCV图片类型
@@ -23,15 +25,17 @@ def vis_text(img, text, position, text_color, text_size):
 
 class VisualizeResults:
     def __init__(
-        self, save_root, task="classify", img_size=(640, 480), text_size=24, class_map=None, only_error=False
+        self, save_root, task="classify", img_size=(640, 480), text_size=24, class_map=None, settings=[]
     ) -> None:
         assert task in ["classify", "search"], f"{task} is not support, only support classify or search, yet!"
+        assert all(isinstance(v, str) for v in class_map.values()), "the values of class_map must be str!"
         self.vis_function = eval(f"self.vis_one_{task}")
+        self.only_error = "only_error" in settings
+        self.show_gt = "show_gt" in settings
         self.save_root = save_root
         self.img_size = img_size
         self.text_size = text_size
         self.class_map = class_map
-        self.only_error = only_error
 
         rows, columns, edge = 2, 5, 2
         set_height, set_width = img_size
@@ -40,30 +44,42 @@ class VisualizeResults:
         self.output_width = (set_width + edge) * columns - edge
 
     def vis_one_search(self, q_name, q_file, pred_names, pred_files, scores=None):
-        assert len(pred_names) <= 9, f"not support show top{len(pred_names)}, maxium value is top9!"
         sum_img = np.full((self.output_height, self.output_width, 3), 255, dtype=np.uint8)  # 生成全白大图
         set_height, set_width = self.img_size
 
         img = cv2.imread(q_file)
         H, W, _ = img.shape
         new_height = min(set_height, int(H * (set_width / W)))  # 保持原来的长宽比
-        img = cv2.resize(img, (set_width, new_height))  # 调整大小
-        img = vis_text(img, q_name, [2, 2], (255, 0, 0), self.text_size)
+        img = vis_text(img, q_name, [2, 2], _RED, self.text_size)
         sum_img[0:new_height, 0:set_width, :] = img
-        start_h, start_w = 0, 0
-        for i, (pred_file, p_name) in enumerate(zip(pred_files, pred_names)):
+        start_h, start_w, default_sw = 0, 0, 0
+        if self.show_gt:
+            if q_name in pred_names:
+                gt_idx = pred_names.index(q_name)
+                gt_files = pred_files[gt_idx]
+                img = cv2.imread(gt_files) if os.path.exists(gt_files) else np.full(self.img_size, 255, dtype=np.uint8)
+                H, W, _ = img.shape
+                new_height = min(set_height, int(H * (set_width / W)))  # 保持原来的长宽比
+                text = f"第{len(set(pred_names[:gt_idx]))+1}类; 第{gt_idx+1}张"
+                img = vis_text(img, text, [2, 2], _RED, self.text_size)
+                text = f"{scores[gt_idx]:.5f}" if scores is not None else ""
+                img = vis_text(img, text, [2, new_height - self.text_size - 2], _RED, self.text_size)
+                sum_img[self.strip_h : self.strip_h + new_height, start_w : start_w + set_width, :] = img
+            default_sw = self.strip_w
+        show_num = 8 if self.show_gt else 9
+        for i, (pred_file, p_name) in enumerate(zip(pred_files[:show_num], pred_names[:show_num])):
             img = cv2.imread(pred_file) if os.path.exists(pred_file) else np.full(self.img_size, 255, dtype=np.uint8)
+            H, W, _ = img.shape
             new_height = min(set_height, int(H * (set_width / W)))  # 保持原来的长宽比
             img = cv2.resize(img, (set_width, new_height))  # 调整大小
-            color = (255, 0, 0) if q_name == p_name else (0, 255, 0)
+            color = _RED if q_name == p_name else _GREEN
             img = vis_text(img, p_name, [2, 2], color, self.text_size)
-            H, W, _ = img.shape
             if scores is not None:
                 img = vis_text(img, f"{scores[i]:.5f}", [2, new_height - self.text_size - 2], color, self.text_size)
             start_w += self.strip_w
             if start_w >= self.output_width:
                 start_h += self.strip_h
-                start_w = 0
+                start_w = default_sw
             sum_img[start_h : start_h + new_height, start_w : start_w + set_width, :] = img
         return sum_img
 
@@ -93,7 +109,7 @@ class VisualizeResults:
         if scores is None:
             scores = np.full(gt_labels.shape[0], np.nan)
         for gt_label, gt_file, p_label, p_file, score in zip(gt_labels, gt_files, p_labels, p_files, scores):
-            if self.only_error and gt_label in p_label:
+            if self.only_error:
                 continue
             if not os.path.exists(gt_file):
                 print(f"{gt_file} is error!")

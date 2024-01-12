@@ -23,19 +23,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Create RKNN object
     rknn = RKNN(verbose=True)
-    mean_vales = [num * 255.0 for num in args.mean]
-    std_values = [num * 255.0 for num in args.std]
-    rknn.config(mean_values=mean_vales, std_values=std_values, target_platform=args.target_platform)
+    # mean_values = [num * 255.0 for num in args.mean]
+    # std_values = [num * 255.0 for num in args.std]
+    mean_values = [123.675, 116.28, 103.53]
+    std_values = [58.82, 58.82, 58.82]
+    rknn.config(mean_values=mean_values, std_values=std_values, target_platform=args.target_platform)
     print("Config model done")
 
     print("--> Loading model")
     onnx_model = args.input  # "output/converted_model/20230925-185645-resnet18-224.onnx"
-    ret = rknn.load_onnx(
-        model=onnx_model
-    )  # , inputs=["input0"], input_size_list=[[1, args.in_chans, args.img_size, args.img_size]])
-    if ret != 0:
-        print("load model failed!")
-        exit(ret)
+    ret = rknn.load_onnx(model=onnx_model)
+    assert ret == 0, "load model failed!"
     print("done")
 
     # Build model
@@ -43,27 +41,20 @@ if __name__ == "__main__":
     data_file = "dataset/minidata/quantizate/dataset1.txt" if args.do_quantizate else None
     ret = rknn.build(do_quantization=args.do_quantizate, dataset=data_file)  # , rknn_batch_size=args.batch_size)
     # rknn.accuracy_analysis(inputs=['dataset/.../image.jpg'])
-    if ret != 0:
-        print("build model failed.")
-        exit(ret)
+    assert ret == 0, "build model failed!"
     print("done")
 
     # Export rknn model
     print("--> Export RKNN model")
     ret = rknn.export_rknn(args.output)
-    if ret != 0:
-        print("Export rknn failed!")
-        exit(ret)
+    assert ret == 0, "Export rknn failed!"
     print("Export rknn success!")
 
     # # Set inputs
     # img_root = "dataset/minidata/validation"
     # evaliation(img_root, rknn, onnx_model)
     ret = rknn.init_runtime()
-    if ret != 0:
-        print("init rknn failed!")
-        exit(ret)
-    # feat_extract(args, rknn)
+    assert ret == 0, "init rknn failed!"
 
     # img=cv2.imread("dataset/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg")
     path = "/data/AI-scales/images/0/backflow/00001/1831_8fdaa0cf410f1c36_1673323817187_1673323817536.jpg"
