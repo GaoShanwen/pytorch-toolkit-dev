@@ -68,32 +68,42 @@ def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METR
     return index
 
 
+def get_thresh(samilar_thresh, data_num):
+    if data_num <= 50:
+        return 1.
+    if isinstance(samilar_thresh, float):
+        return samilar_thresh
+    for v, set_th in samilar_thresh:
+        if data_num <= v:
+            break
+    return set_th
+
+
 def intra_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
     cats = list(set(labels))
     stride = len(cats) // update_times if update_times else 1
-    keeps = []
+    masks = []
     pbar = tqdm.tqdm(total=len(cats), miniters=stride, maxinterval=3600)
     for cat in cats:
+        pbar.update(1)
         cat_index = np.where(labels == cat)[0]
+        data_num = cat_index.shape[0]
+        threshold = get_thresh(samilar_thresh, data_num)
+        if abs(threshold - 1.) < 1e-9:
+            continue
         choose_gallery = matrix[cat_index]
-        enable_gpu = use_gpu if cat_index.shape[0] <= 6000 else False
-        index = create_index(choose_gallery, enable_gpu)
-        final_num = min(cat_index.shape[0], 2048) if cat_index.shape[0] <= 6000 else 4096
-        # if cat_index.shape[0] <= 15000:
-        #     final_num = 6144
-        g_g_scores, g_g_indexs = index.search(choose_gallery, final_num)
-        masks = []
-        for i in range(cat_index.shape[0] - 1):
-            if i in masks:
+        index = create_index(choose_gallery, use_gpu)
+        g_g_scores, g_g_indexs = index.search(choose_gallery, min(data_num, 2048))
+        mask = np.logical_not(np.ones((data_num)))
+        for i in range(data_num - 1):
+            if mask[i]:
                 continue
             # 找到大于阈值的得分, 定位到位置，
-            mask_index = np.where((g_g_scores[i, :] >= samilar_thresh) & (g_g_indexs[i, :] > i))[0]
-            masks += g_g_indexs[i, mask_index].tolist()
-        masks = np.array(masks)
-        keeps += np.setdiff1d(cat_index, cat_index[masks]).tolist() if masks.shape[0] else cat_index.tolist()
-        pbar.update(1)
+            mask_index = np.where((g_g_scores[i, :] >= threshold) & (g_g_indexs[i, :] > i))[0]
+            mask[g_g_indexs[i, mask_index]] = True
+        masks += cat_index[np.where(mask == True)[0]].tolist()
     pbar.close()
-    return np.array(keeps)
+    return np.setdiff1d(np.arange(labels.shape[0]), masks)
 
 
 def inter_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_times=0):
@@ -132,40 +142,18 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
     """
     weight = np.array(
         [
-            10.201,
-            4.021,
-            2.44,
-            1.364,
-            0.667,
-            1.5,
-            2.047,
-            0.079,
-            0.898,
-            0.298,
-            -0.438,
-            0.3,
-            -0.671,
-            1.163,
-            0.952,
-            0.371,
-            -0.573,
-            0.504,
-            -0.621,
-            -0.175,
-            1.074,
-            0.98,
-            -0.787,
-            0.313,
-            0.296,
-            -1.303,
-            0.564,
-            -0.269,
-            0.042,
-            0.553,
+            1.8, 1.5, 1.4, 1.36, 0.967, 0.86, 0.75, 0.74,
+            0.63, 0.55, 0.52, 0.5, 0.48, 0.42, 0.4, 0.38, 
+            0.37, 0.35, 0.34, 0.32, 0.3, 0.28, 0.27, 0.26, 
+            0.25, 0.24, 0.23, 0.225, 0.21, 0.2,
+            .15, .145, .125, .11, .097, .095, .092, .09, .087, .084,
+            .082, .08, .078, .075, .073, .071, .068, .065, .063, .06,
         ]
-    )
-    bias = np.array([0.771, -0.327, 0.388, -0.122, -0.639])
+    )[:choose_pic]
+    # weight = np.ones((choose_pic))
+    bias = np.zeros((final_cat,))
     input_x, index_cats = [], []
+    
     for score, plabel in zip(scores, plabels):
         final_l = Counter(plabel.tolist()).most_common()[:final_cat]
         final_l = [l for l, _ in final_l] + [np.nan] * (final_cat - len(final_l))
@@ -182,10 +170,10 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
         return e_x / e_x.sum(axis=1, keepdims=True)
 
     _scores = np.dot(input_x, weight) + bias
-    final_scores = softmax(_scores.reshape(-1, 5))
+    final_scores = softmax(_scores.reshape(-1, final_cat))
     index_cats = np.array(index_cats)
     I = np.argsort(final_scores, axis=1)[:, ::-1]
-    return index_cats[np.arange(index_cats.shape[0])[:, None], I]
+    return index_cats[np.arange(index_cats.shape[0])[:, None], I[:, :5]]
 
 
 def get_predict_label(scores, initial_rank, gallery_label, k=5, use_knn=False, weighted=False):
@@ -198,7 +186,7 @@ def get_predict_label(scores, initial_rank, gallery_label, k=5, use_knn=False, w
             res += [[counter[0] for counter in sorted_counter[:k]]]
         res = [sublist + [np.nan] * (k - len(sublist)) for sublist in res]
         return np.array(res)
-    res = create_matrix(scores, gallery_label[initial_rank], choose_pic=30, final_cat=k)
+    res = create_matrix(scores, gallery_label[initial_rank], choose_pic=scores.shape[1], final_cat=k)
     return np.array(res)
 
 
