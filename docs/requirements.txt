@@ -22,6 +22,7 @@ opencv-python-headless==4.8.1.78
 
 # Plotting ------------------------------------
 pandas==2.0.3
+plotly # ==5.18.0
 # seaborn>=0.11.0
 
 # Export --------------------------------------
@@ -32,6 +33,7 @@ onnxoptimizer==0.2.7
 # Tools --------------------------------------
 faiss-gpu==1.7.2
 grad-cam==1.4.8
+umap-learn
 optuna==3.5.0
 black==22.12.0 # black==22.* for dev/linter.sh
 isort==4.3.21 # isort==4.3.21 for dev/linter.sh
