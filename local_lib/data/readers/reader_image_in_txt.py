@@ -13,6 +13,18 @@ from timm.data.readers.img_extensions import get_img_extensions
 from timm.data.readers.reader import Reader
 from timm.utils.misc import natural_key
 
+def check_img(filename):
+    if not os.path.exists(filename):
+        return False
+    try:
+        with open(filename, "rb") as f:
+            f.seek(-2, 2)
+            if not f.read() == b"\xff\xd9":
+                return False
+    except IOError:
+        return False
+    return True
+
 
 def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None, sort: bool = True, **kwargs):
     """Walk folder recursively to discover images and map them to classes by folder names.
@@ -46,10 +58,13 @@ def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None,
         num_choose = kwargs["num_choose"]
         choose_cats = save_cats[num_choose[0] : num_choose[1]]
     with open(anno_path, "r") as f:
-        lines = [line.strip().split(", ") for line in f.readlines()]
+        lines = [line.strip().replace(' ', '').split(",") for line in f.readlines()]
     filenames, labels = zip(
-        *[(filename, label) for filename, label in lines if choose_cats is None or label in choose_cats]
+        *[(fpath, label) for fpath, label in lines if choose_cats is None or label in choose_cats]
     )
+    # check images in dataset is readable!
+    for img_path in filenames:
+        assert check_img(img_path), f"{img_path} is error!"
 
     if class_to_idx is None:
         # building class index

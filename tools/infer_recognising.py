@@ -22,18 +22,11 @@ from local_lib.data.dataset_factory import create_custom_dataset
 from local_lib.data.loader import create_custom_loader
 from local_lib.models import create_custom_model
 from local_lib.utils.set_parse import parse_args
+from local_lib.utils.visualize import save_imgs
+from timm.utils.misc import natural_key
+from tools.before.check_data import load_names
 
 _logger = logging.getLogger("validate")
-
-
-def save_imgs(choose_files, choices_type, save_root):
-    if not os.path.exists(save_root):
-        os.makedirs(save_root)
-    for file_path, cat in zip(choose_files, choices_type):
-        save_dir = os.path.join(save_root, f"{cat}")
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        shutil.copy(file_path, save_dir)
 
 
 def load_model(args):
@@ -91,24 +84,27 @@ def run_infer(model, args):
     # resolve AMP arguments based on PyTorch / Apex availability
     amp_autocast = suppress
 
+    if args.cats_path and args.need_cats:
+        with open(args.cats_path, "r") as f:
+            class_list = sorted([line.strip() for line in f.readlines()[:args.num_classes]], key=natural_key)
+        with open(args.need_cats, "r") as f:
+            need_list = [class_list.index(line.strip()) for line in f.readlines()]
+    else:
+        need_list = None
     assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
-            query_files = [line.strip("\n").split(",")[0] for line in f.readlines()]
-    else:
+            query_files, query_labels = zip(*[line.strip().split(",") for line in f.readlines()])
+            if args.only_need:
+                need_cat = np.array(class_list)[need_list]
+                query_files = [f for f, l in zip(query_files, query_labels) if l in need_cat]
+    else: # args.input_mode == "path" or "dir"
         query_files = (
             [os.path.join(args.data_path, path) for path in os.listdir(args.data_path)]
             if args.input_mode == "dir"
             else [args.data_path]
         )
     _logger.info(f"Loaded {len(query_files)} imgs")
-    if args.cats_path and args.need_cats:
-        with open(args.cats_path, "r") as f:
-            class_list = [line.strip("\n") for line in f.readlines()]
-        with open(args.need_cats, "r") as f:
-            need_list = [class_list.index(line.strip()) for line in f.readlines()]
-    else:
-        need_list = None
     dataset = create_custom_dataset(root=query_files, name="txt_data", split="infer")
     input_size = [3, args.img_size, args.img_size]
     loader = create_custom_loader(
@@ -135,7 +131,8 @@ def run_infer(model, args):
             _, pred = output.topk(1, 1, True, True)
             pred = pred.T.cpu()[0].numpy()
             this_choices = (
-                np.where(pred[:, np.newaxis] == need_list)[0] if need_list is not None else np.arange(pred.shape[0])
+                np.where(pred[:, np.newaxis] == need_list)[0] if False else np.arange(pred.shape[0])
+                # np.where(pred[:, np.newaxis] == need_list)[0] if need_list is not None else np.arange(pred.shape[0])
             )
             choices_type += pred[this_choices].tolist()
             base_idx = batch_idx * args.batch_size
@@ -151,8 +148,14 @@ def run_infer(model, args):
             choices_num = np.where(choices_type == cat)[0].shape[0]
             print(f"cat={cat} num: {choices_num}")
 
-    # save_imgs(choices_files, choices_type, args.results_dir)
-    np.savez(f"blacklist-{args.infer_mode}.npz", files=choices_files, labels=choices_type)
+    # import pdb; pdb.set_trace()
+    if args.only_need:
+        choices_type = np.array(class_list)[choices_type]
+        label_maps = load_names("dataset/zero_dataset/label_names.csv", idx_column=0, name_column=-1, to_int=False)
+        # print(f"{label_maps[need_list[0]]}")
+        choices_type = np.array([label_maps[l] for l in choices_type])
+    save_imgs(choices_files, choices_type, args.results_dir)
+    # np.savez(f"blacklist-{args.infer_mode}.npz", files=choices_files, labels=choices_type)
 
 
 if __name__ == "__main__":

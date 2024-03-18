@@ -7,10 +7,10 @@
 ######################################################
 import os
 
-from . import ReaderImageTxt
+from .reader_image_in_txt import ReaderImageTxt
 
 
 def create_reader(root, split="train", **kwargs):
-    assert os.path.exists(root)
+    assert os.path.exists(root), f"{root} not exist !!!"
     reader = ReaderImageTxt(root, split=split, **kwargs)
     return reader

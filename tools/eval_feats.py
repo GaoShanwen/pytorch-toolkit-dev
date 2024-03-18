@@ -11,8 +11,9 @@ import faiss
 import numpy as np
 
 from local_lib.utils import feat_tools
+from local_lib.utils.visualize.results import save_imgs
 from local_lib.utils.file_tools import load_csv_file, load_data, save_dict2csv, save_keeps2mysql
-from local_lib.utils.visualize import save_imgs
+# from local_lib.utils.visualize import save_imgs
 
 
 def parse_args():
@@ -21,7 +22,6 @@ def parse_args():
     parser.add_argument("-q", "--querys", type=str)
     parser.add_argument("--save-root", type=str, default="output/vis/noises")
     parser.add_argument("--label-file", type=str, default="dataset/zero_dataset/label_names.csv")
-    parser.add_argument("--cats-file", type=str, default="dataset/removeredundancy/629_cats.txt")
     parser.add_argument("--pass-cats", type=str, default="dataset/removeredundancy/pass_cats.txt")
     parser.add_argument("--remove-mode", type=str, default="none", help="remove mode(eq:noise, or similarity)!")
     parser.add_argument("--mask-path", type=str, default="", help="blacklist-train.npz")
@@ -34,7 +34,6 @@ def parse_args():
     parser.add_argument("--save-sql", action="store_true", default=False)
     parser.add_argument("--debug", action="store_true", default=False)
     parser.add_argument("--threshold", type=float, default=0.9)
-    parser.add_argument("--num-classes", type=int, default=629)
     parser.add_argument("--update-times", type=int, default=0)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=5)
@@ -67,13 +66,13 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
             save_keeps2mysql(g_feats, g_label, g_files, update_times=args.update_times)
         return
     keeps = feat_tools.run_choose(g_feats, g_label, args)
-    if args.remove_mode == "choose_noise":
-        if args.save_detail:
-            label_index = load_csv_file(args.label_file)
-            label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
-            save_imgs(new_g_files, new_g_label, label_map, args.save_root)
-        all_indics = np.arange(g_label.shape[0])
-        keeps = np.setdiff1d(all_indics, keeps)
+    # if args.remove_mode == "choose_noise":
+    #     if args.save_detail:
+    #         label_index = load_csv_file(args.label_file)
+    #         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
+    #         save_imgs(new_g_files, new_g_label, label_map, args.save_root)
+    #     all_indics = np.arange(g_label.shape[0])
+    #     keeps = np.setdiff1d(all_indics, keeps)
 
     print(f"original data: {g_label.shape[0]}, after remove {args.remove_mode} data: {keeps.shape[0]}")
     new_g_feats, new_g_label, new_g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
@@ -117,6 +116,19 @@ def print_static(static_res, th=0.01):
 
 
 def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
+    import pdb; pdb.set_trace()
+    keeps = feat_tools.run_choose(g_feats, g_label, args)
+    new_g_files, new_g_label = g_files[keeps], g_label[keeps]
+    save_imgs(new_g_files, new_g_label, args.save_root)
+    # if args.remove_mode == "choose_noise":
+    #     if args.save_detail:
+    #         label_index = load_csv_file(args.label_file)
+    #         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
+    #         save_imgs(new_g_files, new_g_label, label_map, args.save_root)
+    #     all_indics = np.arange(g_label.shape[0])
+    #     keeps = np.setdiff1d(all_indics, keeps)
+
+    print(f"original data: {g_label.shape[0]}, after remove {args.remove_mode} data: {keeps.shape[0]}")
     # #################### static topk ####################
     if args.remove_mode == "choose_with_static":
         static = feat_tools.run_choose(g_feats, g_label, args)
@@ -146,22 +158,23 @@ def expend_feats(feats, labels, files, feat_path):
 
 if __name__ == "__main__":
     args = parse_args()
-    args.param = "IVF629,Flat"  # "Flat"
+    args.param = "IVF629,Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
 
     # 加载npz文件
     g_feats, g_label, g_files = load_data(args.gallerys)
-    q_feats, q_label, q_files = load_data(args.querys)
+    if args.querys:
+        q_feats, q_label, q_files = load_data(args.querys)
 
-    with open(args.cats_file, "r") as f:
-        class_list = np.array([int(line.strip("\n")) for line in f.readlines()])
-        g_label = g_label if args.pass_mapping else class_list[g_label]
-        q_label = class_list[q_label]
+    # with open(args.cats_file, "r") as f:
+    #     class_list = np.array([int(line.strip("\n")) for line in f.readlines()])
+    #     g_label = g_label if args.pass_mapping else class_list[g_label]
+    #     q_label = class_list[q_label]
 
-    if not args.pass_mapping:
-        feat_paths = ["output/feats/add_2c-train.npz", "output/feats/blacklist-train.npz"]
-        for feat_path in feat_paths:
-            g_feats, g_label, g_files = expend_feats(g_feats, g_label, g_files, feat_path)
+    # if not args.pass_mapping:
+    #     feat_paths = ["output/feats/add_2c-train.npz", "output/feats/blacklist-train.npz"]
+    #     for feat_path in feat_paths:
+    #         g_feats, g_label, g_files = expend_feats(g_feats, g_label, g_files, feat_path)
     if args.debug:
         with open(args.pass_cats, "r") as f:
             choose_cats = [int(line.strip("\n")) for line in f.readlines()]
@@ -175,6 +188,9 @@ if __name__ == "__main__":
     print(f"Loaded cats number={len(cats)}, img number={g_label.shape[0]}")
 
     faiss.normalize_L2(g_feats)
-    faiss.normalize_L2(q_feats)
+    if args.querys:
+        faiss.normalize_L2(q_feats)
+    else:
+        q_feats, q_label, q_files = None, None, None
     function_name = "run_test" if args.run_test else "main"
     eval(function_name)(g_feats, g_label, g_files, q_feats, q_label, q_files, args)

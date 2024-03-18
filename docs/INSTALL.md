@@ -2,7 +2,7 @@
 
 ### Install timm
 
-下面内容安装后，需要安装pytorch，timm等python库用于训练和推理任务。
+先安装python3.8对应环境，然后根据下面内容安装pytorch，timm等python库用于训练和推理任务。
 
 ```bash
 <pytorch-toolkit-dev> ~$ # install timm and its environment(include rknn-tools2)
@@ -62,6 +62,7 @@
 ```
 
 ### 安装glibc-2.29
+
 ```bash
     cd <your-workspace>
     wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.gz
@@ -104,8 +105,14 @@
 
 ### 环境安装问题
 
-可以参考该[博客](https://blog.csdn.net/qq_42076902/article/details/129261266)解决如下问题：
+1.可以参考该[博客](https://blog.csdn.net/qq_42076902/article/details/129261266)解决如下问题：
 
 ```bash
     AttributeError: module ‘distutils‘ has no attribute ‘version‘
+```
+
+2.使用yum安装'mesa-libGL'解决如下问题：
+
+```bash
+    ImportError: libGL.so.1: cannot open shared object file: No such file or directory
 ```

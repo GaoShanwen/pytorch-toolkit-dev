@@ -215,7 +215,7 @@ def extract(args):
     cat_list = None
     if (np.array(sorted(list(class_to_idx.values()))) == np.arange(args.data_classes)).all():
         cat_list = np.array(list(map(int, class_to_idx.keys())))
-    _logger.info(f"cat_list are {cat_list}.")
+    # _logger.info(f"cat_list are {cat_list}.")
     merge_feat_files(args.results_dir, args.infer_mode, img_files, cat_list)
     _logger.info(f"feat saved in {args.results_dir}-{args.infer_mode}.npz")
 

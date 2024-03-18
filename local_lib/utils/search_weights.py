@@ -45,8 +45,7 @@ def cross_entropy(y_hat, y):
 
 if __name__ == "__main__":
     # # 生成随机数据
-    # x = torch.randn((3000, 5, 30))  # 输入数据（3000，5，30）
-    # y = torch.randint(0, 5, (3000, 1))  # 输出数据（3000，30，1）
+    topk=50
     data = np.load("output/temp/weighted_knn.npz")
     scores, plabels, gts = data["scores"], data["plabels"], data["gts"]
     x, y = [], []
@@ -56,7 +55,7 @@ if __name__ == "__main__":
         random.shuffle(final_l)
         if gt not in final_l:
             continue
-        input = np.zeros((5, 30))
+        input = np.zeros((5, topk))
         for i, (l, s) in enumerate(zip(plabel, score)):
             if l not in final_l:
                 continue
@@ -64,18 +63,31 @@ if __name__ == "__main__":
         y.append(final_l.index(gt))
         x.append(input)
     tensors = [torch.from_numpy(arr).type(torch.FloatTensor) for arr in x]
-    x = torch.cat(tensors, dim=0).view(-1, 5, 30)
+    x = torch.cat(tensors, dim=0).view(-1, 5, topk)
     y = torch.from_numpy(np.array(y)).unsqueeze(1)
 
     # 将数据划分为训练集和验证集
     x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2, random_state=42)
 
     # 定义超参数
-    num_epochs = 2000  # 训练轮数
+    num_epochs = 20000  # 训练轮数
     batch_size = 10000  # 批次大小
-    learning_rate = 0.01  # 学习率
-    W = torch.normal(0, 0.01, size=(30, 1), requires_grad=True)
-    b = torch.zeros((5, 1), requires_grad=True)
+    learning_rate = 0.0002  # 学习率
+    W = torch.normal(0, 0.01, size=(topk, 1), requires_grad=True)
+    # 设定范围
+    low, high = 0., 1.
+
+    # 初始化模型参数
+    torch.nn.init.normal_(W, mean=(low + high) / 2, std=(high - low) / 6)
+    W.data = torch.tensor([
+        1.8, 1.5, 1.4, 1.36, .967, .86, .75, .74, .63, .55, 
+        .52, .5, .48, .42, .4, .38, .37, .35, .34, .32, 
+        .3, .28, .27, .26, .25, .24, .23, .225, .21, .2, 
+        .15, .145, .125, .11, .097, .095, .092, .09, .087, .084,
+        .082, .08, .078, .075, .073, .071, .068, .065, .063, .06,
+    ]).view(50,1)
+    import pdb; pdb.set_trace()
+    b = torch.zeros((5, 1), requires_grad=False)
     optimizer = torch.optim.Adam([W, b], lr=learning_rate)
 
     def net(X):
@@ -98,7 +110,7 @@ if __name__ == "__main__":
             optimizer.zero_grad()
             loss.mean().backward()
             optimizer.step()
-        if epoch % 100 == 0:
+        if epoch % 1000 == 0:
             print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}")
 
     def evaluate_accuracy(net, data_iter):  # @save

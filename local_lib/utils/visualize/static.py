@@ -17,7 +17,7 @@ class StatisticDistance(object):
             self.save_result()
 
     def statistics_instance(self, obj):
-        value = round(math.log(obj, 10), 4)
+        value = round(math.log10(obj+1e-12), 4)
         if value not in self.distance_dict.keys():
             self.distance_dict[value] = 0
         self.distance_dict[value] += 1
@@ -86,7 +86,7 @@ class DrawStatisticResult(object):
         # ax1.set_title(key[0].split('_')[0])
         min_value = min(v[0] for v in self.attributes.values())
         max_value = max(v[-1] for v in self.attributes.values())
-        xticks = [min_value, max_value] + np.arange(min_value, max_value, 0.05).tolist()
+        xticks = [min_value, max_value] + np.arange(min_value, max_value, 0.5).tolist()
 
         # axes.set_xticks(xticks)
         plt.xticks(xticks, np.around(np.power(10, xticks), decimals=4))
@@ -110,8 +110,8 @@ class DrawStatisticResult(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Visulize Rank1 Score")
-    parser.add_argument("-s", "--src_path", type=str, default="", help="source txt path")
+    parser.add_argument("-s", "--src_path", type=str, default="", help="source npz path")
     parser.add_argument("-d", "--dst_path", type=str, default="", help="object txt path")
     args = parser.parse_args()
-    StatisticDistance(args.src_path, args.dst_path, keys=["1029", "1173"])
-    DrawStatisticResult(args.dst_path, keys=["1029", "1173"])
+    StatisticDistance(args.src_path, args.dst_path, keys=["1144-t", "1144-f"])
+    DrawStatisticResult(args.dst_path, keys=["1144-t", "1144-f"])

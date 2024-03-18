@@ -8,6 +8,7 @@
 import os
 
 import cv2
+import shutil
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -21,6 +22,16 @@ def vis_text(img, text, position, text_color, text_size):
     fontText = ImageFont.truetype("dataset/simsun.ttc", text_size, encoding="utf-8")
     draw.text(position, text, text_color, font=fontText)
     return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+
+
+def save_imgs(choose_files, choices_type, save_root):
+    if not os.path.exists(save_root):
+        os.makedirs(save_root)
+    for file_path, cat in zip(choose_files, choices_type):
+        save_dir = os.path.join(save_root, f"{cat}")
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        shutil.copy(file_path, save_dir)
 
 
 class VisualizeResults:
@@ -90,10 +101,11 @@ class VisualizeResults:
         new_height = min(set_height, int(H * (set_width / W)))  # 保持原来的长宽比
         img = cv2.resize(img, (set_width, new_height))  # 调整大小
         assert len(pred_names) == len(scores), f"pred name number is {len(pred_names)}, scores is {len(scores)}"
-        for p_name, score in zip(pred_names, scores):
-            img = vis_text(img, p_name, [2, H - self.text_size - 2], (255, 0, 0), self.text_size)
+        for i, (p_name, score) in enumerate(zip(pred_names, scores)):
+            img = vis_text(img, p_name, [2, i * self.text_size + 2], (255, 0, 0), self.text_size)
             if score is not None:
-                img = vis_text(img, str(score), [2, H - self.text_size - 2], (255, 0, 0), self.text_size)
+                start_h = H // 2 + i * self.text_size + 2
+                img = vis_text(img, f"{score*100:.2f}", [2, start_h], (255, 0, 0), self.text_size)
         return img
 
     def get_save_dir(self, obj_file, class_name):
@@ -109,14 +121,16 @@ class VisualizeResults:
         if scores is None:
             scores = np.full(gt_labels.shape[0], np.nan)
         for gt_label, gt_file, p_label, p_file, score in zip(gt_labels, gt_files, p_labels, p_files, scores):
-            if self.only_error:
-                continue
+            # if self.only_error and gt_label in p_label[:5]:
+            #     continue
+            # import pdb; pdb.set_trace()
             if not os.path.exists(gt_file):
                 print(f"{gt_file} is error!")
                 continue
             if self.class_map is not None:
                 gt_label = self.class_map[gt_label]
-                p_label = [self.class_map[p] for p in p_label]
+                p_label = [self.class_map[p] for p in p_label if p in self.class_map]
+                score = score[:len(p_label)]
             img = self.vis_function(gt_label, gt_file, p_label, p_file, score)
             obj_path = self.get_save_dir(gt_file, gt_label)
             cv2.imwrite(obj_path, img)

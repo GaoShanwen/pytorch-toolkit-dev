@@ -13,17 +13,49 @@ import numpy as np
 import tqdm
 
 
-def run_compute(p_label, q_label, do_output=True, k=5):
+weights75 = [
+    1.8, 1.5, 1.4, 1.36, .967, .86, .75, .74, .63, .55,
+    .52, .5, .48, .42, .4, .38, .37, .35, .34, .32,
+    .3, .28, .27, .26, .25, .24, .23, .225, .21, .2,
+    .15, .145, .125, .11, .097, .095, .092, .09, .087, .084,
+    .082, .08, .078, .075, .073, .071, .068, .065, .063, .06,
+]
+weights65 = [
+    1.216, 1.151, 1.059, 1.006, 1.004, .991, .981, .967, .954, .937,
+    .923, .91, .892, .878, .861, .845, .814, .792, .77, .761,
+    .74, .72, .68, .65, .63, .62, .615, .607, .592, .581,
+    .573, .563, .557, .55, .542, .537, .524, .516, .492, .48,
+    .46, .454, .441, .438, .421, .42, .4, .38, .37, .35,
+]
+weights55 = np.array([
+    2.22, 2.21, 2.20, 2.19, 2.18, 2.17, 2.16, 2.15, 2.14, 2.13, 
+    2.12, 2.11, 2.10, 2.09, 2.08, 2.07, 2.06, 2.05, 2.04, 2.03, 
+    2.02, 2.01, 2.00, 1.99, 1.98, 1.97, 1.96, 1.95, 1.94, 1.93, 
+    1.92, 1.91, 1.90, 1.89, 1.88, 1.87, 1.86, 1.85, 1.84, 1.83, 
+    1.82, 1.81, 1.80, 1.79, 1.78, 1.77, 1.76, 1.75, 1.74, 1.73
+])
+weights11 = np.ones((50))
+
+
+def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
     blacklist = np.arange(110110110001, 110110110010)
     masks = np.any(np.isin(p_label, blacklist), axis=1)
     p_label, q_label = p_label[~masks], q_label[~masks]
+    if th is not None and scores is not None:
+        scores[:, 0] = 1.
+        masks = np.where((scores < th))
+        p_label[masks] = np.nan
 
     tp1_num = np.where(p_label[:, 0] == q_label)[0].shape[0]
     tp5_num = np.unique(np.where(p_label[:, :k] == q_label[:, np.newaxis])[0]).shape[0]
-    if do_output:
+    if not do_output:
         return tp1_num, tp5_num
-    print(f"top1-knn(k={k}): {tp1_num}/{q_label.shape[0]}|{tp1_num/q_label.shape[0]}")
-    print(f"top5-knn(k={k}): {tp5_num}/{q_label.shape[0]}|{tp5_num/q_label.shape[0]}")
+    print(f"top1-knn(k={k}): {tp1_num}/{q_label.shape[0]}|{tp1_num/q_label.shape[0]*100:.2f}")
+    print(f"top5-knn(k={k}): {tp5_num}/{q_label.shape[0]}|{tp5_num/q_label.shape[0]*100:.2f}")
+    print(f"display-avg(th={th}): {np.count_nonzero(~np.isnan(p_label))/p_label.shape[0]:.2f}")
+    # import pdb; pdb.set_trace()
+    only_ones = np.equal(np.sum(np.isnan(p_label[:, 1:]), axis=1), 4)
+    print(f"display-one(th={th}): {np.sum(only_ones)/p_label.shape[0]*100:.2f}")
 
 
 def compute_acc_by_cat(p_label, q_label, label_map=None):
@@ -128,6 +160,13 @@ def inter_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_t
     return np.where(masks == False)[0]
 
 
+def softmax(x, do_sqrt=False):
+    if do_sqrt:
+        x = np.sqrt(x)
+    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return e_x / e_x.sum(axis=1, keepdims=True)
+
+
 def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
     """_summary_
 
@@ -142,16 +181,20 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
     """
     weight = np.array(
         [
-            1.8, 1.5, 1.4, 1.36, 0.967, 0.86, 0.75, 0.74,
-            0.63, 0.55, 0.52, 0.5, 0.48, 0.42, 0.4, 0.38, 
-            0.37, 0.35, 0.34, 0.32, 0.3, 0.28, 0.27, 0.26, 
-            0.25, 0.24, 0.23, 0.225, 0.21, 0.2,
-            .15, .145, .125, .11, .097, .095, .092, .09, .087, .084,
-            .082, .08, .078, .075, .073, .071, .068, .065, .063, .06,
+            # 1.8, 1.5, 1.4, 1.36, .967, .86, .75, .74, .63, .55,
+            # .52, .5, .48, .42, .4, .38, .37, .35, .34, .32,
+            # .3, .28, .27, .26, .25, .24, .23, .225, .21, .2,
+            # .15, .145, .125, .11, .097, .095, .092, .09, .087, .084,
+            # .082, .08, .078, .075, .073, .071, .068, .065, .063, .06,
+            1.216, 1.151, 1.059, 1.006, 1.004, .991, .981, .967, .954, .937,
+            .923, .91, .892, .878, .861, .845, .814, .792, .77, .761,
+            .74, .72, .68, .65, .63, .62, .615, .607, .592, .581,
+            .573, .563, .557, .55, .542, .537, .524, .516, .492, .48,
+            .46, .454, .441, .438, .421, .42, .4, .38, .37, .35,
         ]
     )[:choose_pic]
     # weight = np.ones((choose_pic))
-    bias = np.zeros((final_cat,))
+    # bias = np.zeros((final_cat,))
     input_x, index_cats = [], []
     
     for score, plabel in zip(scores, plabels):
@@ -165,29 +208,89 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
         input_x.append(input)
         index_cats.append(final_l)
 
-    def softmax(x):
-        e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-        return e_x / e_x.sum(axis=1, keepdims=True)
-
-    _scores = np.dot(input_x, weight) + bias
+    _scores = np.dot(input_x, weight) #+ bias
     final_scores = softmax(_scores.reshape(-1, final_cat))
     index_cats = np.array(index_cats)
     I = np.argsort(final_scores, axis=1)[:, ::-1]
     return index_cats[np.arange(index_cats.shape[0])[:, None], I[:, :5]]
 
 
-def get_predict_label(scores, initial_rank, gallery_label, k=5, use_knn=False, weighted=False):
+def everycat_Npic(scores, plabels, choose_Npic=5, final_cat=5, do_sqrt: bool=True, weights=None):
+    final_plabels, final_pscores = [], []
+    for score, plabel in zip(scores, plabels):
+        final_p, cat_static, index_num = [], {"cats": [], "scores": [], "counts": []}, 0
+        for i, (l, s) in enumerate(zip(plabel, score)):
+            if l not in cat_static["cats"]:
+                cat_static["cats"].append(l)
+                cat_static["scores"].append(0.)
+                cat_static["counts"].append(0)
+            cat_num = cat_static["cats"].index(l)
+            if cat_static["counts"][cat_num] > 5:
+                continue
+            cat_static["counts"][cat_num] += 1
+            cat_static["scores"][cat_num] += s * weights[index_num]
+            index_num += 1
+            if index_num >= len(weights):
+                break
+        sorted_indexes = sorted(range(len(cat_static["scores"])), key=lambda i: cat_static["scores"][i], reverse=True)
+        final_p = np.array(cat_static["cats"])[sorted_indexes].tolist()
+        final_s = np.array(cat_static["scores"])[sorted_indexes].tolist()
+        if len(final_p) < final_cat:
+            final_p = final_p + [np.nan] * (final_cat - len(final_p))
+            final_s = final_s + [-1.] * (final_cat - len(final_s))
+        final_plabels.append(final_p[:final_cat])
+        final_pscores.append(final_s[:final_cat])
+    
+    return final_plabels, softmax(np.array(final_pscores), do_sqrt)
+
+
+def merge_topN_scores(scores, plabels, choose_Npic=30, final_cat=5, weights=None):
+    assert scores.shape == plabels.shape and scores.shape[1] >= choose_Npic, \
+        f"{scores.shape} or {plabels.shape} is error!"
+    weights = weights[:choose_Npic]
+    final_plabels, final_pscores = [], []
+    for score, plabel in zip(scores, plabels):
+        final_p, cat_static = [], {"cats": [], "scores": [], "counts": []}
+        for i, (l, s) in enumerate(zip(plabel, score)):
+            if i >= choose_Npic:
+                break
+            if l not in cat_static["cats"]:
+                cat_static["cats"].append(l)
+                cat_static["scores"].append(0.)
+                cat_static["counts"].append(0)
+            cat_num = cat_static["cats"].index(l)
+            cat_static["counts"][cat_num] += 1
+            cat_static["scores"][cat_num] += s * weights[i]
+        sorted_indexes = sorted(range(len(cat_static["scores"])), key=lambda i: cat_static["scores"][i], reverse=True)
+        final_p = np.array(cat_static["cats"])[sorted_indexes].tolist()
+        final_s = np.array(cat_static["scores"])[sorted_indexes].tolist()
+        if len(final_p) < final_cat:
+            final_p = final_p + [np.nan] * (final_cat - len(final_p))
+            final_s = final_s + [-1.] * (final_cat - len(final_s))
+        final_plabels.append(final_p[:final_cat])
+        final_pscores.append(final_s[:final_cat])
+    
+    return final_plabels, softmax(np.array(final_pscores))
+
+
+def get_predict_label(scores, initial_rank, gallery_label, k=5, use_knn=False, trick_id=None):
     if not use_knn:
-        return gallery_label[initial_rank]
+        return gallery_label[initial_rank], None
     res = []
-    if not weighted:
+    if not trick_id:
         for initial in initial_rank:
             sorted_counter = Counter(gallery_label[initial].tolist()).most_common()
             res += [[counter[0] for counter in sorted_counter[:k]]]
         res = [sublist + [np.nan] * (k - len(sublist)) for sublist in res]
-        return np.array(res)
-    res = create_matrix(scores, gallery_label[initial_rank], choose_pic=scores.shape[1], final_cat=k)
-    return np.array(res)
+        return np.array(p_labels), None
+    if trick_id in [11, 65, 75]:
+        weights = eval(f"weights{trick_id}")
+        p_labels, p_scores = merge_topN_scores(scores, gallery_label[initial_rank], final_cat=k, weights=weights)
+    # elif trick_id == 65:
+    #     res = create_matrix(scores, gallery_label[initial_rank], choose_pic=scores.shape[1], final_cat=k)
+    elif trick_id == 55:
+        p_labels, p_scores = everycat_Npic(scores, gallery_label[initial_rank], final_cat=k, do_sqrt=False, weights=weights)
+    return np.array(p_labels), np.array(p_scores)
 
 
 def choose_noise(matrix, labels, choose_ratio, use_gpu=False, update_times=0):

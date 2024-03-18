@@ -27,3 +27,4 @@ topk: 9
 mode_function: "feat_extract"
 num_choose: null
 results_dir: ""
+only_need: false
