@@ -23,8 +23,8 @@ from local_lib.data.loader import create_custom_loader
 from local_lib.models import create_custom_model
 from local_lib.utils.set_parse import parse_args
 from local_lib.utils.visualize import save_imgs
+from local_lib.utils.file_tools import load_names
 from timm.utils.misc import natural_key
-from tools.before.check_data import load_names
 
 _logger = logging.getLogger("validate")
 
