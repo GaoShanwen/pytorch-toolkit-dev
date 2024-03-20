@@ -28,12 +28,12 @@ def parse_args():
     parser.add_argument("--use-gpu", action="store_true", default=False)
     parser.add_argument("--use-knn", action="store_true", default=False)
     parser.add_argument("--run-test", action="store_true", default=False)
-    parser.add_argument("--weighted", action="store_true", default=False)
     parser.add_argument("--save-detail", action="store_true", default=False)
     parser.add_argument("--pass-mapping", action="store_true", default=False)
     parser.add_argument("--save-sql", action="store_true", default=False)
     parser.add_argument("--debug", action="store_true", default=False)
     parser.add_argument("--threshold", type=float, default=0.9)
+    parser.add_argument("--trick_id", type=int, default=None)
     parser.add_argument("--update-times", type=int, default=0)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=5)
@@ -43,7 +43,7 @@ def parse_args():
 def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv"):
     index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     D, I = index.search(q_feats, args.topk)
-    p_label = feat_tools.get_predict_label(D, I, g_label, use_knn=args.use_knn, weighted=args.weighted)
+    p_label = feat_tools.get_predict_label(D, I, g_label, use_knn=args.use_knn, trick_id=args.trick_id)
     if acc_file_name:
         label_index = load_csv_file(args.label_file)
         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
