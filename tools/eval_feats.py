@@ -43,7 +43,7 @@ def parse_args():
 def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv"):
     index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     D, I = index.search(q_feats, args.topk)
-    p_label = feat_tools.get_predict_label(D, I, g_label, use_knn=args.use_knn, trick_id=args.trick_id)
+    p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, use_knn=args.use_knn, trick_id=args.trick_id)
     if acc_file_name:
         label_index = load_csv_file(args.label_file)
         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}

@@ -52,14 +52,15 @@ def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
         return tp1_num, tp5_num
     print(f"top1-knn(k={k}): {tp1_num}/{q_label.shape[0]}|{tp1_num/q_label.shape[0]*100:.2f}")
     print(f"top5-knn(k={k}): {tp5_num}/{q_label.shape[0]}|{tp5_num/q_label.shape[0]*100:.2f}")
-    print(f"display-avg(th={th}): {np.count_nonzero(~np.isnan(p_label))/p_label.shape[0]:.2f}")
     # import pdb; pdb.set_trace()
+    print(f"display-avg(th={th}): {np.count_nonzero(~np.isnan(p_label))/p_label.shape[0]:.2f}")
     only_ones = np.equal(np.sum(np.isnan(p_label[:, 1:]), axis=1), 4)
     print(f"display-one(th={th}): {np.sum(only_ones)/p_label.shape[0]*100:.2f}")
 
 
 def compute_acc_by_cat(p_label, q_label, label_map=None):
-    top1_num, top5_num = run_compute(p_label, q_label)
+    # import pdb; pdb.set_trace()
+    top1_num, top5_num = run_compute(p_label, q_label, do_output=False)
     acc_map = {
         "all_data": {
             "top1_num": top1_num,
