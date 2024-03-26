@@ -36,7 +36,7 @@ def save_imgs(choose_files, choices_type, save_root):
 
 class VisualizeResults:
     def __init__(
-        self, save_root, task="classify", img_size=(640, 480), text_size=24, class_map=None, settings=[]
+        self, save_root, task="classify", text_size=24, class_map=None, settings=[], img_size=(640, 480)
     ) -> None:
         assert task in ["classify", "search"], f"{task} is not support, only support classify or search, yet!"
         assert all(isinstance(v, str) for v in class_map.values()), "the values of class_map must be str!"
@@ -121,9 +121,8 @@ class VisualizeResults:
         if scores is None:
             scores = np.full(gt_labels.shape[0], np.nan)
         for gt_label, gt_file, p_label, p_file, score in zip(gt_labels, gt_files, p_labels, p_files, scores):
-            # if self.only_error and gt_label in p_label[:5]:
-            #     continue
-            # import pdb; pdb.set_trace()
+            if self.only_error and gt_label in p_label[:5]:#p_label[:5]:
+                continue
             if not os.path.exists(gt_file):
                 print(f"{gt_file} is error!")
                 continue

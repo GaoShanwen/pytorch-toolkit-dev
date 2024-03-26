@@ -48,44 +48,42 @@ def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
 
     tp1_num = np.where(p_label[:, 0] == q_label)[0].shape[0]
     tp5_num = np.unique(np.where(p_label[:, :k] == q_label[:, np.newaxis])[0]).shape[0]
+    display_num = np.count_nonzero(~np.isnan(p_label))
+    only_ones = np.sum(np.equal(np.sum(np.isnan(p_label[:, 1:]), axis=1), 4))
     if not do_output:
-        return tp1_num, tp5_num
+        return tp1_num, tp5_num, display_num, only_ones
     print(f"top1-knn(k={k}): {tp1_num}/{q_label.shape[0]}|{tp1_num/q_label.shape[0]*100:.2f}")
     print(f"top5-knn(k={k}): {tp5_num}/{q_label.shape[0]}|{tp5_num/q_label.shape[0]*100:.2f}")
-    # import pdb; pdb.set_trace()
-    print(f"display-avg(th={th}): {np.count_nonzero(~np.isnan(p_label))/p_label.shape[0]:.2f}")
-    only_ones = np.equal(np.sum(np.isnan(p_label[:, 1:]), axis=1), 4)
-    print(f"display-one(th={th}): {np.sum(only_ones)/p_label.shape[0]*100:.2f}")
+    print(f"display-avg(th={th}): {display_num/p_label.shape[0]:.2f}")
+    print(f"display-one(th={th}): {only_ones/p_label.shape[0]*100:.2f}")
 
 
 def compute_acc_by_cat(p_label, q_label, label_map=None):
-    # import pdb; pdb.set_trace()
-    top1_num, top5_num = run_compute(p_label, q_label, do_output=False)
+    top1_num, top5_num, display_num, only_ones = run_compute(p_label, q_label, do_output=False)
     acc_map = {
         "all_data": {
-            "top1_num": top1_num,
-            "top1_acc": top1_num / q_label.shape[0],
-            "top5_num": top5_num,
-            "top5_acc": top5_num / q_label.shape[0],
-            "data_num": q_label.shape[0],
+            "top1_acc": top1_num / q_label.shape[0] * 100,
+            "top5_acc": top5_num / q_label.shape[0] * 100,
+            "display_avg": display_num / q_label.shape[0],
+            "display_one": only_ones / q_label.shape[0] * 100,
+            "query_num": q_label.shape[0],
             "name": "",
         }
     }
     val_dict = dict(Counter(q_label))
     for cat, data_num in val_dict.items():
-        cat_index = np.where(q_label == cat)
-        top1_num = np.where(p_label[cat_index, 0] == q_label[cat_index])[1].shape[0]
-        top5_num = np.unique(np.where(p_label[cat_index, :] == q_label[cat_index, np.newaxis])[1]).shape[0]
+        keeps = np.isin(q_label, [cat])
+        cat_pl, cat_ql = p_label[keeps], q_label[keeps]
+        top1_num, top5_num, display_num, only_ones = run_compute(cat_pl, cat_ql, do_output=False)
         cat_res = {
-            "top1_num": top1_num,
-            "top1_acc": top1_num / data_num,
-            "top5_num": top5_num,
-            "top5_acc": top5_num / data_num,
-            "data_num": data_num,
+            "top1_acc": top1_num / data_num * 100,
+            "top5_acc": top5_num / data_num * 100,
+            "display_avg": display_num / data_num,
+            "display_one": only_ones / data_num * 100,
+            "query_num": data_num,
+            "name": label_map[cat] if label_map is not None else ''
         }
-        if label_map is not None:
-            cat_res.update({"name": label_map[cat]})
-        acc_map[cat] = cat_res
+        acc_map.update({cat: cat_res}) 
     return acc_map
 
 
@@ -131,7 +129,7 @@ def intra_similarity(matrix, labels, samilar_thresh=0.9, use_gpu=False, update_t
         for i in range(data_num - 1):
             if mask[i]:
                 continue
-            # 找到大于阈值的得分, 定位到位置，
+            # 找到大于阈值的得分, 定位到位置
             mask_index = np.where((g_g_scores[i, :] >= threshold) & (g_g_indexs[i, :] > i))[0]
             mask[g_g_indexs[i, mask_index]] = True
         masks += cat_index[np.where(mask == True)[0]].tolist()
@@ -274,8 +272,10 @@ def merge_topN_scores(scores, plabels, choose_Npic=30, final_cat=5, weights=None
     return final_plabels, softmax(np.array(final_pscores))
 
 
-def get_predict_label(scores, initial_rank, gallery_label, k=5, use_knn=False, trick_id=None):
-    if not use_knn:
+def get_predict_label(scores, initial_rank, gallery_label, k=5, threshold=None, trick_id=None):
+    if trick_id and threshold:
+        initial_rank[scores<threshold], scores[scores<threshold] = -1, 0.
+    if not trick_id:
         return gallery_label[initial_rank], None
     res = []
     if not trick_id:

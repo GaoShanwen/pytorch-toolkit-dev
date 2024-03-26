@@ -11,8 +11,9 @@ import faiss
 import numpy as np
 
 from local_lib.utils import feat_tools
+from local_lib.utils.visualize import VisualizeResults
 from local_lib.utils.visualize.results import save_imgs
-from local_lib.utils.file_tools import load_csv_file, load_data, save_dict2csv, save_keeps2mysql
+from local_lib.utils.file_tools import load_csv_file, load_data, save_dict2csv, save_keeps2mysql, load_names
 # from local_lib.utils.visualize import save_imgs
 
 
@@ -20,10 +21,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-g", "--gallerys", type=str)
     parser.add_argument("-q", "--querys", type=str)
-    parser.add_argument("--save-root", type=str, default="output/vis/noises")
+    parser.add_argument("--save-root", type=str, default="output/vis/errors")
     parser.add_argument("--label-file", type=str, default="dataset/zero_dataset/label_names.csv")
-    parser.add_argument("--pass-cats", type=str, default="dataset/removeredundancy/pass_cats.txt")
-    parser.add_argument("--remove-mode", type=str, default="none", help="remove mode(eq:noise, or similarity)!")
+    parser.add_argument("--set-cats", type=str, default="dataset/removeredundancy/pass_cats.txt")
+    parser.add_argument("--remove-mode", type=str, default="none", help="remove mode(eq:noise or similarity)")
+    parser.add_argument("--vis-way", type=str, default=None, help="visualize way(eq:classify or search)")
     parser.add_argument("--mask-path", type=str, default="", help="blacklist-train.npz")
     parser.add_argument("--use-gpu", action="store_true", default=False)
     parser.add_argument("--use-knn", action="store_true", default=False)
@@ -31,8 +33,9 @@ def parse_args():
     parser.add_argument("--save-detail", action="store_true", default=False)
     parser.add_argument("--pass-mapping", action="store_true", default=False)
     parser.add_argument("--save-sql", action="store_true", default=False)
+    parser.add_argument("--do-keep", action="store_true", default=False)
     parser.add_argument("--debug", action="store_true", default=False)
-    parser.add_argument("--threshold", type=float, default=0.9)
+    parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--trick_id", type=int, default=None)
     parser.add_argument("--update-times", type=int, default=0)
     parser.add_argument("--dim", type=int, default=128)
@@ -43,20 +46,33 @@ def parse_args():
 def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv"):
     index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     D, I = index.search(q_feats, args.topk)
-    p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, use_knn=args.use_knn, trick_id=args.trick_id)
+    p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, threshold=args.threshold, trick_id=args.trick_id)
     if acc_file_name:
-        label_index = load_csv_file(args.label_file)
-        label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
+        label_map = load_csv_file(args.label_file, to_int=True, frist_name=True)
         acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, label_map)
+        for key, value in acc_map.items():
+            g_num = np.sum(np.isin(g_label, [int(key)])) if key != "all_data" else g_label.shape[0]
+            value.update({"gallery_num": g_num})
         save_dict2csv(acc_map, acc_file_name)
-    feat_tools.run_compute(p_label, q_label, do_output=False)
+    feat_tools.run_compute(p_label, q_label, do_output=True)
 
 
 def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
     eval_server(g_feats, g_label, q_feats, q_label, args, "eval_res.csv")
+    if args.vis_way is not None:
+        save_root, text_size = args.save_root, 48
+        index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
+        D, I = index.search(q_feats, args.topk)
+        label_maps = load_names(args.label_file, idx_column=0, name_column=1, to_int=True)
+        visualizer = VisualizeResults(save_root, args.vis_way, text_size, label_maps, ["show_gt"]) #"only_error", 
+        if args.vis_way == "search":
+            visualizer.do_visualize(q_label, q_files, g_label[I], p_files=g_files[I], scores=D)
+            return
+        
+        p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, 5, args.threshold, args.trick_id)
+        visualizer.do_visualize(q_label, q_files, p_label, p_files=None, scores=p_scores)
     if args.mask_path:
         data = np.load(args.mask_path)
-        # import pdb; pdb.set_trace()
         masks = np.isin(g_files, data["files"])
         keeps = np.array(np.arange(g_files.shape[0]))[~masks]
         print(f"original data: {g_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}")
@@ -158,13 +174,16 @@ def expend_feats(feats, labels, files, feat_path):
 
 if __name__ == "__main__":
     args = parse_args()
-    args.param = "IVF629,Flat"
+    # args.param = "IVF629,Flat"
+    args.param = "Flat"
     args.measure = faiss.METRIC_INNER_PRODUCT
 
     # 加载npz文件
     g_feats, g_label, g_files = load_data(args.gallerys)
+    g_files = np.array([path.replace("/exp-data", "") for path in g_files])
     if args.querys:
         q_feats, q_label, q_files = load_data(args.querys)
+        q_files = np.array([path.replace("/exp-data", "") for path in q_files])
 
     # with open(args.cats_file, "r") as f:
     #     class_list = np.array([int(line.strip("\n")) for line in f.readlines()])
@@ -176,21 +195,24 @@ if __name__ == "__main__":
     #     for feat_path in feat_paths:
     #         g_feats, g_label, g_files = expend_feats(g_feats, g_label, g_files, feat_path)
     if args.debug:
-        with open(args.pass_cats, "r") as f:
-            choose_cats = [int(line.strip("\n")) for line in f.readlines()]
-        print(f"remove cats number={len(choose_cats)}")
-        masks = np.isin(g_label, choose_cats)
-        g_feats, g_label, g_files = g_feats[~masks], g_label[~masks], g_files[~masks]
+        with open(args.set_cats, "r") as f:
+            set_cats = [int(line.strip("\n")) for line in f.readlines()]
+        print(f"set cats number={len(set_cats)}")
+        choice = np.isin(g_label, set_cats)
+        keeps = choice if args.do_keep else ~choice
+        g_feats, g_label, g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
 
-        masks = np.isin(q_label, choose_cats)
-        q_feats, q_label, q_files = q_feats[~masks], q_label[~masks], q_files[~masks]
+        choice = np.isin(q_label, set_cats)
+        keeps = choice if args.do_keep else ~choice
+        q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
     cats = list(set(g_label))
-    print(f"Loaded cats number={len(cats)}, img number={g_label.shape[0]}")
+    print(f"Loaded cats number={len(cats)}, gallery number={g_label.shape[0]}")
 
     faiss.normalize_L2(g_feats)
     if args.querys:
         faiss.normalize_L2(q_feats)
     else:
         q_feats, q_label, q_files = None, None, None
+    print(f"Loaded cats number={len(cats)}, query number={q_label.shape[0]}")
     function_name = "run_test" if args.run_test else "main"
     eval(function_name)(g_feats, g_label, g_files, q_feats, q_label, q_files, args)
