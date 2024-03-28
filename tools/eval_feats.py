@@ -35,7 +35,8 @@ def parse_args():
     parser.add_argument("--save-sql", action="store_true", default=False)
     parser.add_argument("--do-keep", action="store_true", default=False)
     parser.add_argument("--debug", action="store_true", default=False)
-    parser.add_argument("--threshold", type=float, default=None)
+    parser.add_argument("--similarity-th", type=float, default=None)
+    parser.add_argument("--final-th", type=float, default=None)
     parser.add_argument("--trick_id", type=int, default=None)
     parser.add_argument("--update-times", type=int, default=0)
     parser.add_argument("--dim", type=int, default=128)
@@ -46,15 +47,16 @@ def parse_args():
 def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv"):
     index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     D, I = index.search(q_feats, args.topk)
-    p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, threshold=args.threshold, trick_id=args.trick_id)
+    p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, threshold=args.similarity_th, trick_id=args.trick_id)
     if acc_file_name:
         label_map = load_csv_file(args.label_file, to_int=True, frist_name=True)
-        acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, label_map)
+        acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, p_scores, label_map, threshold=args.final_th)
         for key, value in acc_map.items():
             g_num = np.sum(np.isin(g_label, [int(key)])) if key != "all_data" else g_label.shape[0]
             value.update({"gallery_num": g_num})
         save_dict2csv(acc_map, acc_file_name)
-    feat_tools.run_compute(p_label, q_label, do_output=True)
+    
+    feat_tools.run_compute(p_label, q_label, p_scores, do_output=True, th=args.final_th)
 
 
 def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
@@ -69,7 +71,7 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
             visualizer.do_visualize(q_label, q_files, g_label[I], p_files=g_files[I], scores=D)
             return
         
-        p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, 5, args.threshold, args.trick_id)
+        p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, 5, args.similarity_th, args.trick_id)
         visualizer.do_visualize(q_label, q_files, p_label, p_files=None, scores=p_scores)
     if args.mask_path:
         data = np.load(args.mask_path)
@@ -92,11 +94,11 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
 
     print(f"original data: {g_label.shape[0]}, after remove {args.remove_mode} data: {keeps.shape[0]}")
     new_g_feats, new_g_label, new_g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
-    save_path = f"output/feats/regnety_040-train-{args.remove_mode}-{args.threshold}.npz"
+    save_path = f"output/feats/regnety_040-train-{args.remove_mode}-{args.similarity_th}.npz"
     np.savez(save_path, feats=new_g_feats, gts=new_g_label, fpaths=new_g_files)
     if args.save_sql:
         save_keeps2mysql(new_g_feats, new_g_label, new_g_files, update_times=args.update_times)
-    csv_name = f"eval_res-{args.remove_mode}-{args.threshold}.csv" if args.save_detail else ""
+    csv_name = f"eval_res-{args.remove_mode}-{args.similarity_th}.csv" if args.save_detail else ""
     eval_server(new_g_feats, new_g_label, q_feats, q_label, args, csv_name)
 
 
@@ -213,6 +215,10 @@ if __name__ == "__main__":
         faiss.normalize_L2(q_feats)
     else:
         q_feats, q_label, q_files = None, None, None
+
+    # keeps = np.isin(q_label, [40038,])
+    # q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
+    # import pdb; pdb.set_trace()
     print(f"Loaded cats number={len(cats)}, query number={q_label.shape[0]}")
     function_name = "run_test" if args.run_test else "main"
     eval(function_name)(g_feats, g_label, g_files, q_feats, q_label, q_files, args)

@@ -58,32 +58,24 @@ def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
     print(f"display-one(th={th}): {only_ones/p_label.shape[0]*100:.2f}")
 
 
-def compute_acc_by_cat(p_label, q_label, label_map=None):
-    top1_num, top5_num, display_num, only_ones = run_compute(p_label, q_label, do_output=False)
-    acc_map = {
-        "all_data": {
-            "top1_acc": top1_num / q_label.shape[0] * 100,
-            "top5_acc": top5_num / q_label.shape[0] * 100,
-            "display_avg": display_num / q_label.shape[0],
-            "display_one": only_ones / q_label.shape[0] * 100,
-            "query_num": q_label.shape[0],
-            "name": "",
-        }
-    }
-    val_dict = dict(Counter(q_label))
+def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshold=None):
+    val_dict = {"all_data": q_label.shape[0]}
+    val_dict.update(dict(Counter(q_label)))
+    acc_map = {}
     for cat, data_num in val_dict.items():
-        keeps = np.isin(q_label, [cat])
-        cat_pl, cat_ql = p_label[keeps], q_label[keeps]
-        top1_num, top5_num, display_num, only_ones = run_compute(cat_pl, cat_ql, do_output=False)
+        keeps = np.ones(shape=data_num, dtype=bool) if cat == "all_data" else np.isin(q_label, [cat])
+        cat_pl, cat_ql, cat_ps = p_label[keeps], q_label[keeps], p_scores[keeps]
+        top1_num, top5_num, display_num, only_ones = \
+            run_compute(cat_pl, cat_ql, cat_ps, do_output=False, th=threshold)
         cat_res = {
             "top1_acc": top1_num / data_num * 100,
             "top5_acc": top5_num / data_num * 100,
             "display_avg": display_num / data_num,
             "display_one": only_ones / data_num * 100,
             "query_num": data_num,
-            "name": label_map[cat] if label_map is not None else ''
+            "name": label_map[cat] if label_map is not None and cat in label_map else ''
         }
-        acc_map.update({cat: cat_res}) 
+        acc_map.update({cat: cat_res})
     return acc_map
 
 
@@ -165,6 +157,10 @@ def softmax(x, do_sqrt=False):
     e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
     return e_x / e_x.sum(axis=1, keepdims=True)
 
+def normalize_scores(scores):
+    s = scores.copy()
+    s[s<0] = 0
+    return s / s.sum(axis=1, keepdims=True)
 
 def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
     """_summary_
@@ -269,7 +265,7 @@ def merge_topN_scores(scores, plabels, choose_Npic=30, final_cat=5, weights=None
         final_plabels.append(final_p[:final_cat])
         final_pscores.append(final_s[:final_cat])
     
-    return final_plabels, softmax(np.array(final_pscores))
+    return final_plabels, normalize_scores(np.array(final_pscores)) #softmax(np.array(final_pscores))
 
 
 def get_predict_label(scores, initial_rank, gallery_label, k=5, threshold=None, trick_id=None):
