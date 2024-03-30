@@ -13,8 +13,8 @@ import numpy as np
 from local_lib.utils import feat_tools
 from local_lib.utils.visualize import VisualizeResults
 from local_lib.utils.visualize.results import save_imgs
-from local_lib.utils.file_tools import load_csv_file, load_data, save_dict2csv, save_keeps2mysql, load_names
-# from local_lib.utils.visualize import save_imgs
+from local_lib.utils.file_tools import load_data, save_dict2csv, save_keeps2mysql, load_names
+# from local_lib.utils.visualize import save_imgs load_csv_file, 
 
 
 def parse_args():
@@ -23,12 +23,12 @@ def parse_args():
     parser.add_argument("-q", "--querys", type=str)
     parser.add_argument("--save-root", type=str, default="output/vis/errors")
     parser.add_argument("--label-file", type=str, default="dataset/zero_dataset/label_names.csv")
-    parser.add_argument("--set-cats", type=str, default="dataset/removeredundancy/pass_cats.txt")
-    parser.add_argument("--remove-mode", type=str, default="none", help="remove mode(eq:noise or similarity)")
+    parser.add_argument("--set-files", type=str, default="dataset/removeredundancy/pass_cats.txt")
+    parser.add_argument("--remove-mode", type=str, default=None, help="noise or similarity(default:None)")
     parser.add_argument("--vis-way", type=str, default=None, help="visualize way(eq:classify or search)")
+    parser.add_argument("--filter-mode", type=str, default=None, help="label or file_path(default:None)")
     parser.add_argument("--mask-path", type=str, default="", help="blacklist-train.npz")
     parser.add_argument("--use-gpu", action="store_true", default=False)
-    parser.add_argument("--use-knn", action="store_true", default=False)
     parser.add_argument("--run-test", action="store_true", default=False)
     parser.add_argument("--save-detail", action="store_true", default=False)
     parser.add_argument("--pass-mapping", action="store_true", default=False)
@@ -37,8 +37,10 @@ def parse_args():
     parser.add_argument("--debug", action="store_true", default=False)
     parser.add_argument("--similarity-th", type=float, default=None)
     parser.add_argument("--final-th", type=float, default=None)
-    parser.add_argument("--trick_id", type=int, default=None)
+    parser.add_argument("--trick-id", type=int, default=None)
     parser.add_argument("--update-times", type=int, default=0)
+    parser.add_argument("--idx-column", type=int, default=0)
+    parser.add_argument("--name-column", type=int, default=-1)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=5)
     return parser.parse_args()
@@ -49,7 +51,7 @@ def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_re
     D, I = index.search(q_feats, args.topk)
     p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, threshold=args.similarity_th, trick_id=args.trick_id)
     if acc_file_name:
-        label_map = load_csv_file(args.label_file, to_int=True, frist_name=True)
+        label_map = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
         acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, p_scores, label_map, threshold=args.final_th)
         for key, value in acc_map.items():
             g_num = np.sum(np.isin(g_label, [int(key)])) if key != "all_data" else g_label.shape[0]
@@ -65,7 +67,7 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
         save_root, text_size = args.save_root, 48
         index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
         D, I = index.search(q_feats, args.topk)
-        label_maps = load_names(args.label_file, idx_column=0, name_column=1, to_int=True)
+        label_maps = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
         visualizer = VisualizeResults(save_root, args.vis_way, text_size, label_maps, ["show_gt"]) #"only_error", 
         if args.vis_way == "search":
             visualizer.do_visualize(q_label, q_files, g_label[I], p_files=g_files[I], scores=D)
@@ -79,14 +81,14 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
         keeps = np.array(np.arange(g_files.shape[0]))[~masks]
         print(f"original data: {g_label.shape[0]}, after remove blacklist data: {keeps.shape[0]}")
         g_feats, g_label, g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
-    if args.remove_mode == "none":
+    if args.remove_mode is None:
         if args.save_sql:
             save_keeps2mysql(g_feats, g_label, g_files, update_times=args.update_times)
         return
     keeps = feat_tools.run_choose(g_feats, g_label, args)
     # if args.remove_mode == "choose_noise":
     #     if args.save_detail:
-    #         label_index = load_csv_file(args.label_file)
+    #         label_index = load_names(args.label_file)
     #         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
     #         save_imgs(new_g_files, new_g_label, label_map, args.save_root)
     #     all_indics = np.arange(g_label.shape[0])
@@ -150,7 +152,7 @@ def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
     # #################### static topk ####################
     if args.remove_mode == "choose_with_static":
         static = feat_tools.run_choose(g_feats, g_label, args)
-        label_index = load_csv_file(args.label_file)
+        label_index = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
         label_map = {int(cat): name.split("/")[0] for cat, name in label_index.items()}
         new_static = {}
         for cat, value in static.items():
@@ -183,28 +185,29 @@ if __name__ == "__main__":
     # 加载npz文件
     g_feats, g_label, g_files = load_data(args.gallerys)
     g_files = np.array([path.replace("/exp-data", "") for path in g_files])
+    g_files = np.array([file.replace("./dataset/function_test/test_subo/train", "/data/AI-scales/images/1173/backflow") for file in g_files])
     if args.querys:
         q_feats, q_label, q_files = load_data(args.querys)
         q_files = np.array([path.replace("/exp-data", "") for path in q_files])
+    q_files = np.array([file.replace("./dataset/function_test/test_subo/val", "/data/AI-scales/images/1173/backflow") for file in q_files])
 
-    # with open(args.cats_file, "r") as f:
-    #     class_list = np.array([int(line.strip("\n")) for line in f.readlines()])
-    #     g_label = g_label if args.pass_mapping else class_list[g_label]
-    #     q_label = class_list[q_label]
-
-    # if not args.pass_mapping:
-    #     feat_paths = ["output/feats/add_2c-train.npz", "output/feats/blacklist-train.npz"]
-    #     for feat_path in feat_paths:
-    #         g_feats, g_label, g_files = expend_feats(g_feats, g_label, g_files, feat_path)
-    if args.debug:
-        with open(args.set_cats, "r") as f:
-            set_cats = [int(line.strip("\n")) for line in f.readlines()]
-        print(f"set cats number={len(set_cats)}")
-        choice = np.isin(g_label, set_cats)
+    if args.filter_mode is not None:
+        assert args.filter_mode in ["label", "file_path"], "filter_model must be label or file_path!"
+        if args.filter_mode == "label":
+            with open(args.set_files, "r") as f:
+                g_objects = [int(line.strip("\n")) for line in f.readlines()]
+            q_objects = g_objects
+        else:
+            data = np.load(args.set_files)
+            g_objects, q_objects = data["g_files"], data["q_files"]
+        print(f"set {args.filter_mode} g_number={len(g_objects)}, q_number={len(q_objects)}")
+        org_object = g_label if args.filter_mode == "label" else g_files
+        choice = np.isin(org_object, g_objects)
         keeps = choice if args.do_keep else ~choice
         g_feats, g_label, g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
 
-        choice = np.isin(q_label, set_cats)
+        org_object = q_label if args.filter_mode == "label" else q_files
+        choice = np.isin(org_object, q_objects)
         keeps = choice if args.do_keep else ~choice
         q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
     cats = list(set(g_label))

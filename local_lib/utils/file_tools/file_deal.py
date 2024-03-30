@@ -34,7 +34,13 @@ def load_csv_file(label_file, to_int=False, frist_name=False):
     return product_id_map
 
 
-def load_names(label_files: Union[str, List[str]], idx_column: int=1, name_column: int=2, to_int: bool=False):
+def load_names(
+        label_files: Union[str, List[str]], 
+        idx_column: int=1, 
+        name_column: int=2, 
+        to_int: bool=True, 
+        frist_name: bool=True,
+    ):
     product_id_map = {}
     if isinstance(label_files, str):
         label_files = [label_files]
@@ -43,12 +49,11 @@ def load_names(label_files: Union[str, List[str]], idx_column: int=1, name_colum
             for line in f.readlines():#[1:]:
                 try:
                     id_record = line.strip().replace('"', "").split(",")
-                    if to_int:
-                        product_id_map.update({int(id_record[idx_column]): id_record[name_column]})
-                    else:
-                        product_id_map.update({id_record[idx_column]: id_record[name_column]})
+                    key = int(id_record[idx_column]) if to_int else id_record[idx_column]
+                    value = id_record[name_column].split("/")[0] if frist_name else id_record[name_column]
+                    product_id_map.update({key: value})
                 except:
-                    print(f"line={line} is error!")
+                    print(f"line={line.strip()} is passed!")
     return product_id_map
 
 
