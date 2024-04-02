@@ -10,6 +10,10 @@
 <pytorch-toolkit-dev> ~$ git checkout timm-dev
 <pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu102
 <pytorch-toolkit-dev> ~$ python setup.py install
+<pytorch-toolkit-dev> ~$ # install apex for speed training
+< other-workspace > ~$ git clone https://github.com/NVIDIA/apex
+< other-workspace > ~$ cd apex
+< other-workspace/apex > ~$ pip install -v --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" --global-option="--deprecated_fused_adam" --global-option="--xentropy" --global-option="--fast_multihead_attn" ./
 ```
 
 如果需要转换模型，则需另外安装以下内容：

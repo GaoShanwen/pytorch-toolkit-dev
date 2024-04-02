@@ -23,7 +23,7 @@ timm-dev branch for classfication or re-identification tasks.
 - [x] Remove similarity or noise data, weighted k-nearest neighbor for reid.
 - [ ] Visualize precision-recall / receiver-operating-characteristic curve.
 - [x] Visualize the features converted into 2D/3D pixels and convert to html.
-- [ ] Mixed-Precision Training for faster speed.
+- [x] Mixed-Precision Training for faster speed.
 - [x] Visualize models' heatmaps.
 - [x] Convert pth model to onnx/rknn.
 
