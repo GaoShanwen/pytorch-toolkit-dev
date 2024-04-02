@@ -27,7 +27,7 @@ from timm.scheduler import create_scheduler_v2, scheduler_kwargs
 from timm.utils import ApexScaler, NativeScaler
 from torch.nn.parallel import DistributedDataParallel as NativeDDP
 
-from local_lib.data import create_custom_dataset
+from local_lib.data import create_custom_dataset, CustomRandAADataset
 from local_lib.models import create_custom_model  # for regster local model
 from local_lib.utils import TensorBoardWriter, parse_args
 
@@ -325,13 +325,25 @@ def main():
             mixup_fn = Mixup(**mixup_args)
 
     # wrap dataset in AugMix helper
-    if num_aug_splits > 1:
+    if not args.custom_aa_cats and num_aug_splits > 1:
         dataset_train = AugMixDataset(dataset_train, num_splits=num_aug_splits)
 
     # create data loaders w/ augmentation pipeiine
     train_interpolation = args.train_interpolation
     if args.no_aug or not train_interpolation:
         train_interpolation = data_config["interpolation"]
+    if args.custom_aa_cats:
+        with open(args.custom_aa_cats, 'r') as load_f:
+            set_cats = [line.strip() for line in load_f.readlines()]
+        assert args.aa.startswith('rand')
+        dataset_train = CustomRandAADataset(
+            dataset_train, 
+            input_size=data_config["input_size"], 
+            auto_augment=args.aa,
+            interpolation=train_interpolation,
+            mean=data_config["mean"],
+            set_cats=[dataset_train.reader.class_to_idx[cat] for cat in set_cats],
+        )
     loader_train = create_loader(
         dataset_train,
         input_size=data_config["input_size"],
@@ -599,6 +611,13 @@ def train_one_epoch(
         update_idx = batch_idx // accum_steps
         if batch_idx >= last_batch_idx_to_accum:
             accum_steps = last_accum_steps
+        # import cv2
+        # import numpy as np
+        # # imgs = paddle.transpose(images, perm=[0, 2, 3, 1]).numpy()[..., ::-1]
+        # imgs = input.permute([0,2,3,1]).cpu().numpy()[..., ::-1]
+        # for i, img in enumerate(imgs):
+        #     cv2.imwrite(f"output/vis/vis_img/{batch_idx}_{i}.jpg", np.array(img*255, dtype=int))
+        # import pdb; pdb.set_trace()
 
         if not args.prefetcher:
             input, target = input.to(device), target.to(device)

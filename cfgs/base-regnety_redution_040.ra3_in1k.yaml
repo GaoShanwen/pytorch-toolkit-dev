@@ -153,3 +153,4 @@ results_file: ''
 results_format: csv
 compute_by_cat: true
 label_file: "dataset/zero_dataset/label_names.csv"
+custom_aa_cats: ""
