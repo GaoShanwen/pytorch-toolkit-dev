@@ -64,22 +64,24 @@ def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshol
     acc_map = {}
     for cat, data_num in val_dict.items():
         keeps = np.ones(shape=data_num, dtype=bool) if cat == "all_data" else np.isin(q_label, [cat])
-        cat_pl, cat_ql, cat_ps = p_label[keeps], q_label[keeps], p_scores[keeps]
+        cat_pl, cat_ql = p_label[keeps], q_label[keeps]
+        cat_ps = p_scores[keeps] if p_scores is not None else p_scores
         top1_num, top5_num, display_num, only_ones = \
             run_compute(cat_pl, cat_ql, cat_ps, do_output=False, th=threshold)
         cat_res = {
+            "name": label_map[cat] if label_map is not None and cat in label_map else '',
+            "gallery_num": 0,
+            "query_num": data_num,
             "top1_acc": top1_num / data_num * 100,
             "top5_acc": top5_num / data_num * 100,
             "display_avg": display_num / data_num,
-            "display_one": only_ones / data_num * 100,
-            "query_num": data_num,
-            "name": label_map[cat] if label_map is not None and cat in label_map else ''
+            "display_one": only_ones / data_num * 100
         }
         acc_map.update({cat: cat_res})
     return acc_map
 
 
-def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT, L2_flag=False):
+def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT):
     dim = data_embedding.shape[1]
     index = faiss.index_factory(dim, param, measure)
     if param.startswith("IVF"):

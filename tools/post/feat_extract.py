@@ -156,7 +156,7 @@ def extract(args):
         root=root_dir,
         name=args.dataset,
         split=args.split,
-        is_training=args.infer_mode == "train",
+        is_training=args.infer_mode=="train",
         download=args.dataset_download,
         load_bytes=args.tf_preprocessing,
         class_map=args.class_map,
@@ -213,7 +213,7 @@ def extract(args):
     img_files = dataset.reader.samples
     class_to_idx = dataset.reader.class_to_idx
     cat_list = None
-    if (np.array(sorted(list(class_to_idx.values()))) == np.arange(args.data_classes)).all():
+    if not args.cats_path or (np.array(sorted(list(class_to_idx.values()))) == np.arange(args.data_classes)).all():
         cat_list = np.array(list(map(int, class_to_idx.keys())))
     # _logger.info(f"cat_list are {cat_list}.")
     merge_feat_files(args.results_dir, args.infer_mode, img_files, cat_list)
