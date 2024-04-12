@@ -33,6 +33,18 @@ def save_imgs(choose_files, choices_type, save_root):
             os.makedirs(save_dir)
         shutil.copy(file_path, save_dir)
 
+def save_predictions(choose_files, predicts, gts, save_root):
+    # if gts.any() is None:
+    #     return save_imgs(choose_files, predicts, save_root)
+    if not os.path.exists(save_root):
+        os.makedirs(save_root)
+    for file_path, cat, gt in zip(choose_files, predicts, gts):
+        save_dir = os.path.join(save_root, f"{gt}p2{cat}")
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        shutil.copy(file_path, save_dir)
+
+
 
 class VisualizeResults:
     def __init__(
@@ -121,7 +133,7 @@ class VisualizeResults:
         if scores is None:
             scores = np.full(gt_labels.shape[0], np.nan)
         for gt_label, gt_file, p_label, p_file, score in zip(gt_labels, gt_files, p_labels, p_files, scores):
-            if self.only_error and gt_label in p_label[:5]:#p_label[:5]:
+            if self.only_error and gt_label in p_label[:30]:#p_label[:5]:
                 continue
             if not os.path.exists(gt_file):
                 print(f"{gt_file} is error!")

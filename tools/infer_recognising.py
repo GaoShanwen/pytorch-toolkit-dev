@@ -8,6 +8,7 @@
 ######################################################
 import logging
 import os
+import json
 import shutil
 from contextlib import suppress
 
@@ -22,7 +23,7 @@ from local_lib.data.dataset_factory import create_custom_dataset
 from local_lib.data.loader import create_custom_loader
 from local_lib.models import create_custom_model
 from local_lib.utils.set_parse import parse_args
-from local_lib.utils.visualize import save_imgs
+from local_lib.utils.visualize import save_imgs, save_predictions
 from local_lib.utils.file_tools import load_names
 from timm.utils.misc import natural_key
 
@@ -83,29 +84,51 @@ def run_infer(model, args):
     device = torch.device(args.device)
     # resolve AMP arguments based on PyTorch / Apex availability
     amp_autocast = suppress
+    assert isinstance(args.threshold, float), f"threshold={args.threshold} is not supported!"
+    assert args.status is not None, f"status={args.status} is not supported!"
 
-    if args.cats_path and args.need_cats:
+    if args.cats_path:
         with open(args.cats_path, "r") as f:
             class_list = sorted([line.strip() for line in f.readlines()[:args.num_classes]], key=natural_key)
+    if args.need_cats:
         with open(args.need_cats, "r") as f:
-            need_list = [class_list.index(line.strip()) for line in f.readlines()]
+            load_cats = json.load(f)
+        assert len(load_cats) == 1, f"the longth of load_cats must be one, but get {len(load_cats)}"
+        need_cats, related_cats = np.array(list(load_cats.keys())), np.squeeze(np.array(list(load_cats.values())))
+        
+        # need_cats = np.array(load_cats["original_categories"])
+        # need_idx = np.array([class_list.index(line.strip()) for line in need_cats])
+        # related_cats = np.array(load_cats["related_categories"])
+        # related_idx = np.array([class_list.index(line.strip()) for line in related_cats])
+        # with open(args.need_cats, "r") as f:
+        #     need_list = np.array([class_list.index(line.strip()) for line in f.readlines()])
+        #     need_cat = np.array(class_list)[need_list]
     else:
-        need_list = None
+        need_cats, related_cats = None, None
     assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
             query_files, query_labels = zip(*[line.strip().split(",") for line in f.readlines()])
-            if args.only_need:
-                need_cat = np.array(class_list)[need_list]
-                query_files = [f for f, l in zip(query_files, query_labels) if l in need_cat]
+        query_files, query_labels = np.array(query_files), np.array(query_labels)
+        filter_cats = related_cats if args.status == "after_analyze" else need_cats
+        checker_cats = need_cats if args.status == "after_analyze" else related_cats
+        # import pdb; pdb.set_trace()
+        check_idx = np.array([class_list.index(line) for line in checker_cats])
+        if args.only_need:
+            keeps = np.isin(query_labels, filter_cats)
+            query_files, query_labels = query_files[keeps], query_labels[keeps]
     else: # args.input_mode == "path" or "dir"
-        query_files = (
+        query_files = np.array(
             [os.path.join(args.data_path, path) for path in os.listdir(args.data_path)]
             if args.input_mode == "dir"
             else [args.data_path]
         )
+        query_labels = np.array([None] * len(query_files))
+    
+    class_to_idx = {c: idx for idx, c in enumerate(class_list)}
+    images_and_targets = list(zip(*(query_files, query_labels)))
     _logger.info(f"Loaded {len(query_files)} imgs")
-    dataset = create_custom_dataset(root=query_files, name="txt_data", split="infer")
+    dataset = create_custom_dataset(root=images_and_targets, name="txt_data", class_to_idx=class_to_idx, split="infer")
     input_size = [3, args.img_size, args.img_size]
     loader = create_custom_loader(
         dataset,
@@ -117,7 +140,7 @@ def run_infer(model, args):
         transfrom_mode="custom",
     )
 
-    choices, choices_type = [], []
+    choices, predicts = np.zeros(len(query_files)).astype(bool), []
     pbar = tqdm.tqdm(total=len(loader))
     model.eval()
     with torch.no_grad():
@@ -128,33 +151,41 @@ def run_infer(model, args):
 
             with amp_autocast():
                 output = model(input)
-            _, pred = output.topk(1, 1, True, True)
-            pred = pred.T.cpu()[0].numpy()
-            this_choices = (
-                np.where(pred[:, np.newaxis] == need_list)[0] if False else np.arange(pred.shape[0])
-                # np.where(pred[:, np.newaxis] == need_list)[0] if need_list is not None else np.arange(pred.shape[0])
-            )
-            choices_type += pred[this_choices].tolist()
-            base_idx = batch_idx * args.batch_size
-            choices += (this_choices + base_idx).tolist()
+            if args.status == "before_analyze":
+                _, pred = output.topk(1, 1, True, True)
+                pred = pred.T.cpu()[0].numpy()
+                # this_choices = (np.isin(pred, check_idx)).astype(bool)
+                this_choices = (
+                    np.isin(pred, check_idx) if check_idx.shape[0] else np.ones(pred.shape[0])
+                ).astype(bool)
+            elif args.status == "after_analyze":
+                pred = output.softmax(dim=1).cpu().numpy()
+                this_choices = (np.sum(pred[:, check_idx], axis=1) >= args.threshold).astype(bool)
+                pred = check_idx[np.argmax(pred[:, check_idx], axis=1)]
+            if not np.sum(this_choices):
+                continue
+            predicts += pred[this_choices].tolist()
+            keeps = np.arange(pred.shape[0])[this_choices] + (batch_idx * args.batch_size)
+            choices[keeps] = True
     pbar.close()
-    choices_type = np.array(choices_type)
-    choices = np.array(choices)
-    query_files = np.array(query_files)
-    choices_files = query_files[choices]
-    print(f"choices/all: {choices_type.shape[0]}/{query_files.shape[0]}")
-    if need_list is not None:
-        for cat in need_list:
-            choices_num = np.where(choices_type == cat)[0].shape[0]
-            print(f"cat={cat} num: {choices_num}")
+    predicts = np.array(predicts) #choices = np.array(choices)
+    choices_files, choices_gts = query_files[choices], query_labels[choices]
+    _logger.info(f"choices/all: {predicts.shape[0]}/{query_files.shape[0]}")
+    label_maps = load_names(args.label_file, idx_column=0, name_column=-1, to_int=False)
+    predicts = np.array(class_list)[predicts]
+    if need_cats is not None:
+        for cat in need_cats:
+            choices_num = np.sum(np.isin(predicts, [cat]))
+            _logger.info(f"cat={cat} name={label_maps[cat]} num: {choices_num}")
 
-    # import pdb; pdb.set_trace()
-    if args.only_need:
-        choices_type = np.array(class_list)[choices_type]
-        label_maps = load_names("dataset/zero_dataset/label_names.csv", idx_column=0, name_column=-1, to_int=False)
-        # print(f"{label_maps[need_list[0]]}")
-        choices_type = np.array([label_maps[l] for l in choices_type])
-    save_imgs(choices_files, choices_type, args.results_dir)
+    # with open("after_removed.txt", "w") as f:
+    #     choices_files, choices_gts = query_files[~choices], query_labels[~choices]
+    #     for file_path, label in zip(choices_files, choices_gts):
+    #         f.write(f"{file_path},{label}\n")
+    predicts = np.array([label_maps[l] for l in predicts])
+    choices_gts = np.array([label_maps[l] for l in choices_gts])
+    # save_imgs(choices_files, predicts, args.results_dir)
+    save_predictions(choices_files, predicts, choices_gts, args.results_dir)
     # np.savez(f"blacklist-{args.infer_mode}.npz", files=choices_files, labels=choices_type)
 
 
