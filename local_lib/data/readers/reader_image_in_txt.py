@@ -62,9 +62,9 @@ def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None,
     filenames, labels = zip(
         *[(fpath, label) for fpath, label in lines if choose_cats is None or label in choose_cats]
     )
-    # check images in dataset is readable!
+    # check images 
     for img_path in filenames:
-        assert check_img(img_path), f"{img_path} is error!"
+        assert check_img(img_path), f"{img_path} in dataset is unreadable!"
 
     if class_to_idx is None:
         # building class index
@@ -111,13 +111,15 @@ class ReaderImageTxt(Reader):
 
 
 class ReaderImagePaths(Reader):
-    def __init__(self, filenames: List, class_to_idx: Optional[Dict] = None, sort: bool = True):
+    def __init__(self, images_and_targets: List, class_to_idx: Optional[Dict] = None, sort: bool = True):
         super().__init__()
-        assert len(filenames), (
+        filepaths, _ = zip(*(images_and_targets))
+        assert len(filepaths), (
             f"Found 0 images in subfolders of filenames. "
             f'Supported image extensions are {", ".join(get_img_extensions())}'
         )
-        images_and_targets = list(zip(*(filenames, [None] * len(filenames))))
+        if class_to_idx is not None:
+            images_and_targets = [(f, class_to_idx[l]) for f, l in images_and_targets]
         if sort:
             images_and_targets = sorted(images_and_targets, key=lambda k: natural_key(k[0]))
         self.samples, self.class_to_idx = images_and_targets, class_to_idx

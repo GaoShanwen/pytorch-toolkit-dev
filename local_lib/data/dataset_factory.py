@@ -15,7 +15,7 @@ def create_custom_dataset(name, root, split="val", class_map=None, is_training=F
     if name != "txt_data":
         return create_dataset(name, root, split, class_map, is_training, **kwargs)
     split = "train" if is_training else split.replace("validation", "val")
-    assert split in ["train", "val", "infer"], f"split must be train/val or infer but you set {split}"
-    reader = ReaderImagePaths(root, sort=False) if split == "infer" else None
+    assert split in ["train", "val", "infer"], f"split must be train/val or infer, but you set {split}"
+    reader = ReaderImagePaths(root, sort=False, class_to_idx=kwargs.get("class_to_idx", None)) if split == "infer" else None
     ds = TxtReaderImageDataset(root, reader=reader, split=split, class_map=class_map, **kwargs)
     return ds

@@ -15,26 +15,7 @@ from timm.data.auto_augment import rand_augment_transform
 from timm.data.transforms import str_to_pil_interp
 
 from .readers import create_reader
-
-
-_CUSTOM_RAND_TFS = [
-    'AutoContrast', 
-    # 'Equalize',
-    # 'Invert',
-    'Rotate', 
-    # 'Posterize', 
-    'Solarize',
-    # 'SolarizeAdd',
-    'Color',
-    'Contrast',
-    'Brightness',
-    'Sharpness',
-    'ShearX', 
-    'ShearY', 
-    'TranslateXRel',
-    'TranslateYRel',
-    # 'Cutout'  # NOTE I've implement this as random erasing separately
-]
+from .custom_aa import _CUSTOM_RAND_TFS
 
 class TxtReaderImageDataset(ImageDataset):
     def __init__(
@@ -59,19 +40,26 @@ class TxtReaderImageDataset(ImageDataset):
         self._consecutive_errors = 0
 
 class CustomRandAADataset(data.Dataset):
-    def __init__(self, dataset, input_size, auto_augment, interpolation, mean, set_cats=None):
+    def __init__(self, dataset, input_size, auto_augment, interpolation, mean, convert_epoch):
         self.augmentation = None
+        self.default_aa = None
         self.normalize = None
         self.dataset = dataset
-        self.set_cats = set_cats
+        self.convert_epoch = convert_epoch
         if self.dataset.transform is not None:
             self._set_transforms(self.dataset.transform)
         self.custom_aa = self.create_transform(input_size, auto_augment, interpolation, mean)
 
+    def set_epoch(self, count):
+        # TFDS and WDS need external epoch count for deterministic cross process shuffle
+        if hasattr(self, 'reader') and hasattr(self.reader, 'set_epoch'):
+            self.reader.set_epoch(count)
+        self.augmentation = self.default_aa if count < self.convert_epoch else self.custom_aa
+
     def _set_transforms(self, x):
         assert isinstance(x, (list, tuple)) and len(x) == 3, 'Expecting a tuple/list of 3 transforms'
         self.dataset.transform = x[0]
-        self.augmentation = x[1]
+        self.default_aa = x[1]
         self.normalize = x[2]
 
     @property
@@ -101,11 +89,7 @@ class CustomRandAADataset(data.Dataset):
     def __getitem__(self, i):
         x, y = self.dataset[i]  # all splits share the same dataset base transform
         # run the full augmentation on the remaining splits
-        x = self.transform(x)
-        if y in self.set_cats:
-            x = self.custom_aa(x)
-        else:
-            x = self.augmentation(x)
+        x = self.augmentation(self.transform(x))
         return self.normalize(x), y
 
     def __len__(self):

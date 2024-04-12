@@ -325,16 +325,14 @@ def main():
             mixup_fn = Mixup(**mixup_args)
 
     # wrap dataset in AugMix helper
-    if not args.custom_aa_cats and num_aug_splits > 1:
+    if not args.custom_aa and num_aug_splits > 1:
         dataset_train = AugMixDataset(dataset_train, num_splits=num_aug_splits)
 
     # create data loaders w/ augmentation pipeiine
     train_interpolation = args.train_interpolation
     if args.no_aug or not train_interpolation:
         train_interpolation = data_config["interpolation"]
-    if args.custom_aa_cats:
-        with open(args.custom_aa_cats, 'r') as load_f:
-            set_cats = [line.strip() for line in load_f.readlines()]
+    if args.custom_aa:
         assert args.aa.startswith('rand')
         dataset_train = CustomRandAADataset(
             dataset_train, 
@@ -342,7 +340,7 @@ def main():
             auto_augment=args.aa,
             interpolation=train_interpolation,
             mean=data_config["mean"],
-            set_cats=[dataset_train.reader.class_to_idx[cat] for cat in set_cats],
+            convert_epoch=args.convert_epoch,
         )
     loader_train = create_loader(
         dataset_train,
