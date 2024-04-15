@@ -39,7 +39,10 @@ def save_predictions(choose_files, predicts, gts, save_root):
     if not os.path.exists(save_root):
         os.makedirs(save_root)
     for file_path, cat, gt in zip(choose_files, predicts, gts):
-        save_dir = os.path.join(save_root, f"{gt}p2{cat}")
+        last_dir = os.path.join(save_root, f"p2{cat}")
+        if not os.path.exists(last_dir):
+            os.makedirs(last_dir)
+        save_dir = os.path.join(last_dir, f"{gt}p2{cat}")
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         shutil.copy(file_path, save_dir)

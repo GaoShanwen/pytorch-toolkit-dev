@@ -89,7 +89,8 @@ def run_infer(model, args):
 
     if args.cats_path:
         with open(args.cats_path, "r") as f:
-            class_list = sorted([line.strip() for line in f.readlines()[:args.num_classes]], key=natural_key)
+            # class_list = sorted([line.strip() for line in f.readlines()[:args.num_classes]], key=natural_key)
+            class_list = sorted([line.strip() for line in f.readlines()], key=natural_key)
     if args.need_cats:
         with open(args.need_cats, "r") as f:
             load_cats = json.load(f)
@@ -105,15 +106,14 @@ def run_infer(model, args):
         #     need_cat = np.array(class_list)[need_list]
     else:
         need_cats, related_cats = None, None
+    filter_cats = related_cats if args.status == "after_analyze" else need_cats
+    checker_cats = need_cats if args.status == "after_analyze" else related_cats
+    check_idx = np.array([class_list.index(line) for line in checker_cats]) if checker_cats else np.array([])
     assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
         with open(args.data_path, "r") as f:
             query_files, query_labels = zip(*[line.strip().split(",") for line in f.readlines()])
         query_files, query_labels = np.array(query_files), np.array(query_labels)
-        filter_cats = related_cats if args.status == "after_analyze" else need_cats
-        checker_cats = need_cats if args.status == "after_analyze" else related_cats
-        # import pdb; pdb.set_trace()
-        check_idx = np.array([class_list.index(line) for line in checker_cats])
         if args.only_need:
             keeps = np.isin(query_labels, filter_cats)
             query_files, query_labels = query_files[keeps], query_labels[keeps]
@@ -128,7 +128,7 @@ def run_infer(model, args):
     class_to_idx = {c: idx for idx, c in enumerate(class_list)}
     images_and_targets = list(zip(*(query_files, query_labels)))
     _logger.info(f"Loaded {len(query_files)} imgs")
-    dataset = create_custom_dataset(root=images_and_targets, name="txt_data", class_to_idx=class_to_idx, split="infer")
+    dataset = create_custom_dataset("txt_data", images_and_targets, class_to_idx=class_to_idx, split="infer")
     input_size = [3, args.img_size, args.img_size]
     loader = create_custom_loader(
         dataset,
@@ -182,7 +182,8 @@ def run_infer(model, args):
     #     choices_files, choices_gts = query_files[~choices], query_labels[~choices]
     #     for file_path, label in zip(choices_files, choices_gts):
     #         f.write(f"{file_path},{label}\n")
-    predicts = np.array([label_maps[l] for l in predicts])
+    # predicts = np.array([label_maps[l] for l in predicts])
+    predicts = predicts.astype(str)
     choices_gts = np.array([label_maps[l] for l in choices_gts])
     # save_imgs(choices_files, predicts, args.results_dir)
     save_predictions(choices_files, predicts, choices_gts, args.results_dir)
