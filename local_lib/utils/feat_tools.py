@@ -46,14 +46,14 @@ def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
         masks = np.where((scores < th))
         p_label[masks] = np.nan
 
-    tp1_num = np.where(p_label[:, 0] == q_label)[0].shape[0]
-    tp5_num = np.unique(np.where(p_label[:, :k] == q_label[:, np.newaxis])[0]).shape[0]
+    top1_num = np.where(p_label[:, 0] == q_label)[0].shape[0]
+    top5_num = np.unique(np.where(p_label[:, :k] == q_label[:, np.newaxis])[0]).shape[0]
     display_num = np.count_nonzero(~np.isnan(p_label))
     only_ones = np.sum(np.equal(np.sum(np.isnan(p_label[:, 1:]), axis=1), 4))
     if not do_output:
-        return tp1_num, tp5_num, display_num, only_ones
-    print(f"top1-knn(k={k}): {tp1_num}/{q_label.shape[0]}|{tp1_num/q_label.shape[0]*100:.2f}")
-    print(f"top5-knn(k={k}): {tp5_num}/{q_label.shape[0]}|{tp5_num/q_label.shape[0]*100:.2f}")
+        return top1_num, top5_num, display_num, only_ones
+    print(f"top1-knn(k={k}): {top1_num}/{q_label.shape[0]}|{top1_num/q_label.shape[0]*100:.2f}")
+    print(f"top5-knn(k={k}): {top5_num}/{q_label.shape[0]}|{top5_num/q_label.shape[0]*100:.2f}")
     print(f"display-avg(th={th}): {display_num/p_label.shape[0]:.2f}")
     print(f"display-one(th={th}): {only_ones/p_label.shape[0]*100:.2f}")
 
@@ -66,6 +66,11 @@ def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshol
         keeps = np.ones(shape=data_num, dtype=bool) if cat == "all_data" else np.isin(q_label, [cat])
         cat_pl, cat_ql = p_label[keeps], q_label[keeps]
         cat_ps = p_scores[keeps] if p_scores is not None else p_scores
+        # cat_pl, cat_ql = p_label.copy(), q_label.copy()
+        # cat_ps = p_scores.copy() if p_scores is not None else p_scores
+        # if cat != "all_data":
+        #     cat_pl[p_label!=cat] = 0
+        #     cat_ql[q_label!=cat] = 0
         top1_num, top5_num, display_num, only_ones = \
             run_compute(cat_pl, cat_ql, cat_ps, do_output=False, th=threshold)
         cat_res = {

@@ -18,14 +18,14 @@ timm-dev branch for classfication or re-identification tasks.
 
 ### Supported Functions
 
-- [x] Classfication or re-identification tasks.
+- [ ] Classfication (Single-label and Multi-label) and Re-identification tasks.
+- [ ] Metric distance for Re-identification.
 - [x] Visualize training curve (wandb / tensorboard).
 - [x] Remove similarity or noise data, weighted k-nearest neighbor for reid.
-- [ ] Visualize precision-recall / receiver-operating-characteristic curve.
-- [x] Visualize the features converted into 2D/3D pixels and convert to html.
+- [ ] Visualize Precision-Recall / Receiver-Operating-Characteristic curve.
 - [x] Mixed-Precision Training for faster speed.
-- [x] Visualize models' heatmaps.
-- [x] Convert pth model to onnx/rknn.
+- [x] Visualize models' heatmaps and U-MAPs.
+- [x] Convert pth model to onnx / rknn.
 
 ### Major Motivation
 

@@ -54,6 +54,7 @@ Run this comand, make sure your folder format is follow:
 <pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --config cfgs/removeredundancy/regnety_redution_040.ra3_in1k.yaml
 <pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --cats-path dataset/zero_dataset/save_cats2.txt
 <pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --options model-kwargs="reduction_dim=64"
+<pytorch-toolkit-dev> ~$ OMP_U_THREADS=1 ... --options amp=True amp_impl=apex 
 ```
 
 - **Validate Dataset**
@@ -80,10 +81,10 @@ Run this comand, make sure your folder format is follow:
 
 ```bash
 <pytorch-toolkit-dev> ~$ # feat extracte
-        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=5,6 python tools/post/feat_extract.py \
+        OMP_U_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES=4,5,6,7 python tools/post/feat_extract.py \
         --config cfgs/base-regnety_redution_040.ra3_in1k.yaml --options model_classes=629 data_classes=10 \
         checkpoint=output/train/20231113-141942-regnety_redution_040_ra3_in1k-224/model_best.pth.tar \
-        cats_path=dataset/blacklist2/10_cats.txt batch_size=128 num_gpu=2 results_dir=output/feats/blacklist \
+        cats_path=dataset/blacklist2/10_cats.txt batch_size=512 num_gpu=4 results_dir=output/feats/blacklist \
         infer_mode=train data_dir=dataset/blacklist2
         model_classes=629 data_classes=175 \
         checkpoint=output/train/20240229-010436-regnety_redution_040_ra3_in1k-224/model_best.pth.tar \

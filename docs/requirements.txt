@@ -11,7 +11,7 @@ torchvision==0.11.2+cu102
 pyyaml==6.0.1
 huggingface_hub==0.18.0
 safetensors==0.4.0
-timm==0.9.12
+timm==0.9.12 # not support newest !
 scipy==1.5.4
 requests==2.27.1
 protobuf==3.20.3
