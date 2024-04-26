@@ -44,23 +44,13 @@ def read_images_and_targets(anno_path: str, class_to_idx: Optional[Dict] = None,
         with open(cats_path, "r") as f:
             save_cats = [line.strip("\n") for line in f.readlines()]
 
-    if kwargs.get("pass_path", None):
-        pass_path = kwargs["pass_path"]
-        with open(pass_path, "r") as f:
-            for line in f.readlines():
-                save_cats.remove(line.strip("\n"))
-
     if kwargs.get("num_classes", None):
         num_classes = kwargs["num_classes"]
         save_cats = save_cats[:num_classes] if save_cats is not None and num_classes < len(save_cats) else save_cats
-    choose_cats = save_cats
-    if kwargs.get("num_choose", None):
-        num_choose = kwargs["num_choose"]
-        choose_cats = save_cats[num_choose[0] : num_choose[1]]
     with open(anno_path, "r") as f:
         lines = [line.strip().replace(' ', '').split(",") for line in f.readlines()]
     filenames, labels = zip(
-        *[(fpath, label) for fpath, label in lines if choose_cats is None or label in choose_cats]
+        *[(fpath, label) for fpath, label in lines if save_cats is None or label in save_cats]
     )
     # check images 
     for img_path in filenames:
@@ -141,11 +131,13 @@ class ReaderImagePaths(Reader):
 
 
 if __name__ == "__main__":
-    anno_path = "./dataset/blacklist/train.txt"
-    # images_and_targets, class_to_idx = read_images_and_targets(
-    #     anno_path, cats_path="dataset/blacklist/save_cats.txt",
-    #     num_classes=632)
+    anno_path = "./dataset/optimize_task3/train.txt"
+    cats_path="dataset/optimize_task3/2066_cats.txt"
+    images_and_targets, class_to_idx = read_images_and_targets(
+        anno_path, cats_path=cats_path, num_classes=2066
+    )
+    print(f"Loaded trainset: cats={len(class_to_idx)}, imgs={len(images_and_targets)}")
 
-    with open(anno_path, "r") as f:
-        query_files = [line.strip("\n").split(", ")[0] for line in f.readlines()]
-    reader = ReaderImagePaths(query_files)
+    # with open(anno_path, "r") as f:
+    #     query_files = [line.strip("\n").split(", ")[0] for line in f.readlines()]
+    # reader = ReaderImagePaths(query_files)

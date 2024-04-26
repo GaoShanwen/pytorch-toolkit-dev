@@ -28,3 +28,6 @@ mode_function: "feat_extract"
 num_choose: null
 results_dir: ""
 only_need: false
+threshold: null
+multilabel:
+  enable: false

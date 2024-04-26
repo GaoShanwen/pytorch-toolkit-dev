@@ -28,7 +28,7 @@ from timm.utils import ApexScaler, NativeScaler
 from torch.nn.parallel import DistributedDataParallel as NativeDDP
 
 from local_lib.data import create_custom_dataset, CustomRandAADataset
-from local_lib.models import create_custom_model  # for regster local model
+from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel  # for regster local model
 from local_lib.utils import TensorBoardWriter, parse_args
 
 try:
@@ -66,7 +66,7 @@ def main():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.benchmark = True
 
-    args.prefetcher = not args.no_prefetcher
+    args.prefetcher = not args.no_prefetcher and args.multilabel is None
     args.grad_accum_steps = max(1, args.grad_accum_steps)
     device = utils.init_distributed_device(args)
     if args.distributed:
@@ -158,6 +158,11 @@ def main():
     model.to(device=device)
     if args.channels_last:
         model.to(memory_format=torch.channels_last)
+
+    if args.feat_extract_dim is not None: #feat_extract
+        model = FeatExtractModel(model, args.model).to(device=device)
+    if args.multilabel:
+        model = MultiLabelModel(model, args.multilabel).to(device=device)
 
     # setup synchronized BatchNorm for distributed training
     if args.distributed and args.sync_bn:
@@ -271,6 +276,7 @@ def main():
     # create the train and eval datasets
     if args.data and not args.data_dir:
         args.data_dir = args.data
+    
     dataset_train = create_custom_dataset(
         args.dataset,
         root=args.data_dir,
@@ -285,8 +291,10 @@ def main():
         num_choose=args.num_choose,
         cats_path=args.cats_path,
         pass_path=args.pass_path,
+        multilabel=args.multilabel,
     )
-    _logger.info(f"Loaded trainset: cats={len(dataset_train.reader.class_to_idx)}, imgs={len(dataset_train)}")
+    cat_nums = len(dataset_train.reader.class_to_idx) if not args.multilabel else args.multilabel["label_nums"]
+    _logger.info(f"Loaded trainset: cats={cat_nums}, imgs={len(dataset_train)}")
 
     dataset_eval = create_custom_dataset(
         args.dataset,
@@ -300,8 +308,10 @@ def main():
         num_choose=args.num_choose,
         cats_path=args.cats_path,
         pass_path=args.pass_path,
+        multilabel=args.multilabel,
     )
-    _logger.info(f"Loaded valset: cats={len(dataset_eval.reader.class_to_idx)}, imgs={len(dataset_eval)}")
+    cat_nums = len(dataset_train.reader.class_to_idx) if not args.multilabel else args.multilabel["label_nums"]
+    _logger.info(f"Loaded valset: cats={cat_nums}, imgs={len(dataset_eval)}")
 
     # setup mixup / cutmix
     collate_fn = None
@@ -618,7 +628,11 @@ def train_one_epoch(
         # import pdb; pdb.set_trace()
 
         if not args.prefetcher:
-            input, target = input.to(device), target.to(device)
+            input = input.to(device)
+            if isinstance(target, dict):
+                target = {k: v.to(device) for k, v in target.items()}
+            else:
+                target = target.to(device)
             if mixup_fn is not None:
                 input, target = mixup_fn(input, target)
         if args.channels_last:
@@ -630,7 +644,10 @@ def train_one_epoch(
         def _forward():
             with amp_autocast():
                 output = model(input)
-                loss = loss_fn(output, target)
+                if args.multilabel:
+                    loss = model.module.get_loss(loss_fn, output, target)
+                else:
+                    loss = loss_fn(output, target)
             if accum_steps > 1:
                 loss /= accum_steps
             return loss
@@ -726,26 +743,21 @@ def train_one_epoch(
         update_sample_count = 0
         data_start_time = time.time()
         # end for
-
+    
     if hasattr(optimizer, "sync_lookahead"):
         optimizer.sync_lookahead()
 
     return OrderedDict([("loss", losses_m.avg)])
 
 
-def validate(
-    model,
-    loader,
-    loss_fn,
-    args,
-    device=torch.device("cuda"),
-    amp_autocast=suppress,
-    log_suffix="",
-):
+def validate(model, loader, loss_fn, args, device=torch.device("cuda"), amp_autocast=suppress, log_suffix=""):
     batch_time_m = utils.AverageMeter()
     losses_m = utils.AverageMeter()
     top1_m = utils.AverageMeter()
     top5_m = utils.AverageMeter()
+    if args.multilabel:
+        attributes = args.multilabel.get("attributes", None)
+        acc1_attrs = {attr: utils.AverageMeter() for attr in attributes}
 
     model.eval()
 
@@ -756,7 +768,10 @@ def validate(
             last_batch = batch_idx == last_idx
             if not args.prefetcher:
                 input = input.to(device)
-                target = target.to(device)
+                if isinstance(target, dict):
+                    target = {k: v.to(device) for k, v in target.items()}
+                else:
+                    target = target.to(device)
             if args.channels_last:
                 input = input.contiguous(memory_format=torch.channels_last)
 
@@ -771,8 +786,18 @@ def validate(
                     output = output.unfold(0, reduce_factor, reduce_factor).mean(dim=2)
                     target = target[0 : target.size(0) : reduce_factor]
 
-                loss = loss_fn(output, target)
-            acc1, acc5 = utils.accuracy(output, target, topk=(1, 5))
+                if args.multilabel:
+                    loss_calculator = model.module.get_loss if isinstance(model, NativeDDP) else model.get_loss
+                    loss = loss_calculator(loss_fn, output, target)
+                else:
+                    loss = loss_fn(output, target)
+            if args.multilabel:
+                acc_calculator = model.module.get_accuracy if isinstance(model, NativeDDP) else model.get_accuracy
+                acc1, acc5, acc1_for_attrs = acc_calculator(utils.accuracy, output, target, topk=(1, 5))
+                for attr in attributes:
+                    acc1_attrs[attr].update(acc1_for_attrs[attr].item(), input.size(0))
+            else:
+                acc1, acc5 = utils.accuracy(output, target, topk=(1, 5))
 
             if args.distributed:
                 reduced_loss = utils.reduce_tensor(loss.data, args.world_size)
@@ -785,8 +810,8 @@ def validate(
                 torch.cuda.synchronize()
 
             losses_m.update(reduced_loss.item(), input.size(0))
-            top1_m.update(acc1.item(), output.size(0))
-            top5_m.update(acc5.item(), output.size(0))
+            top1_m.update(acc1.item(), input.size(0))
+            top5_m.update(acc5.item(), input.size(0))
 
             batch_time_m.update(time.time() - end)
             end = time.time()
@@ -800,6 +825,9 @@ def validate(
                     f"Acc@5: {top5_m.val:>7.3f} ({top5_m.avg:>7.3f})"
                 )
 
+    if utils.is_primary(args) and args.multilabel:
+        for attr in attributes:
+            _logger.info(f"{attr} loss: {acc1_attrs[attr].avg:>7.3f};")
     metrics = OrderedDict([("loss", losses_m.avg), ("top1", top1_m.avg), ("top5", top5_m.avg)])
 
     return metrics

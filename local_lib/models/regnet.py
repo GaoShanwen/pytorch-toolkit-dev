@@ -80,6 +80,10 @@ def regnety_redution_120(pretrained=False, **kwargs) -> RegNet:
     """RegNetY-redution-12.0GF"""
     return _create_regnet("regnety_120", pretrained, **kwargs)  # type: ignore
 
+@register_model
+def regnety_redution_160(pretrained=False, **kwargs) -> RegNet:
+    """RegNetY-redution-16.0GF"""
+    return _create_regnet("regnety_160", pretrained, **kwargs)  # type: ignore
 
 @register_model
 def regnetv_redution_040(pretrained=False, **kwargs) -> RegNet:
@@ -109,8 +113,9 @@ if __name__ == "__main__":
 
     # m = timm.create_model('regnety_redution_016.tv2_in1k', pretrained=True, num_classes=100)
     # m = timm.create_model('regnetz_redution_040_h.ra3_in1k', pretrained=True, num_classes=100)
-    m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
+    # m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
     # m = timm.create_model("regnety_320.swag_ft_in1k", pretrained=True, num_classes=4281)
+    m = timm.create_model("regnety_redution_160.swag_ft_in1k", pretrained=True, num_classes=100)
     o = m(torch.randn(2, 3, 224, 224))
     print(m)
     # parameters = m.parameters()

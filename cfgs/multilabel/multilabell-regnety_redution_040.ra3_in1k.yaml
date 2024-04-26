@@ -22,7 +22,7 @@ cutmix: 0.0
 cutmix_minmax: null
 data: null
 data_dir: dataset/blacklist
-dataset: txt_data
+dataset: multilabel
 dataset_download: false
 decay_epochs: 90
 decay_milestones:
@@ -77,7 +77,7 @@ mixup_mode: batch
 mixup_off_epoch: 0
 mixup_prob: 1.0
 mixup_switch_prob: 0.5
-model: regnety_redution_040.ra3_in1k
+model: regnety_040.ra3_in1k
 model_ema: true
 model_ema_decay: 0.9999
 model_ema_force_cpu: false
@@ -155,5 +155,14 @@ compute_by_cat: true
 label_file: "dataset/zero_dataset/label_names.csv"
 custom_aa: false
 convert_epoch: 0
-multilabel: null
-feat_extract_dim: null
+multilabel:
+  attributes: 
+    - product_id
+    - package_way
+  weights:
+    - 0.8
+    - 0.2
+  label_nums:
+    - 1510
+    - 4
+feat_extract_dim: 128

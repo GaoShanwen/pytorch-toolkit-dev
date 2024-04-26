@@ -1,0 +1,86 @@
+######################################################
+# author: gaowenjie
+# email: gaowenjie@rongxwy.com
+# date: 2023.11.09
+# filenaem: mobilenetv3.py
+# function: Multi-Label Model
+# reference: https://github.com/yang-ruixin/PyTorch-Image-Models-Multi-Label-Classification
+######################################################
+
+import torch
+import torch.nn as nn
+from sklearn.metrics import balanced_accuracy_score
+
+
+class MultiLabelModel(nn.Module):
+    def __init__(self, model, config, drop_p: float=0.2):
+        super().__init__()
+        self.base_model = model
+        self.attributes = config["attributes"]
+        self.label_nums = config["label_nums"]
+        self.weights = config["weights"]
+        assert len(self.attributes) >= 2, f"attributes' number be request >= 2!" 
+        assert len(self.attributes) == len(self.weights), "attributes' number must equal to weights!"
+        self.label_pairs_num = len(self.weights)
+        model.classifier = nn.Identity()
+        model.out_layer = nn.Flatten(1)
+        self.base_model = model
+        last_channel = model.num_features
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        for attr, label_num in zip(self.attributes, self.label_nums):
+            attr_fc = nn.Sequential(
+                nn.Dropout(p=drop_p),
+                nn.Linear(in_features=last_channel, out_features=label_num)
+            )
+            exec(f"self.{attr} = attr_fc")
+
+    def forward(self, x):
+        x = self.base_model(x)
+        output = {}
+        for attr in self.attributes:
+            attr_x = eval(f'self.{attr}(x)')
+            output.update({attr: attr_x})
+        return output
+
+    def get_loss(self, loss_fn, output, target):
+        device = torch.cuda.current_device()
+        for idx, (attr, weight) in enumerate(zip(self.attributes, self.weights)):
+            this_loss = loss_fn(output[attr], target[attr].to(device=device))
+            loss = this_loss * weight if not idx else loss + this_loss * weight
+        return loss
+
+    def get_accuracy(self, accuracy, output, target, topk=(1,)):
+        device = torch.cuda.current_device()
+        attrs_acc1 = {}
+        for idx, (attr, weight) in enumerate(zip(self.attributes, self.weights)):
+            this_acc1, this_acc5 = accuracy(output[attr], target[attr].to(device=device), topk=topk)
+            acc1 = this_acc1 * weight if not idx else acc1 + this_acc1 * weight
+            acc5 = this_acc5 * weight if not idx else acc5 + this_acc5 * weight
+            attrs_acc1.update({attr: this_acc1})
+        return acc1, acc5, attrs_acc1
+
+    def calculate_metrics(self, output, target):
+        calculat_result = []
+        for attr in self.attributes:
+            calculat_result += balanced_accuracy_score(
+                y_true=target[attr].cpu().numpy(), 
+                y_pred=output[attr].cpu().argmax(1).numpy()
+            )
+        return calculat_result
+
+
+if __name__ == "__main__":
+    import timm
+    import yaml
+    from local_lib.models.feat_extract_model import FeatExtractModel
+    with open("cfgs/multilabel/multilabell-regnety_redution_040.ra3_in1k.yaml", "r") as f:
+        cfg = yaml.safe_load(f)
+    model_name = "regnety_160.swag_ft_in1k" # "mobilenetv3_large_100.miil_in21k_ft_in1k" #
+    m = timm.create_model(model_name, pretrained=True)#, num_classes=20
+    m = FeatExtractModel(m, model_name)
+    m = MultiLabelModel(m, cfg["multilabel"])
+    m.classifier = nn.Identity()
+    with torch.no_grad():
+        o = m(torch.randn(2, 3, 224, 224))
+    print(m)
+    print(o)

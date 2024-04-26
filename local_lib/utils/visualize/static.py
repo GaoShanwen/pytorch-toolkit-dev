@@ -72,7 +72,7 @@ class DrawStatisticResult(object):
                 self.attributes[cat].append(float(splitline[0]))
                 self.vis_data[cat].append(float(splitline[1]))
 
-    def plot_pic(self, name, colors=["blue", "green", "orange", "red"]):
+    def plot_pic(self, name, colors=["blue", "green", "orange", "red", "black", "gray"]):
         fig, axes = plt.subplots()
         for iter, key in enumerate(self.keys):
             x = np.array(self.attributes[key])

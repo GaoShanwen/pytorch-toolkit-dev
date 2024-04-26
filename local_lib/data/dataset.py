@@ -5,7 +5,9 @@
 # filenaem: dataset.py
 # function: create custom dataset(read imgs by txt-file).
 ######################################################
-import io
+import os
+import csv
+from PIL import Image
 import torch.utils.data as data
 from torchvision import transforms
 
@@ -38,6 +40,36 @@ class TxtReaderImageDataset(ImageDataset):
         self.transform = transform
         self.target_transform = target_transform
         self._consecutive_errors = 0
+
+
+class MultiLabelDataset(data.Dataset):
+    def __init__(self, root, split="train", attributes=[], transform=None, **kwargs):
+        super().__init__()
+        self.transform = transform
+        self.attributes = attributes
+        self.data, self.annos = [], []
+
+        # read the annotations from the CSV file
+        with open(os.path.join(root, f"{split}.csv")) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                self.data.append(row['image_path'])
+                self.annos.append({attr: int(row[attr]) for attr in attributes})
+
+    def __getitem__(self, idx):
+        # take the data sample by its index
+        img_path = self.data[idx]
+        # read image
+        img = Image.open(img_path)
+
+        # apply the image augmentations if needed
+        if self.transform:
+            img = self.transform(img)
+        labels = self.annos[idx]
+        return img, labels
+
+    def __len__(self):
+        return len(self.data)
 
 class CustomRandAADataset(data.Dataset):
     def __init__(self, dataset, input_size, auto_augment, interpolation, mean, convert_epoch):

@@ -49,21 +49,7 @@ parser.add_argument("--model-kwargs", nargs="*", default={}, action=ParseKwargs)
 
 
 # 定义CAM可视化函数
-def visualize_CAM(model, model_name, img_path, save_root):
-    image = cv2.imread(img_path, 1)  # imread()读取的是BGR格式
-    image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_CUBIC)
-    rgb_img = np.float32(image) / 255.0
-    # preprocess_image作用：归一化图像，并转成tensor
-    input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    # 3)初始化CAM对象，包括模型，目标层以及是否使用cuda等
-    # Construct the CAM object once, and then re-use it on many images:
-    if "regnety" in model_name:
-        target_layer = [model.s4]
-    elif "mobilenetv3" in model_name:
-        target_layer = [model.blocks[-1]]
-    else:
-        raise f"{model_name} not be support!"
-    cam = GradCAM(model=model, target_layers=target_layer, use_cuda=False)
+def visualize_CAM(model, input, save_path):
     # 4)选定目标类别，如果不设置，则默认为分数最高的那一类
     # If target_category is None, the highest scoring category
     # will be used for every image in the batch.
@@ -74,13 +60,13 @@ def visualize_CAM(model, model_name, img_path, save_root):
 
     # 5)计算cam
     # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
-    grayscale_cam = cam(input_tensor=input_tensor, targets=target_category)  # [batch, 224,224]
+    grayscale_cam = model(input_tensor=input, targets=target_category)  # [batch, 224,224]
 
     # 6)展示热力图并保存
     # In this example grayscale_cam has only one image in the batch:
     # 7.展示热力图并保存, grayscale_cam是一个batch的结果，只能选择一张进行展示
     visualization = show_cam_on_image(rgb_img, grayscale_cam[0])  # (224, 224, 3)
-    cv2.imwrite(os.path.join(save_root, "first_try.jpg"), visualization)
+    cv2.imwrite(save_path, visualization)
 
 
 if __name__ == "__main__":
@@ -91,6 +77,24 @@ if __name__ == "__main__":
     )
     load_checkpoint(model, args.checkpoint, args.use_ema)
 
+    # 1)初始化CAM对象，包括模型，目标层以及是否使用cuda等
+    # Construct the CAM object once, and then re-use it on many images:
+    if "regnety" in model_name:
+        target_layer = [model.s4]
+    elif "mobilenetv3" in model_name:
+        target_layer = [model.blocks[-1]]
+    else:
+        raise f"{model_name} not be support!"
+    cam = GradCAM(model=model, target_layers=target_layer, use_cuda=False)
     # 加载一张测试图像
-    img_path = "dataset/test_imgs/1.jpg"
-    visualize_CAM(model, model_name, img_path, args.output)
+    # img_path = "dataset/test_imgs/1.jpg"
+    img_dir = "dataset/optimize_task3/images/643"
+    for img_name in os.listdir(img_dir):
+        img_path = os.path.join(img_dir, img_name)
+        image = cv2.imread(img_path, 1)  # imread()读取的是BGR格式
+        image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_CUBIC)
+        rgb_img = np.float32(image) / 255.0
+        # preprocess_image作用：归一化图像，并转成tensor
+        input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        obj_path = os.path.join(args.output, img_name)
+        visualize_CAM(cam, input_tensor, obj_path)
