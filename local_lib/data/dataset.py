@@ -15,6 +15,7 @@ from timm.data import ImageDataset
 from timm.data.constants import IMAGENET_DEFAULT_MEAN
 from timm.data.auto_augment import rand_augment_transform
 from timm.data.transforms import str_to_pil_interp
+from timm.utils.misc import natural_key
 
 from .readers import create_reader
 from .custom_aa import _CUSTOM_RAND_TFS
@@ -48,13 +49,20 @@ class MultiLabelDataset(data.Dataset):
         self.transform = transform
         self.attributes = attributes
         self.data, self.annos = [], []
+        self.label_to_idx = {}
+        for attr in attributes:
+            attr_annos = os.path.join(root, f"{attr}.txt")
+            assert os.path.exists(attr_annos), "make sure the attribute annotation file exists!"
+            with open(attr_annos, "r") as f:
+                unique_labels = list(sorted(set(cat.strip() for cat in f.readlines()), key=natural_key))
+                self.label_to_idx.update({attr: {cat:i for i, cat in enumerate(unique_labels)}})
 
         # read the annotations from the CSV file
         with open(os.path.join(root, f"{split}.csv")) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 self.data.append(row['image_path'])
-                self.annos.append({attr: int(row[attr]) for attr in attributes})
+                self.annos.append({attr: self.label_to_idx[attr][row[attr]] for attr in attributes})
 
     def __getitem__(self, idx):
         # take the data sample by its index
