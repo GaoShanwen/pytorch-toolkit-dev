@@ -52,10 +52,11 @@ def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
     only_ones = np.sum(np.equal(np.sum(np.isnan(p_label[:, 1:]), axis=1), 4))
     if not do_output:
         return top1_num, top5_num, display_num, only_ones
-    print(f"top1-knn(k={k}): {top1_num}/{q_label.shape[0]}|{top1_num/q_label.shape[0]*100:.2f}")
-    print(f"top5-knn(k={k}): {top5_num}/{q_label.shape[0]}|{top5_num/q_label.shape[0]*100:.2f}")
-    print(f"display-avg(th={th}): {display_num/p_label.shape[0]:.2f}")
-    print(f"display-one(th={th}): {only_ones/p_label.shape[0]*100:.2f}")
+    q_num = max(q_label.shape[0], 1)
+    print(f"top1-acc(th={th}): {top1_num}/{q_label.shape[0]}|{top1_num / q_num * 100:.2f}")
+    print(f"top5-acc(th={th}): {top5_num}/{q_label.shape[0]}|{top5_num / q_num * 100:.2f}")
+    print(f"display-avg(th={th}): {display_num / q_num:.2f}")
+    print(f"display-one(th={th}): {only_ones / q_num * 100:.2f}")
 
 
 def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshold=None):
@@ -63,6 +64,7 @@ def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshol
     val_dict.update(dict(Counter(q_label)))
     acc_map = {}
     for cat, data_num in val_dict.items():
+        data_num = data_num or 1
         keeps = np.ones(shape=data_num, dtype=bool) if cat == "all_data" else np.isin(q_label, [cat])
         cat_pl, cat_ql = p_label[keeps], q_label[keeps]
         cat_ps = p_scores[keeps] if p_scores is not None else p_scores

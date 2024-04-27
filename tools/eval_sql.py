@@ -9,12 +9,12 @@ from local_lib.utils.file_tools import save_dict2csv, load_names
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--set-date", type=str, default=None)
-    parser.add_argument("--length", type=int, default=37)
+    parser.add_argument("--length", type=int, default=38)
     parser.add_argument("--instance-idx", type=int, default=0)
     parser.add_argument("--groundture-column", type=int, default=1)
-    parser.add_argument("--product-column", type=int, default=10)
-    parser.add_argument("--date-column", type=int, default=15)
-    parser.add_argument("--predict-column", type=int, default=19)
+    parser.add_argument("--product-column", type=int, default=11)
+    parser.add_argument("--date-column", type=int, default=16)
+    parser.add_argument("--predict-column", type=int, default=20)
     parser.add_argument("--idx-column", type=int, default=0)
     parser.add_argument("--name-column", type=int, default=-1)
     parser.add_argument("--label-file", type=str, default=None)
@@ -37,6 +37,7 @@ if __name__ == '__main__':
     set_length, gt_column, pred_column = args.length, args.groundture_column, args.predict_column
     product_column = args.product_column
     read_res = [res for res in read_res if res[args.date_column]==args.set_date]
+    assert len(read_res) >= 1, "the sql data number must be greater than 0!"
     predicts, gts = np.full((len(read_res), 5), np.nan), np.zeros(len(read_res)).astype(int)
     product_idx, this_prodict_code = 0, None
     for idx, instance in enumerate(read_res):
@@ -48,11 +49,11 @@ if __name__ == '__main__':
         pred_res = eval(instance[pred_column])
         if not len(pred_res):
             continue
+        predicts[product_idx, :len(pred_res)] = np.array([pred["label"] for pred in pred_res])
+        gts[product_idx] = instance[gt_column]
         if this_prodict_code!= instance[product_column]:
             this_prodict_code = instance[product_column]
             product_idx += 1
-        predicts[product_idx, :len(pred_res)] = np.array([pred["label"] for pred in pred_res])
-        gts[product_idx] = instance[gt_column]
     masks = np.zeros(gts.shape[0]).astype(bool) #np.isin(gts, [0])
     masks[product_idx+1:] = True
     predicts, gts = predicts[~masks], gts[~masks]
@@ -61,10 +62,6 @@ if __name__ == '__main__':
     if label_file is not None:
         label_map = load_names(label_file, idx_column=idx_column, name_column=name_column)
     acc_map = compute_acc_by_cat(predicts, gts, label_map=label_map)
-    # for key, value in acc_map.items():
-    #     g_num = np.sum(np.isin(gts, [int(key)])) if key != "all_data" else gts.shape[0]
-    #     value.update({"gallery_num": g_num})
     for key, value in acc_map.items():
         value.pop("gallery_num")
     save_dict2csv(acc_map, "test_1345.csv")
-    # import pdb; pdb.set_trace()

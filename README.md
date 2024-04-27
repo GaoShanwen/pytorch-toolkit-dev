@@ -18,7 +18,7 @@ timm-dev branch for classfication or re-identification tasks.
 
 ### Supported Functions
 
-- [ ] Classfication (Single-label and Multi-label) and Re-identification tasks.
+- [x] Classfication (Single-label, Multi-label) and Re-identification tasks.
 - [ ] Metric distance for Re-identification.
 - [x] Visualize training curve (wandb / tensorboard).
 - [x] Remove similarity or noise data, weighted k-nearest neighbor for reid.
