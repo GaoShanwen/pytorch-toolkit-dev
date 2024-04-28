@@ -273,7 +273,7 @@ def validate(args):
                 rate_avg = input.size(0) / batch_time.avg
                 attrs_info = ""
                 if args.multilabel:
-                    attrs_info = "Acc@1_ATTRS: "
+                    attrs_info = "| Acc@1_ATTRS: "
                     attrs_info += "  ".join([
                         f"{attr}: {acc1.val:>7.3f} ({acc1.avg:>7.3f})" for attr, acc1 in acc1_attrs.items()
                     ])
@@ -306,11 +306,11 @@ def validate(args):
     )
     if args.multilabel:
         results["attributes"] = attributes
-        attrs_info = "Acc@1_ATTRS: "
+        attrs_info = "| Acc@1_ATTRS: "
         for attr, acc1 in acc1_attrs.items():
             results[f"top1_attr_{attr}"] = round(acc1.avg, 4)
             results[f"top1_attr_{attr}_err"] = round(100 - acc1.avg, 4)
-            attrs_info += f"{attr}: {acc1.avg:>7.3f}"
+            attrs_info += f"{attr}: {acc1.avg:>7.3f} "
     if args.compute_by_cat and not args.multilabel:
         acc_map.save_to_csv(args.infer_mode)
     _logger.info(
