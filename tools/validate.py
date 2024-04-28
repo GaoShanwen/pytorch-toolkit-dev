@@ -34,7 +34,7 @@ from timm.utils import (
 )
 
 from local_lib.data import RealLabelsCustomData, create_custom_dataset
-from local_lib.models import create_custom_model
+from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel
 from local_lib.utils import ClassAccuracyMap, parse_args
 
 try:
@@ -66,7 +66,7 @@ _logger = logging.getLogger("validate")
 def validate(args):
     # might as well try to validate something
     args.pretrained = args.pretrained and not args.checkpoint
-    args.prefetcher = not args.no_prefetcher
+    args.prefetcher = not args.no_prefetcher and args.multilabel is None
 
     if torch.cuda.is_available():
         torch.backends.cuda.matmul.allow_tf32 = True
@@ -118,6 +118,11 @@ def validate(args):
     if args.num_classes is None:
         assert hasattr(model, "num_classes"), "Model must have `num_classes` attr if not set on cmd line/config."
         args.num_classes = model.num_classes
+
+    if args.feat_extract_dim is not None: #feat_extract
+        model = FeatExtractModel(model, args.model, args.feat_extract_dim)
+    if args.multilabel:
+        model = MultiLabelModel(model, args.multilabel)
 
     if args.checkpoint:
         load_checkpoint(model, args.checkpoint, args.use_ema)
@@ -174,6 +179,7 @@ def validate(args):
         num_choose=args.num_choose,
         cats_path=args.cats_path,
         pass_path=args.pass_path,
+        multilabel=args.multilabel,
     )
 
     if args.valid_labels:
@@ -210,7 +216,11 @@ def validate(args):
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
-    acc_map = ClassAccuracyMap(dataset.reader.class_to_idx, args.label_file)
+    if args.multilabel:
+        attributes = args.multilabel.get("attributes", None)
+        acc1_attrs = {attr: AverageMeter() for attr in attributes}
+    else:
+        acc_map = ClassAccuracyMap(dataset.reader.class_to_idx, args.label_file)
     model.eval()
     with torch.no_grad():
         # warmup, reduce variability of first batch time, especially for comparing torchscript vs non
@@ -234,17 +244,26 @@ def validate(args):
 
                 if valid_labels is not None:
                     output = output[:, valid_labels]
-                loss = criterion(output, target)
+                if args.multilabel:
+                    loss = model.module.get_loss(criterion, output, target)
+                else:
+                    loss = criterion(output, target)
 
             if real_labels is not None:
                 real_labels.add_result(output)
 
             # measure accuracy and record loss
-            acc1, acc5 = accuracy(output.detach(), target, topk=(1, 5))
+            if args.multilabel:
+                acc1, acc5, acc1_for_attrs = model.module.get_accuracy(accuracy, output, target, topk=(1, 5))
+                for attr in attributes:
+                    acc1_attrs[attr].update(acc1_for_attrs[attr].item(), input.size(0))
+            else:
+                acc1, acc5 = accuracy(output.detach(), target, topk=(1, 5))
+            # acc1, acc5 = accuracy(output.detach(), target, topk=(1, 5))
             losses.update(loss.item(), input.size(0))
             top1.update(acc1.item(), input.size(0))
             top5.update(acc5.item(), input.size(0))
-            if args.compute_by_cat:
+            if args.compute_by_cat and not args.multilabel:
                 acc_map.update(output.detach(), target, topk=(1, 5))
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -252,14 +271,23 @@ def validate(args):
 
             if batch_idx % args.log_freq == 0:
                 rate_avg = input.size(0) / batch_time.avg
+                attrs_info = ""
+                if args.multilabel:
+                    attrs_info = "Acc@1_ATTRS: "
+                    attrs_info += "  ".join([
+                        f"{attr}: {acc1.val:>7.3f} ({acc1.avg:>7.3f})" for attr, acc1 in acc1_attrs.items()
+                    ])
+                    
                 _logger.info(
                     f"Test: [{batch_idx:>4d}/{len(loader)}]  "
                     f"Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s, {rate_avg:>7.2f}/s)  "
                     f"Loss: {losses.val:>7.4f} ({losses.avg:>6.4f})  "
                     f"Acc@1: {top1.val:>7.3f} ({top1.avg:>7.3f})  "
-                    f"Acc@5: {top5.val:>7.3f} ({top5.avg:>7.3f})"
+                    f"Acc@5: {top5.val:>7.3f} ({top5.avg:>7.3f}) "
+                    f"{attrs_info}"
                 )
 
+    attrs_info = ""
     if args.results_file:
         # real labels mode replaces topk values at the end
         top1a, top5a = real_labels.get_accuracy(k=1), real_labels.get_accuracy(k=5)
@@ -276,11 +304,19 @@ def validate(args):
         crop_pct=crop_pct,
         interpolation=data_config["interpolation"],
     )
-    if args.compute_by_cat:
+    if args.multilabel:
+        results["attributes"] = attributes
+        attrs_info = "Acc@1_ATTRS: "
+        for attr, acc1 in acc1_attrs.items():
+            results[f"top1_attr_{attr}"] = round(acc1.avg, 4)
+            results[f"top1_attr_{attr}_err"] = round(100 - acc1.avg, 4)
+            attrs_info += f"{attr}: {acc1.avg:>7.3f}"
+    if args.compute_by_cat and not args.multilabel:
         acc_map.save_to_csv(args.infer_mode)
     _logger.info(
         f" * Acc@1 {results['top1']:.3f} ({results['top1_err']:.3f})"
         f" Acc@5 {results['top5']:.3f} ({results['top5_err']:.3f})"
+        f" {attrs_info}"
     )
 
     return results

@@ -20,7 +20,7 @@ from timm.models import load_checkpoint
 from timm.utils import reparameterize_model, setup_default_logging
 
 from local_lib.data import create_custom_dataset, create_custom_loader
-from local_lib.models import create_custom_model  # enable local model
+from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel # enable local model
 from local_lib.utils import parse_args
 from local_lib.utils.file_tools import init_feats_dir, merge_feat_files, save_feat
 
@@ -107,11 +107,16 @@ def extract(args):
         assert hasattr(model, "num_classes"), "Model must have `num_classes` attr if not set on cmd line/config."
         args.model_classes = model.num_classes
 
+    if args.feat_extract_dim is not None: #feat_extract
+        model = FeatExtractModel(model, args.model, args.feat_extract_dim)
+    if args.multilabel:
+        model = MultiLabelModel(model, args.multilabel)
+
     if args.checkpoint:
         load_checkpoint(model, args.checkpoint, args.use_ema)
+    
     if "redution" in args.model:
         import torch.nn as nn
-
         if "mobilenetv3" in args.model:
             model.classifier = nn.Identity()  # 移除分类层
         elif "regnet" in args.model:
@@ -119,6 +124,12 @@ def extract(args):
         else:
             raise f"not support {args.model} !"
 
+    if args.multilabel:
+        model = model.base_model # 只留特征层
+    elif args.feat_extract_dim is not None:
+        model.classifier = nn.Identity()
+        model.out_layer = nn.Flatten(1)
+    
     if args.reparam:
         model = reparameterize_model(model)
 
@@ -153,8 +164,8 @@ def extract(args):
 
     root_dir = args.data or args.data_dir
     dataset = create_custom_dataset(
-        root=root_dir,
         name=args.dataset,
+        root=root_dir,
         split=args.split,
         is_training=args.infer_mode=="train",
         download=args.dataset_download,

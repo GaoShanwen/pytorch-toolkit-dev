@@ -28,7 +28,7 @@ from timm.utils import ApexScaler, NativeScaler
 from torch.nn.parallel import DistributedDataParallel as NativeDDP
 
 from local_lib.data import create_custom_dataset, CustomRandAADataset
-from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel  # for regster local model
+from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel # for regster local model
 from local_lib.utils import TensorBoardWriter, parse_args
 
 try:
@@ -160,7 +160,7 @@ def main():
         model.to(memory_format=torch.channels_last)
 
     if args.feat_extract_dim is not None: #feat_extract
-        model = FeatExtractModel(model, args.model).to(device=device)
+        model = FeatExtractModel(model, args.model, args.feat_extract_dim).to(device=device)
     if args.multilabel:
         model = MultiLabelModel(model, args.multilabel).to(device=device)
 
@@ -829,6 +829,9 @@ def validate(model, loader, loss_fn, args, device=torch.device("cuda"), amp_auto
         for attr in attributes:
             _logger.info(f"{attr} top1 accuracy: {acc1_attrs[attr].avg:>7.3f};")
     metrics = OrderedDict([("loss", losses_m.avg), ("top1", top1_m.avg), ("top5", top5_m.avg)])
+    if args.multilabel:
+        for attr in attributes:
+            metrics.upadte({attr: acc1_attrs[attr].avg})
 
     return metrics
 

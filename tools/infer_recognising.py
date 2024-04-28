@@ -9,7 +9,6 @@
 import logging
 import os
 import json
-import shutil
 from contextlib import suppress
 
 import numpy as np
@@ -18,14 +17,12 @@ import torch.nn.parallel
 import tqdm
 from timm.models import load_checkpoint
 from timm.utils import setup_default_logging
+from timm.utils.misc import natural_key
 
 from local_lib.data.dataset_factory import create_custom_dataset
 from local_lib.data.loader import create_custom_loader
-from local_lib.models import create_custom_model
+from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel
 from local_lib.utils.set_parse import parse_args
-from local_lib.utils.visualize import save_imgs, save_predictions
-from local_lib.utils.file_tools import load_names
-from timm.utils.misc import natural_key
 
 _logger = logging.getLogger("validate")
 
@@ -65,6 +62,12 @@ def load_model(args):
         assert hasattr(model, "num_classes"), "Model must have `num_classes` attr if not set on cmd line/config."
         args.num_classes = model.num_classes
 
+
+    if args.feat_extract_dim is not None: #feat_extract
+        model = FeatExtractModel(model, args.model, args.feat_extract_dim)
+    if args.multilabel:
+        model = MultiLabelModel(model, args.multilabel)
+    
     if args.checkpoint:
         load_checkpoint(model, args.checkpoint, False)
 
@@ -84,18 +87,16 @@ def run_infer(model, args):
     device = torch.device(args.device)
     # resolve AMP arguments based on PyTorch / Apex availability
     amp_autocast = suppress
-    assert isinstance(args.threshold, float), f"threshold={args.threshold} is not supported!"
-    assert args.status is not None, f"status={args.status} is not supported!"
 
     if args.cats_path:
         with open(args.cats_path, "r") as f:
             # class_list = sorted([line.strip() for line in f.readlines()[:args.num_classes]], key=natural_key)
             class_list = sorted([line.strip() for line in f.readlines()], key=natural_key)
-    if args.need_cats:
-        with open(args.need_cats, "r") as f:
-            load_cats = json.load(f)
-        assert len(load_cats) == 1, f"the longth of load_cats must be one, but get {len(load_cats)}"
-        need_cats, related_cats = np.array(list(load_cats.keys())), np.squeeze(np.array(list(load_cats.values())))
+    # if args.need_cats:
+    #     with open(args.need_cats, "r") as f:
+    #         load_cats = json.load(f)
+    #     assert len(load_cats) == 1, f"the longth of load_cats must be one, but get {len(load_cats)}"
+    #     need_cats, related_cats = np.array(list(load_cats.keys())), np.squeeze(np.array(list(load_cats.values())))
         
         # need_cats = np.array(load_cats["original_categories"])
         # need_idx = np.array([class_list.index(line.strip()) for line in need_cats])
@@ -104,19 +105,25 @@ def run_infer(model, args):
         # with open(args.need_cats, "r") as f:
         #     need_list = np.array([class_list.index(line.strip()) for line in f.readlines()])
         #     need_cat = np.array(class_list)[need_list]
-    else:
-        need_cats, related_cats = None, None
-    filter_cats = related_cats if args.status == "after_analyze" else need_cats
-    checker_cats = need_cats if args.status == "after_analyze" else related_cats
-    check_idx = np.array([class_list.index(line) for line in checker_cats]) if checker_cats else np.array([])
+    # else:
+    #     need_cats, related_cats = None, None
+    # filter_cats = related_cats if args.status == "after_analyze" else need_cats
+    # checker_cats = need_cats if args.status == "after_analyze" else related_cats
+    # check_idx = np.array([class_list.index(line) for line in checker_cats]) if checker_cats else np.array([])
     assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
     if args.input_mode == "file":
+        need_index = 1
+        if args.multilabel:
+            need_index += args.multilabel["attributes"].index(args.need_attr)
+            start_idx = 1
         with open(args.data_path, "r") as f:
-            query_files, query_labels = zip(*[line.strip().split(",") for line in f.readlines()])
+            load_data = list(zip(*([line.strip().split(",") for line in f.readlines()[start_idx:]])))
+        query_files, query_labels = load_data[0], load_data[need_index]
         query_files, query_labels = np.array(query_files), np.array(query_labels)
-        if args.only_need:
-            keeps = np.isin(query_labels, filter_cats)
-            query_files, query_labels = query_files[keeps], query_labels[keeps]
+        # filter_cats = filter_cats or class_list
+        # if filter_cats:
+        #     keeps = np.isin(query_labels, filter_cats)
+        #     query_files, query_labels = query_files[keeps], query_labels[keeps]
     else: # args.input_mode == "path" or "dir"
         query_files = np.array(
             [os.path.join(args.data_path, path) for path in os.listdir(args.data_path)]
@@ -151,43 +158,18 @@ def run_infer(model, args):
 
             with amp_autocast():
                 output = model(input)
-            if args.status == "before_analyze":
-                _, pred = output.topk(1, 1, True, True)
-                pred = pred.T.cpu()[0].numpy()
-                # this_choices = (np.isin(pred, check_idx)).astype(bool)
-                this_choices = (
-                    np.isin(pred, check_idx) if check_idx.shape[0] else np.ones(pred.shape[0])
-                ).astype(bool)
-            elif args.status == "after_analyze":
-                pred = output.softmax(dim=1).cpu().numpy()
-                this_choices = (np.sum(pred[:, check_idx], axis=1) >= args.threshold).astype(bool)
-                pred = check_idx[np.argmax(pred[:, check_idx], axis=1)]
-            if not np.sum(this_choices):
-                continue
+            pred = output
+            if args.multilabel:
+                pred = pred[args.need_attr]
+            pred = pred.softmax(dim=1).cpu().numpy()
+            this_choices = np.ones(pred.shape[0]).astype(bool)
             predicts += pred[this_choices].tolist()
             keeps = np.arange(pred.shape[0])[this_choices] + (batch_idx * args.batch_size)
             choices[keeps] = True
     pbar.close()
-    predicts = np.array(predicts) #choices = np.array(choices)
+    predicts = np.array(predicts) # choices = np.array(choices)
     choices_files, choices_gts = query_files[choices], query_labels[choices]
-    _logger.info(f"choices/all: {predicts.shape[0]}/{query_files.shape[0]}")
-    label_maps = load_names(args.label_file, idx_column=0, name_column=-1, to_int=False)
-    predicts = np.array(class_list)[predicts]
-    if need_cats is not None:
-        for cat in need_cats:
-            choices_num = np.sum(np.isin(predicts, [cat]))
-            _logger.info(f"cat={cat} name={label_maps[cat]} num: {choices_num}")
-
-    # with open("after_removed.txt", "w") as f:
-    #     choices_files, choices_gts = query_files[~choices], query_labels[~choices]
-    #     for file_path, label in zip(choices_files, choices_gts):
-    #         f.write(f"{file_path},{label}\n")
-    # predicts = np.array([label_maps[l] for l in predicts])
-    predicts = predicts.astype(str)
-    choices_gts = np.array([label_maps[l] for l in choices_gts])
-    # save_imgs(choices_files, predicts, args.results_dir)
-    save_predictions(choices_files, predicts, choices_gts, args.results_dir)
-    # np.savez(f"blacklist-{args.infer_mode}.npz", files=choices_files, labels=choices_type)
+    np.savez("recognize_scores.npz", pscores=predicts, gts=choices_gts, files=choices_files)
 
 
 if __name__ == "__main__":

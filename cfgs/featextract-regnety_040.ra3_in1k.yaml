@@ -155,14 +155,5 @@ compute_by_cat: true
 label_file: "dataset/zero_dataset/label_names.csv"
 custom_aa: false
 convert_epoch: 0
-multilabel:
-  attributes: 
-    - product_id
-    - package_type
-  weights:
-    - 0.8
-    - 0.2
-  label_nums:
-    - 1510
-    - 4
+multilabel: null
 feat_extract_dim: 128
