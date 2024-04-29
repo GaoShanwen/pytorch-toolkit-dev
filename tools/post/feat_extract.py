@@ -124,11 +124,8 @@ def extract(args):
         else:
             raise f"not support {args.model} !"
 
-    if args.multilabel:
-        model = model.base_model # 只留特征层
-    elif args.feat_extract_dim is not None:
-        model.classifier = nn.Identity()
-        model.out_layer = nn.Flatten(1)
+    if args.feat_extract_dim is not None:
+        model.remove_head() # 只留特征提取层
     
     if args.reparam:
         model = reparameterize_model(model)

@@ -831,7 +831,7 @@ def validate(model, loader, loss_fn, args, device=torch.device("cuda"), amp_auto
     metrics = OrderedDict([("loss", losses_m.avg), ("top1", top1_m.avg), ("top5", top5_m.avg)])
     if args.multilabel:
         for attr in attributes:
-            metrics.upadte({attr: acc1_attrs[attr].avg})
+            metrics.update({attr: acc1_attrs[attr].avg})
 
     return metrics
 
