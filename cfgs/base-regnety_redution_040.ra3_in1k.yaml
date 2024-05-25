@@ -88,12 +88,12 @@ no_ddp_bb: false
 no_prefetcher: false
 no_resume_opt: false
 num_choose: null
-num_classes: 6
+num_classes: 2066
 opt: rmsproptf
 opt_betas: null
 opt_eps: 0.001
 opt_kwargs: {}
-output: 'output/ckpts'
+output: output/ckpts
 pass_path: ''
 patience_epochs: 10
 pin_mem: false
@@ -152,8 +152,9 @@ real_labels: ''
 results_file: ''
 results_format: csv
 compute_by_cat: true
-label_file: "dataset/zero_dataset/label_names.csv"
+label_file: dataset/zero_dataset/label_names.csv
 custom_aa: false
 convert_epoch: 0
 multilabel: null
 feat_extract_dim: null
+model_classes: 2066

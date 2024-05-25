@@ -17,26 +17,33 @@ def parse_args():
     parser.add_argument("--predict-column", type=int, default=20)
     parser.add_argument("--idx-column", type=int, default=0)
     parser.add_argument("--name-column", type=int, default=-1)
-    parser.add_argument("--label-file", type=str, default=None)
     parser.add_argument("--brand-id", type=int, default=1345)
+    parser.add_argument("--path-column", type=int, default=5)
     return parser.parse_args()
+
+
+def create_sql_server(brand_id):
+    assert brand_id is not None, f"please set a value for brand_id!"
+    private_hostmap= {479: 1, 1000: 4, 684: 0}
+    host_base = brand_id // 100 if brand_id not in private_hostmap else private_hostmap[brand_id]
+    return MySQLHelper(
+        host=f"balance-open{host_base:02d}.mysql.rds.aliyuncs.com",
+        port=3350,
+        user="rueread",
+        password="read1107!@#$",
+        database=f"balance{brand_id}",
+        table_name="tgoodscollectpic",
+    )
 
 
 if __name__ == '__main__':
     args = parse_args()
-    assert args.set_date is not None, f"please set a value for set_date!"
-    sql_server = MySQLHelper(
-        host=f"balance-open{args.brand_id//100}.mysql.rds.aliyuncs.com",
-        port=3350,
-        user="rueread",
-        password="read1107!@#$",
-        database=f"balance{args.brand_id}",
-        table_name="tgoodscollectpic",
-    )
+    sql_server = create_sql_server(args.brand_id)
     read_res = sql_server.read_table()
     set_length, gt_column, pred_column = args.length, args.groundture_column, args.predict_column
     product_column = args.product_column
-    read_res = [res for res in read_res if res[args.date_column]==args.set_date]
+    # read_res = [res for res in read_res if res[args.date_column]==args.set_date]
+    read_res = [res for res in read_res if res[args.date_column].startswith("2024-05-2")]
     assert len(read_res) >= 1, "the sql data number must be greater than 0!"
     predicts, gts = np.full((len(read_res), 5), np.nan), np.zeros(len(read_res)).astype(int)
     product_idx, this_prodict_code = 0, None
@@ -58,10 +65,9 @@ if __name__ == '__main__':
     masks[product_idx+1:] = True
     predicts, gts = predicts[~masks], gts[~masks]
     run_compute(predicts, gts, do_output=True)
-    label_file, idx_column, name_column = args.label_file, args.idx_column, args.name_column
-    if label_file is not None:
-        label_map = load_names(label_file, idx_column=idx_column, name_column=name_column)
+    idx_column, name_column = args.idx_column, args.name_column
+    label_map = {int(product_id): name for product_id, name in sql_server.read_names()}
     acc_map = compute_acc_by_cat(predicts, gts, label_map=label_map)
     for key, value in acc_map.items():
         value.pop("gallery_num")
-    save_dict2csv(acc_map, "test_1345.csv")
+    save_dict2csv(acc_map, f"test_{args.brand_id}_{args.set_date}.csv")

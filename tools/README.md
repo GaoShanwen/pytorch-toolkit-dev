@@ -23,24 +23,25 @@ Run this comand, make sure your folder format is follow:
     │   ├── simsun.ttc # chinese fonts
     │   └── README.md
     ├── docs
-    │   ├── environment.md
-    │   └── structure.md
+    │   ├── demo4reid.jpg
+    │   ├── INSTALL.md
+    │   ├── model-zoo
+    │   └── requirements.txt
     ├── local_lib
     │   ├── data
     │   ├── models
     │   └── utils
     ├── output 
-    │   └── train # .pth model path
+    │   └── ckpts # .pth model path
     ├── README.md
-    ├── requirements.txt
     └── tools
         ├── before
-        ├── convert
-        ├── eval_feats.py
+        ├── deploy
         ├── post
+        ├── README.md
+        ├── eval_feats.py
         ├── train.py
-        ├── validate.py
-        └── visualize
+        └── validate.py
 ```
 
 - **Train Dataset**

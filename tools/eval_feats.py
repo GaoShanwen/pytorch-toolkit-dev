@@ -15,7 +15,7 @@ from local_lib.utils.visualize import VisualizeResults
 from local_lib.utils.visualize.results import save_imgs
 from local_lib.utils.file_tools import load_data, save_dict2csv, save_keeps2mysql, load_names
 # from local_lib.utils.visualize import save_imgs load_csv_file, 
-
+from tools.eval_sql import create_sql_server
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -40,6 +40,7 @@ def parse_args():
     parser.add_argument("--trick-id", type=int, default=None)
     parser.add_argument("--update-times", type=int, default=0)
     parser.add_argument("--idx-column", type=int, default=0)
+    parser.add_argument("--brand-id", type=int, default=0)
     parser.add_argument("--name-column", type=int, default=-1)
     parser.add_argument("--dim", type=int, default=128)
     parser.add_argument("--topk", type=int, default=5)
@@ -51,7 +52,11 @@ def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_re
     D, I = index.search(q_feats, args.topk)
     p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, threshold=args.similarity_th, trick_id=args.trick_id)
     if acc_file_name:
-        label_map = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
+        if args.brand_id:
+            sql_server = create_sql_server(args.brand_id)
+            label_map = {int(product_id): name for product_id, name in sql_server.read_names()}
+        else:
+            label_map = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
         acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, p_scores, label_map, threshold=args.final_th)
         for key, value in acc_map.items():
             g_num = np.sum(np.isin(g_label, [int(key)])) if key != "all_data" else g_label.shape[0]
@@ -184,15 +189,15 @@ if __name__ == "__main__":
 
     # 加载npz文件
     g_feats, g_label, g_files = load_data(args.gallerys)
-    g_files = np.array([path.replace("/exp-data", "") for path in g_files])
-    ori_prefix = "./dataset/function_test/test_subo/train"
-    obj_prefix = "/data/AI-scales/images/1173/backflow"
-    g_files = np.array([file.replace(ori_prefix, obj_prefix) for file in g_files])
+    # g_files = np.array([path.replace("/exp-data", "") for path in g_files])
+    # ori_prefix = "./dataset/function_test/test_subo/train"
+    # obj_prefix = "/data/AI-scales/images/1173/backflow"
+    # g_files = np.array([file.replace(ori_prefix, obj_prefix) for file in g_files])
     if args.querys:
         q_feats, q_label, q_files = load_data(args.querys)
-        q_files = np.array([path.replace("/exp-data", "") for path in q_files])
-        ori_prefix = "./dataset/function_test/test_subo/val"
-        q_files = np.array([file.replace(ori_prefix, obj_prefix) for file in q_files])
+        # q_files = np.array([path.replace("/exp-data", "") for path in q_files])
+        # ori_prefix = "./dataset/function_test/test_subo/val"
+        # q_files = np.array([file.replace(ori_prefix, obj_prefix) for file in q_files])
 
     if args.filter_mode is not None:
         assert args.filter_mode in ["label", "file_path"], "filter_model must be label or file_path!"

@@ -21,22 +21,27 @@ class MySQLHelper(object):
             charset="utf8",
         )
         self.mycursor = self.mydb.cursor()
-        self.write_sql = (
+        self.write_sql_command = (
             f"insert into `{table_name}` (`sLabel`, `sImgURL`, `sModelVersion`, `sFeature`) VALUES (%s, %s, %s, %s)"
         )
-        self.del_sql = f"delete from {table_name}"
+        self.del_sql_command = f"delete from {table_name}"
         # self.del_sql = f"truncate table {table_name} " # insufficient permissions
-        self.read_sql = f"select * from {table_name}"
+        self.read_sql_command = f"select * from {table_name}"
+        self.get_names_command = "select label,sgoodsname from vgoods"
 
     def write_val2table(self, val):
-        self.mycursor.execute(self.write_sql, val)
+        self.mycursor.execute(self.write_sql_command, val)
 
     def read_table(self):
-        self.mycursor.execute(self.read_sql)
+        self.mycursor.execute(self.read_sql_command)
+        return self.mycursor.fetchall()
+
+    def read_names(self):
+        self.mycursor.execute(self.get_names_command)
         return self.mycursor.fetchall()
 
     def del_table(self):
-        self.mycursor.execute(self.del_sql)
+        self.mycursor.execute(self.del_sql_command)
         self.mydb.commit()
 
     def close_cursor(self):

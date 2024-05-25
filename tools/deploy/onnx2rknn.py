@@ -17,7 +17,7 @@ parser.add_argument("output", metavar="RKNN_FILE", help="output model filename")
 parser.add_argument("--input", metavar="ONNX_FILE", help="output model filename")
 parser.add_argument('--mean', type=float, nargs='+', default=[0.4850, 0.4560, 0.4060])
 parser.add_argument('--std', type=float,  nargs='+', default=[0.2290, 0.2240, 0.2250])
-parser.add_argument("--target-platform", "-tp", default="rk3566", help="target platform (default: rk3566)")
+parser.add_argument("--target-platform", "-tp", default="rk3566", help="eg.: rv1106 (default: rk3566)")
 parser.add_argument("--do-quantizate", action="store_true", default=False, help="enable do quantizate")
 
 
@@ -91,7 +91,9 @@ if __name__ == "__main__":
     #     )
     # img=cv2.imread("dataset/minidata/quantizate/100_NZ53MZV0KS_1680344371005_1680344371719.jpg")
     # path = "/data/AI-scales/images/0/backflow/00001/1831_8fdaa0cf410f1c36_1673323817187_1673323817536.jpg"
-    path = "./dataset/test_imgs/1.jpg"
+    # path = "./dataset/test_imgs/1.jpg"
+    # path = "test_image.jpg"
+    path = "20240315144903_17_1345_6855_50124.jpg"
     img = cv2.imread(path)
     inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
@@ -103,8 +105,16 @@ if __name__ == "__main__":
     session = onnxruntime.InferenceSession(args.input, sess_options)
     input_name = session.get_inputs()[0].name
     output2 = session.run([], {input_name: [x.transpose(2, 0, 1)]})
-    print("onnx", output2)
+    import faiss
+    np.set_printoptions(suppress=True)
+    print("onnx before normalize", output2)
+    output2 = np.array(output2[0]).astype(np.float32)
+    faiss.normalize_L2(output2)
+    print("onnx after normalize", output2)
 
     output = rknn.inference(inputs=[inputs[np.newaxis, ...]], data_format="nhwc")
-    print("rknn", output)
+    print("rknn before normalize", output)
+    output = np.array(output[0]).astype(np.float32)
+    faiss.normalize_L2(output)
+    print("rknn after normalize", output)
     rknn.release()

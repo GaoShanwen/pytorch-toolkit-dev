@@ -96,7 +96,7 @@
     cd rknn-toolkit2; pip install packages/rknn_toolkit2-1.5.2+b642f30c-cp38-cp38-linux_x86_64.whl --no-deps
 ```
 
-### 安装apex(进行中...)
+### 安装apex
 
 ```bash
     git clone -b master https://gitee.com/ascend/apex.git && cd apex/
