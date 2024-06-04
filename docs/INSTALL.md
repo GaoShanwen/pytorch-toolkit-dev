@@ -8,12 +8,8 @@
 <pytorch-toolkit-dev> ~$ # install timm and its environment(include rknn-tools2)
 <pytorch-toolkit-dev> ~$ git clone https://github.com/GaoShanwen/pytorch-toolkit-dev.git
 <pytorch-toolkit-dev> ~$ git checkout timm-dev
-<pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu102
+<pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117
 <pytorch-toolkit-dev> ~$ python setup.py install
-<pytorch-toolkit-dev> ~$ # install apex for speed training
-< other-workspace > ~$ git clone https://github.com/NVIDIA/apex
-< other-workspace > ~$ cd apex
-< other-workspace/apex > ~$ pip install -v --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" --global-option="--deprecated_fused_adam" --global-option="--xentropy" --global-option="--fast_multihead_attn" ./
 ```
 
 如果需要转换模型，则需另外安装以下内容：
@@ -21,7 +17,7 @@
 + [make=4.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装-make-42)
 + [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装gcc820)
 + [glib=2.29](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装glibc-229)
-+ [rknn-tools2=1.5 py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装rknn)
++ [rknn-tools2 for py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装rknn)
 + [apex=0.1](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#apex安装)
 
 ### 安装gcc和make依赖，先安装低版本用于编译环境
@@ -35,10 +31,8 @@
 ```bash
     cd <your-workspace>
     wget http://ftp.gnu.org/gnu/make/make-4.2.1.tar.gz
-    tar -zxvf make-4.2.1.tar.gz
-    cd make-4.2.1
-    mkdir build
-    cd build
+    tar -zxvf make-4.2.1.tar.gz; cd make-4.2.1
+    mkdir build; cd build
     ../configure --prefix=/usr/local/make && make && make install
     export PATH=/usr/local/make/bin:$PATH
     ln -s /usr/local/make/bin/make /usr/local/make/bin/gmake
@@ -49,7 +43,7 @@
 
 ```bash
     cd <your-workspace>
-    wdget https://mirrors.tuna.tsinghua.edu.cn/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz
+    wget https://mirrors.tuna.tsinghua.edu.cn/gnu/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz
     tar xf gcc-8.2.0.tar.gz && cd gcc-8.2.0
     # 下载gmp mpfr mpc等供编译需求的依赖项
     ./contrib/download_prerequisites
@@ -61,7 +55,7 @@
     # 修改环境变量，使得gcc-8.2.0为默认的gcc
     vi /etc/profile.d/gcc.sh # 没用
     # 将 "export PATH=/usr/local/gcc-8.2.0/bin:$PATH" 加到~/.zshrc文件
-    sudo ln -sv /usr/local/gcc-8.2.0/include/ /usr/include/gcc
+    ln -sv /usr/local/gcc-8.2.0/include/ /usr/include/gcc
 "/usr/include/gcc/include" -> "/usr/local/gcc-8.2.0/include/"
 ```
 
@@ -70,12 +64,9 @@
 ```bash
     cd <your-workspace>
     wget https://ftp.gnu.org/gnu/glibc/glibc-2.29.tar.gz
-    tar -xvf glibc-2.29.tar.gz
-    cd glibc-2.29
-    # 创建build目录
-    mkdir build
-    # 进入build目录
-    cd build
+    tar -xvf glibc-2.29.tar.gz; cd glibc-2.29
+    # 创建build目录并进入build目录
+    mkdir build; cd build
     # 执行./configure
     ../configure --prefix=/usr --disable-profile --enable-add-ons --with-headers=/usr/include --with-binutils=/usr/bin
     # 安装
@@ -85,15 +76,16 @@
     ## 再次查看系统中可使用的glibc版本
     strings /lib64/libc.so.6 |grep GLIBC_
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/glibc-2.29/lib
-    LD_PRELOAD=/lib64/libc-2.28.so rm -rf /lib64/libc.so.6
-    LD_PRELOAD=/lib64/libc-2.28.so ln -s /lib64/libc-2.28.so /lib64/libc.so.6
+    LD_PRELOAD=/lib64/libc-2.28.so; rm -rf /lib64/libc.so.6
+    LD_PRELOAD=/lib64/libc-2.28.so; ln -s /lib64/libc-2.28.so /lib64/libc.so.6
+    ldconfig # 更新状态
 ```
 
 ### 安装rknn
 
 ```bash
     git clone https://github.com/rockchip-linux/rknn-toolkit2.git
-    cd rknn-toolkit2; pip install packages/rknn_toolkit2-1.5.2+b642f30c-cp38-cp38-linux_x86_64.whl --no-deps
+    cd rknn-toolkit2; pip install rknn-toolkit2/packages/rknn_toolkit2-*-cp38-cp38-linux_x86_64.whl --no-deps
 ```
 
 ### 安装apex
@@ -105,6 +97,11 @@
     pip3 uninstall apex
     pip3 install --upgrade apex-0.1+ascend-{version}.whl
     pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+
+    <pytorch-toolkit-dev> ~$ # install apex for speed training
+    < other-workspace > ~$ git clone https://github.com/NVIDIA/apex
+    < other-workspace > ~$ cd apex
+    < other-workspace/apex > ~$ pip install -v --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" --global-option="--deprecated_fused_adam" --global-option="--xentropy" --global-option="--fast_multihead_attn" ./
 ```
 
 ### 环境安装问题
@@ -120,3 +117,13 @@
 ```bash
     ImportError: libGL.so.1: cannot open shared object file: No such file or directory
 ```
+
+3.加‘HF_ENDPOINT=https://hf-mirror.com’到python前，解决预训练模型下载失败：
+
+···bash
+    # way1： add expoert HF_ENDPOINT=https://hf-mirror.com to ~/.bashrc
+    export HF_ENDPOINT=https://hf-mirror.com
+    python3 -m transformers.cli download roberta-base
+    # way2: add HF_ENDPOINT=https://hf-mirror.com to command line
+    HF_ENDPOINT=https://hf-mirror.com python3 -m transformers.cli download roberta-base
+···
