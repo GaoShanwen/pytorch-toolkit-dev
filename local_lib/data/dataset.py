@@ -20,6 +20,7 @@ from timm.utils.misc import natural_key
 from .readers import create_reader
 from .custom_aa import _CUSTOM_RAND_TFS
 
+
 class TxtReaderImageDataset(ImageDataset):
     def __init__(
         self,
@@ -78,6 +79,7 @@ class MultiLabelDataset(data.Dataset):
 
     def __len__(self):
         return len(self.data)
+
 
 class CustomRandAADataset(data.Dataset):
     def __init__(self, dataset, input_size, auto_augment, interpolation, mean, convert_epoch):

@@ -4,14 +4,14 @@ amp_dtype: float16
 amp_impl: native
 aug_repeats: 0
 aug_splits: 0
-batch_size: 128
+batch_size: 64
 bce_loss: false
 bce_target_thresh: null
 bn_eps: null
 bn_momentum: null
-cats_path: ''
+cats_path: dataset/optimize_task3/2066_cats.txt
 channels_last: false
-checkpoint_hist: 30
+checkpoint_hist: 10
 class_map: ''
 clip_grad: null
 clip_mode: norm
@@ -21,9 +21,8 @@ crop_pct: null
 cutmix: 0.0
 cutmix_minmax: null
 data: null
-cats_path: dataset/optimize_task3/2066_cats.txt
 data_dir: dataset/optimize_task3
-dataset: txt_data
+dataset: reid_data
 dataset_download: false
 decay_epochs: 90
 decay_milestones:
@@ -59,7 +58,7 @@ local_rank: 0
 log_interval: 50
 log_wandb: false
 lr: null
-lr_base: 0.00375
+lr_base: 0.0001
 lr_base_scale: ''
 lr_base_size: 256
 lr_cycle_decay: 0.5
@@ -78,7 +77,7 @@ mixup_mode: batch
 mixup_off_epoch: 0
 mixup_prob: 1.0
 mixup_switch_prob: 0.5
-model: regnety_redution_040.ra3_in1k
+model: regnety_040.ra3_in1k
 model_ema: true
 model_ema_decay: 0.9999
 model_ema_force_cpu: false
@@ -88,13 +87,12 @@ no_aug: false
 no_ddp_bb: false
 no_prefetcher: false
 no_resume_opt: false
-num_choose: null
 num_classes: 2066
 opt: rmsproptf
 opt_betas: null
 opt_eps: 0.001
 opt_kwargs: {}
-output: output/ckpts
+output: 'output/ckpts'
 pass_path: ''
 patience_epochs: 10
 pin_mem: false
@@ -153,8 +151,15 @@ real_labels: ''
 results_file: ''
 results_format: csv
 compute_by_cat: true
-label_file: dataset/zero_dataset/label_names.csv
+label_file: "dataset/zero_dataset/label_names.csv"
 custom_aa: false
+convert_epoch: 0
 multilabel: null
 feat_extract_dim: null
-model_classes: 2066
+re_identifier:
+  metric_loss: triplet_loss
+  num_instance: 8
+  feat_dim: 128
+  weights:
+    feats: 1.0
+    cls: 1.0 

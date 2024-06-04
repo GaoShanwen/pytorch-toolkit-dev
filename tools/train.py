@@ -288,9 +288,7 @@ def main():
         seed=args.seed,
         repeats=args.epoch_repeats,
         num_classes=args.num_classes,
-        num_choose=args.num_choose,
         cats_path=args.cats_path,
-        pass_path=args.pass_path,
         multilabel=args.multilabel,
     )
     cat_nums = len(dataset_train.reader.class_to_idx) if not args.multilabel else args.multilabel["label_nums"]
@@ -305,9 +303,7 @@ def main():
         download=args.dataset_download,
         batch_size=args.batch_size,
         num_classes=args.num_classes,
-        num_choose=args.num_choose,
         cats_path=args.cats_path,
-        pass_path=args.pass_path,
         multilabel=args.multilabel,
     )
     cat_nums = len(dataset_train.reader.class_to_idx) if not args.multilabel else args.multilabel["label_nums"]

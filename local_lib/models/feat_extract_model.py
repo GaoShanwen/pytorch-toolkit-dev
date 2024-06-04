@@ -5,7 +5,6 @@
 # filenaem: feat_extract_model.py
 # function: REbuild Model for Feature Extract.
 ######################################################
-
 import torch
 import torch.nn as nn
 

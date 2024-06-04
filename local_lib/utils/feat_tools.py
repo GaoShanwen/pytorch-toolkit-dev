@@ -57,6 +57,7 @@ def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
     print(f"top5-acc(th={th}): {top5_num}/{q_label.shape[0]}|{top5_num / q_num * 100:.2f}")
     print(f"display-avg(th={th}): {display_num / q_num:.2f}")
     print(f"display-one(th={th}): {only_ones / q_num * 100:.2f}")
+    print(f"{top1_num / q_num * 100:.2f}/{top5_num / q_num * 100:.2f}-{display_num / q_num:.2f}/{only_ones / q_num * 100:.2f}")
 
 
 def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshold=None):

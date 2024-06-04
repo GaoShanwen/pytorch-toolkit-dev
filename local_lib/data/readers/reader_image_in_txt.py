@@ -13,6 +13,7 @@ from timm.data.readers.img_extensions import get_img_extensions
 from timm.data.readers.reader import Reader
 from timm.utils.misc import natural_key
 
+
 def check_img(filename):
     if not os.path.exists(filename):
         return False

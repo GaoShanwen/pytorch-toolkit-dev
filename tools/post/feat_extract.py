@@ -169,9 +169,7 @@ def extract(args):
         load_bytes=args.tf_preprocessing,
         class_map=args.class_map,
         num_classes=args.data_classes,
-        num_choose=args.num_choose,
         cats_path=args.cats_path,
-        pass_path=args.pass_path,
     )
     _logger.info(f"Loaded {args.infer_mode} task cats:{len(dataset.reader.class_to_idx)}, imgs={len(dataset)}")
 

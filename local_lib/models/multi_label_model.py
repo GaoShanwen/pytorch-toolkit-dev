@@ -3,7 +3,7 @@
 # email: gaowenjie@rongxwy.com
 # date: 2024.04.25
 # filenaem: multi_label_model.py
-# function: REbuild Model for Multi-Label Classification.
+# function: Rebuild Model for Multi-Label Classification.
 # reference: https://github.com/yang-ruixin/PyTorch-Image-Models-Multi-Label-Classification
 ######################################################
 

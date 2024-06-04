@@ -12,7 +12,9 @@ from PIL import Image
 from timm.data import create_loader
 from torchvision import transforms
 from torchvision.transforms import Resize
-
+from torch.utils.data import DataLoader
+from timm.data.loader import MultiEpochsDataLoader, PrefetchLoader
+from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
 class CustomResize(Resize):
     def __init__(self, size, interpolation):
@@ -60,6 +62,54 @@ def create_custom_loader(dataset, input_size, batch_size, transfrom_mode="trainv
     print(loader.transform)
     return loader
 
+
+def rebuild_custom_loader(
+        loader, 
+        sampler, 
+        mean=IMAGENET_DEFAULT_MEAN,
+        std=IMAGENET_DEFAULT_STD,
+        channels=3,
+        re_prob=0.,
+        re_mode='const',
+        re_count=1,
+        re_num_splits=0,
+    ):
+    # import pdb; pdb.set_trace()
+    config_loader = loader.loader
+    loader_class = DataLoader if isinstance(config_loader, DataLoader) else MultiEpochsDataLoader
+
+    loader_args = dict(
+        batch_size=config_loader.batch_size,
+        shuffle=False,
+        num_workers=config_loader.num_workers,
+        sampler=sampler,
+        collate_fn=config_loader.collate_fn,
+        pin_memory=config_loader.pin_memory,
+        drop_last=True, #config_loader.drop_last,
+        worker_init_fn=config_loader.worker_init_fn,
+        persistent_workers=config_loader.persistent_workers
+    )
+    dataset = config_loader.dataset
+    try:
+        custom_loader = loader_class(dataset, **loader_args)
+    except TypeError as e:
+        loader_args.pop('persistent_workers')  # only in Pytorch 1.7+
+        custom_loader = loader_class(dataset, **loader_args)
+    if isinstance(loader, PrefetchLoader):
+        custom_loader = PrefetchLoader(
+            custom_loader,
+            mean=mean,
+            std=std,
+            channels=channels,
+            device=loader.device,
+            fp16=loader.img_dtype==torch.float16,  # deprecated, use img_dtype
+            img_dtype=loader.img_dtype,
+            re_prob=re_prob,
+            re_mode=re_mode,
+            re_count=re_count,
+            re_num_splits=re_num_splits
+        )
+    return custom_loader
 
 if __name__ == "__main__":
     img_path = "dataset/test_imgs/1.jpg"

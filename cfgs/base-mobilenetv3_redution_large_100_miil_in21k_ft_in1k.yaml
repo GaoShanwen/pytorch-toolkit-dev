@@ -4,14 +4,13 @@ amp_dtype: float16
 amp_impl: native
 aug_repeats: 0
 aug_splits: 0
-batch_size: 128
+batch_size: 64
 bce_loss: false
 bce_target_thresh: null
 bn_eps: null
 bn_momentum: null
-cats_path: ''
 channels_last: false
-checkpoint_hist: 30
+checkpoint_hist: 10
 class_map: ''
 clip_grad: null
 clip_mode: norm
@@ -21,11 +20,10 @@ crop_pct: null
 cutmix: 0.0
 cutmix_minmax: null
 data: null
-cats_path: dataset/optimize_task3/2066_cats.txt
 data_dir: dataset/optimize_task3
 dataset: txt_data
 dataset_download: false
-decay_epochs: 90
+decay_epochs: 2.4
 decay_milestones:
 - 90
 - 180
@@ -37,7 +35,7 @@ drop_block: null
 drop_connect: null
 drop_path: null
 epoch_repeats: 0.0
-epochs: 10
+epochs: 60
 eval_metric: top1
 experiment: ''
 fast_norm: false
@@ -48,7 +46,8 @@ grad_checkpointing: false
 head_init_bias: null
 head_init_scale: null
 hflip: 0.3
-img_size: 224
+vflip: 0.3
+img_size: null
 in_chans: null
 initial_checkpoint: ''
 input_size: null
@@ -58,10 +57,11 @@ layer_decay: null
 local_rank: 0
 log_interval: 50
 log_wandb: false
+tensorboard: ''
 lr: null
 lr_base: 0.00375
 lr_base_scale: ''
-lr_base_size: 256
+lr_base_size: 128
 lr_cycle_decay: 0.5
 lr_cycle_limit: 1
 lr_cycle_mul: 1.0
@@ -78,7 +78,7 @@ mixup_mode: batch
 mixup_off_epoch: 0
 mixup_prob: 1.0
 mixup_switch_prob: 0.5
-model: regnety_redution_040.ra3_in1k
+model: mobilenetv3_redution_large_100.miil_in21k_ft_in1k
 model_ema: true
 model_ema_decay: 0.9999
 model_ema_force_cpu: false
@@ -88,17 +88,16 @@ no_aug: false
 no_ddp_bb: false
 no_prefetcher: false
 no_resume_opt: false
-num_choose: null
 num_classes: 2066
+cats_path: dataset/optimize_task3/2066_cats.txt
 opt: rmsproptf
 opt_betas: null
 opt_eps: 0.001
 opt_kwargs: {}
 output: output/ckpts
-pass_path: ''
 patience_epochs: 10
 pin_mem: false
-pretrained: true
+pretrained: false
 ratio:
 - 0.75
 - 1.3333333333333333
@@ -107,7 +106,6 @@ recovery_interval: 0
 remode: pixel
 reprob: 0.2
 resplit: false
-resume: ''
 save_images: false
 scale:
 - 0.4
@@ -121,7 +119,6 @@ start_epoch: null
 std: null
 sync_bn: false
 synchronize_step: false
-tensorboard: ''
 torchcompile: null
 torchscript: false
 train_interpolation: random
