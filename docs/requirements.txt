@@ -23,7 +23,7 @@ protobuf==3.20.3
 psutil==5.9.0
 fast-histogram==0.11
 ruamel.yaml==0.17.4
-opencv-python-headless==4.8.1.78
+opencv-python-headless #==4.8.1.78
 
 # Plotting ------------------------------------
 pandas==2.0.3
@@ -32,9 +32,10 @@ mplfonts # for matplotlib chinese fonts
 # seaborn>=0.11.0
 
 # Export --------------------------------------
-onnx==1.14.0
-onnxruntime==1.14.0
-onnxoptimizer==0.2.7
+onnx==1.14.1
+onnxruntime==1.16.0
+onnxoptimizer#==0.2.7
+onnxscript
 
 # Tools --------------------------------------
 faiss-gpu==1.7.2

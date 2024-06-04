@@ -12,6 +12,32 @@
 <pytorch-toolkit-dev> ~$ python setup.py install
 ```
 
+```bash
+<pytorch-toolkit-dev> ~$ yum install git tree curl vim zsh tmux -y # 安装git tree curl vim
+<pytorch-toolkit-dev> ~$ # 生成github ssh key，添加到github账户中
+<pytorch-toolkit-dev> ~$ git config --global user.name "your-name" # 设置用户名
+<pytorch-toolkit-dev> ~$ git config --global user.email "your-email" # 设置邮箱
+<pytorch-toolkit-dev> ~$ git config --global color.ui true # 开启git颜色显示
+<pytorch-toolkit-dev> ~$ ssh-keygen -t rsa -b 4096 -C "your-email"
+<pytorch-toolkit-dev> ~$ cat ~/.ssh/id_rsa.pub # 查看公钥
+<pytorch-toolkit-dev> ~$ # 添加公钥到github账户中
+<pytorch-toolkit-dev> ~$ ssh -T git@github.com # 测试debug是否成功
+<pytorch-toolkit-dev> ~$ chsh -s /bin/zsh # 更换zsh为默认shell
+<pytorch-toolkit-dev> ~$ # 安装zsh插件
+<pytorch-toolkit-dev> ~$ # clone oh-my-zsh
+<pytorch-toolkit-dev> ~$ git clone https://gitee.com/mirrors/oh-my-zsh.git ~/.oh-my-zsh
+<pytorch-toolkit-dev> ~$ git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/plugins/zsh-autosuggestions
+<pytorch-toolkit-dev> ~$ git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/plugins/zsh-syntax-highlighting
+<pytorch-toolkit-dev> ~$ # clone autojump
+<pytorch-toolkit-dev> ~$ git clone https://gitee.com/gentlecp/autojump.git; cd autojump; ./install.sh;  # 加自动跳转
+<pytorch-toolkit-dev> ~$ vim ~/.zshrc # 编辑zsh配置文件
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting) # 启用插件
+[[ -s /root/.autojump/etc/profile.d/autojump.sh ]] && source /root/.autojump/etc/profile.d/autojump.sh
+<pytorch-toolkit-dev> ~$ source ~/.zshrc # 使配置文件生效
+# Retach userspaces
+<pytorch-toolkit-dev> ~$ set -g default-command "reattach-to-user-namespace -l zsh"
+```
+
 如果需要转换模型，则需另外安装以下内容：
 
 + [make=4.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装-make-42)
@@ -36,7 +62,7 @@
     ../configure --prefix=/usr/local/make && make && make install
     export PATH=/usr/local/make/bin:$PATH
     ln -s /usr/local/make/bin/make /usr/local/make/bin/gmake
-    make -v
+    make -v # make sure make-4.2 installed successfully
 ```
 
 ### 安装gcc8.2.0
@@ -50,13 +76,17 @@
     # 配置
     mkdir build && cd build
     ../configure --prefix=/usr/local/gcc-8.2.0 --enable-bootstrap --enable-checking=release --enable-languages=c,c++ --disable-multilib
-    # 编译安装
-    make -j 4 && make install
+    # 编译安装(该命令持续很久（>1h），先启动后台再运行)
+    make -j 4 && make install 
     # 修改环境变量，使得gcc-8.2.0为默认的gcc
-    vi /etc/profile.d/gcc.sh # 没用
     # 将 "export PATH=/usr/local/gcc-8.2.0/bin:$PATH" 加到~/.zshrc文件
+    vim ~/.zshrc # 编辑zsh配置文件
+export PATH=/usr/local/gcc-8.2.0/bin:$PATH
+    source ~/.zshrc # 使配置文件生效
+    # 加软连接
     ln -sv /usr/local/gcc-8.2.0/include/ /usr/include/gcc
 "/usr/include/gcc/include" -> "/usr/local/gcc-8.2.0/include/"
+    gcc -v # make sure gcc-8.2.0 installed successfully
 ```
 
 ### 安装glibc-2.29
@@ -69,7 +99,7 @@
     mkdir build; cd build
     # 执行./configure
     ../configure --prefix=/usr --disable-profile --enable-add-ons --with-headers=/usr/include --with-binutils=/usr/bin
-    # 安装
+    # 编译安装(该命令持续很久，先启动后台再运行, 执行时可能出现错误，可以忽略)
     make && make install
     ## 查看共享库
     ls -l /lib64/libc.so.6
@@ -127,3 +157,9 @@
     # way2: add HF_ENDPOINT=https://hf-mirror.com to command line
     HF_ENDPOINT=https://hf-mirror.com python3 -m transformers.cli download roberta-base
 ···
+
+4.重新安装编译make，gcc，glibc，解决如下问题：
+
+```bash
+    ImportError: libGL.so.1: cannot open shared object file: No such file or directory
+```

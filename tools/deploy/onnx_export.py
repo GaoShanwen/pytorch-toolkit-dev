@@ -175,7 +175,7 @@ def onnx_export(
     else:
         export_type = torch.onnx.OperatorExportTypes.ONNX
 
-    torch_out = torch.onnx._export(
+    torch_out = torch.onnx.export(
         model,
         example_input,
         output_file,
