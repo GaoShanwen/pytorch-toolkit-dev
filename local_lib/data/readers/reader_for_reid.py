@@ -1,7 +1,6 @@
 
 from .reader_image_in_txt import ReaderImageTxt
 from .reid_sampler import NaiveIdentitySampler
-from .sampler import MPerClassSampler
 
 
 class ReaderForReid(ReaderImageTxt):

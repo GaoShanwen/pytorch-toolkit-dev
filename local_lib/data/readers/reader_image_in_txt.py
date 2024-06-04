@@ -110,7 +110,7 @@ class ReaderImagePaths(Reader):
             f'Supported image extensions are {", ".join(get_img_extensions())}'
         )
         if class_to_idx is not None:
-            images_and_targets = [(f, class_to_idx[l]) for f, l in images_and_targets]
+            images_and_targets = [(f, class_to_idx[l]) for f, l in images_and_targets if l in class_to_idx]
         if sort:
             images_and_targets = sorted(images_and_targets, key=lambda k: natural_key(k[0]))
         self.samples, self.class_to_idx = images_and_targets, class_to_idx

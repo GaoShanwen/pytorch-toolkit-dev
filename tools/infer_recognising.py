@@ -90,40 +90,19 @@ def run_infer(model, args):
 
     if args.cats_path:
         with open(args.cats_path, "r") as f:
-            # class_list = sorted([line.strip() for line in f.readlines()[:args.num_classes]], key=natural_key)
             class_list = sorted([line.strip() for line in f.readlines()], key=natural_key)
-    # if args.need_cats:
-    #     with open(args.need_cats, "r") as f:
-    #         load_cats = json.load(f)
-    #     assert len(load_cats) == 1, f"the longth of load_cats must be one, but get {len(load_cats)}"
-    #     need_cats, related_cats = np.array(list(load_cats.keys())), np.squeeze(np.array(list(load_cats.values())))
-        
-        # need_cats = np.array(load_cats["original_categories"])
-        # need_idx = np.array([class_list.index(line.strip()) for line in need_cats])
-        # related_cats = np.array(load_cats["related_categories"])
-        # related_idx = np.array([class_list.index(line.strip()) for line in related_cats])
-        # with open(args.need_cats, "r") as f:
-        #     need_list = np.array([class_list.index(line.strip()) for line in f.readlines()])
-        #     need_cat = np.array(class_list)[need_list]
-    # else:
-    #     need_cats, related_cats = None, None
-    # filter_cats = related_cats if args.status == "after_analyze" else need_cats
-    # checker_cats = need_cats if args.status == "after_analyze" else related_cats
-    # check_idx = np.array([class_list.index(line) for line in checker_cats]) if checker_cats else np.array([])
     assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
+    start_idx = 1 if args.multilabel else 0
     if args.input_mode == "file":
         need_index = 1
         if args.multilabel:
             need_index += args.multilabel["attributes"].index(args.need_attr)
-            start_idx = 1
         with open(args.data_path, "r") as f:
             load_data = list(zip(*([line.strip().split(",") for line in f.readlines()[start_idx:]])))
         query_files, query_labels = load_data[0], load_data[need_index]
         query_files, query_labels = np.array(query_files), np.array(query_labels)
-        # filter_cats = filter_cats or class_list
-        # if filter_cats:
-        #     keeps = np.isin(query_labels, filter_cats)
-        #     query_files, query_labels = query_files[keeps], query_labels[keeps]
+        keeps = np.isin(query_labels, class_list)
+        query_files, query_labels = query_files[keeps], query_labels[keeps]
     else: # args.input_mode == "path" or "dir"
         query_files = np.array(
             [os.path.join(args.data_path, path) for path in os.listdir(args.data_path)]
@@ -164,12 +143,13 @@ def run_infer(model, args):
             pred = pred.softmax(dim=1).cpu().numpy()
             this_choices = np.ones(pred.shape[0]).astype(bool)
             predicts += pred[this_choices].tolist()
-            keeps = np.arange(pred.shape[0])[this_choices] + (batch_idx * args.batch_size)
-            choices[keeps] = True
+            # keeps = np.arange(pred.shape[0])[this_choices] + (batch_idx * args.batch_size)
+            # choices[keeps] = True
     pbar.close()
     predicts = np.array(predicts) # choices = np.array(choices)
-    choices_files, choices_gts = query_files[choices], query_labels[choices]
-    np.savez("recognize_scores.npz", pscores=predicts, gts=choices_gts, files=choices_files)
+    # choices_files, choices_gts = query_files[choices], query_labels[choices]
+    # np.savez("recognize_scores.npz", pscores=predicts, gts=choices_gts, files=choices_files)
+    np.savez("recognize_scores.npz", pscores=predicts, gts=query_labels, files=query_files)
 
 
 if __name__ == "__main__":

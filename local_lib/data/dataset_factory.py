@@ -23,7 +23,7 @@ def create_custom_dataset(name, root, split="val", class_map=None, is_training=F
         return MultiLabelDataset(root, split, multilabel.get("attributes", None), **kwargs)
     
     class_to_idx = kwargs.get("class_to_idx", None)
-    reader = ReaderImagePaths(root, sort=False, class_to_idx=class_to_idx) if split == "infer" else None
+    reader = ReaderImagePaths(root, class_to_idx=class_to_idx, sort=False) if split == "infer" else None
     if name == "reid_data" and is_training:
         reader = ReaderForReid(root, split=split, class_map=class_map, **kwargs)
     return TxtReaderImageDataset(root, reader=reader, split=split, class_map=class_map, **kwargs)

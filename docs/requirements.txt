@@ -39,11 +39,12 @@ onnxoptimizer==0.2.7
 # Tools --------------------------------------
 faiss-gpu==1.7.2
 grad-cam==1.4.8
+argparse
 umap-learn
-optuna==3.5.0
 black==22.12.0 # black==22.* for dev/linter.sh
 isort==4.3.21 # isort==4.3.21 for dev/linter.sh
 pymysql==1.1.0
+# optuna==3.5.0
 # pymongo==4.6.0
 
 # Logging -------------------------------------
@@ -56,6 +57,7 @@ optuna-dashboard==0.14.0
 
 # Extras --------------------------------------
 psutil  # system utilization
+gpustat # gpu's status display
 # py-cpuinfo  # display CPU info
 # thop>=0.1.1  # FLOPs computation
 # ipython  # interactive notebook
