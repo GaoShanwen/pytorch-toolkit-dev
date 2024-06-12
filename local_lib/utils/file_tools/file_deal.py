@@ -5,12 +5,12 @@ import pandas as pd
 from typing import Union, List
 
 
-def save_dict2csv(data, csv_name):
+def save_dict2csv(data, csv_name, index=None):
     # try:
     #     df = pd.DataFrame(data).transpose()
     # except:
     #     df = pd.DataFrame(data, index=[0]).transpose()
-    df = pd.DataFrame(data).transpose()
+    df = pd.DataFrame(data, index).transpose()
     df.to_csv(csv_name)
     # print(df)
 

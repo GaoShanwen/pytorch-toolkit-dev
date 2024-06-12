@@ -13,7 +13,6 @@ building a multitask training platform based on Pytorch
 timm-dev branch for classfication or re-identification tasks.
 
 <div align="center";style="display: none;">
-    <img src="https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/demo4reid.jpg" width="70%" alt="" />
     <img src="/docs/demo4reid.jpg" width="70%" alt="" />
 </div>
 
