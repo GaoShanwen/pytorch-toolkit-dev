@@ -113,9 +113,9 @@ if __name__ == "__main__":
 
     # m = timm.create_model('regnety_redution_016.tv2_in1k', pretrained=True, num_classes=100)
     # m = timm.create_model('regnetz_redution_040_h.ra3_in1k', pretrained=True, num_classes=100)
-    # m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
+    m = timm.create_model("regnety_redution_040.ra3_in1k", pretrained=True, num_classes=4281)
     # m = timm.create_model("regnety_320.swag_ft_in1k", pretrained=True, num_classes=4281)
-    m = timm.create_model("regnety_redution_160.swag_ft_in1k", pretrained=True, num_classes=100)
+    # m = timm.create_model("regnety_redution_160.swag_ft_in1k", pretrained=True, num_classes=100)
     o = m(torch.randn(2, 3, 224, 224))
     print(m)
     # parameters = m.parameters()

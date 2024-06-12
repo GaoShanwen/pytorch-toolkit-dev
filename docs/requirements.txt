@@ -1,5 +1,5 @@
 # Project requirements
-# Example: pip install -r docs/requirements.txt
+# Example: pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117
 
 # Base ----------------------------------------
 numpy==1.24.4
@@ -9,9 +9,13 @@ tqdm #==4.64.0
 # torch==1.10.1+cu102
 # torchvision==0.11.2+cu102
 
-torch==2.0.1
-torchvision==0.15.2
-torchaudio==2.0.2
+# torch==2.0.1+cu117
+# torchvision==0.15.2+cu117
+# torchaudio==2.0.2+cu117
+
+torch==2.3.0+cu121
+torchvision==0.18.0+cu121
+torchaudio==2.3.0+cu121
 
 pyyaml==6.0.1
 huggingface_hub==0.18.0
@@ -34,7 +38,7 @@ mplfonts # for matplotlib chinese fonts
 # Export --------------------------------------
 onnx==1.14.1
 onnxruntime==1.16.0
-onnxoptimizer#==0.2.7
+onnxoptimizer #==0.2.7
 onnxscript
 
 # Tools --------------------------------------

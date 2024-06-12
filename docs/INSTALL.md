@@ -8,11 +8,21 @@
 <pytorch-toolkit-dev> ~$ # install timm and its environment(include rknn-tools2)
 <pytorch-toolkit-dev> ~$ git clone https://github.com/GaoShanwen/pytorch-toolkit-dev.git
 <pytorch-toolkit-dev> ~$ git checkout timm-dev
-<pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117
+<pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121
 <pytorch-toolkit-dev> ~$ python setup.py install
 ```
 
 ```bash
+<$root> ~$ # 添加NVIDIA Docker repository
+<$root> ~$ distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+<$root> ~$ curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+<$root> ~$ curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+<$root> ~$ # 安装NVIDIA Docker
+<$root> ~$ sudo apt-get update
+<$root> ~$ sudo apt-get install -y nvidia-docker2
+<$root> ~$ sudo systemctl restart docker
+
 <pytorch-toolkit-dev> ~$ yum install git tree curl vim zsh tmux -y # 安装git tree curl vim
 <pytorch-toolkit-dev> ~$ # 生成github ssh key，添加到github账户中
 <pytorch-toolkit-dev> ~$ git config --global user.name "your-name" # 设置用户名
@@ -34,8 +44,9 @@
 plugins=(git zsh-autosuggestions zsh-syntax-highlighting) # 启用插件
 [[ -s /root/.autojump/etc/profile.d/autojump.sh ]] && source /root/.autojump/etc/profile.d/autojump.sh
 <pytorch-toolkit-dev> ~$ source ~/.zshrc # 使配置文件生效
-# Retach userspaces
-<pytorch-toolkit-dev> ~$ set -g default-command "reattach-to-user-namespace -l zsh"
+<pytorch-toolkit-dev> ~$ touch ~/.tmux.conf # 新建tmux配置文件
+<pytorch-toolkit-dev> ~$ set -g default-shell /bin/zsh # 设置默认shell为zsh
+<pytorch-toolkit-dev> ~$ tmux new -s gwj_train #tmux # 启动tmux
 ```
 
 如果需要转换模型，则需另外安装以下内容：
@@ -150,13 +161,14 @@ export PATH=/usr/local/gcc-8.2.0/bin:$PATH
 
 3.加‘HF_ENDPOINT=https://hf-mirror.com’到python前，解决预训练模型下载失败：
 
-···bash
+```bash
     # way1： add expoert HF_ENDPOINT=https://hf-mirror.com to ~/.bashrc
     export HF_ENDPOINT=https://hf-mirror.com
+    HF_HUB_OFFLINE=1
     python3 -m transformers.cli download roberta-base
     # way2: add HF_ENDPOINT=https://hf-mirror.com to command line
     HF_ENDPOINT=https://hf-mirror.com python3 -m transformers.cli download roberta-base
-···
+```
 
 4.重新安装编译make，gcc，glibc，解决如下问题：
 
