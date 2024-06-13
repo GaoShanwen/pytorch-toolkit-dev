@@ -56,6 +56,7 @@ except ImportError:
 
 has_compile = hasattr(torch, "compile")
 _logger = logging.getLogger("train")
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128" #总是报显存不足的问题，是因为碎片没完全释放
 
 
 def main():
@@ -590,6 +591,7 @@ def train_one_epoch(
             loader.mixup_enabled = False
         elif mixup_fn is not None:
             mixup_fn.mixup_enabled = False
+    if hasattr(torch.cuda, 'empty_cache'): torch.cuda.empty_cache()
 
     second_order = hasattr(optimizer, "is_second_order") and optimizer.is_second_order
     has_no_sync = hasattr(model, "no_sync")
@@ -621,7 +623,6 @@ def train_one_epoch(
         # imgs = input.permute([0,2,3,1]).cpu().numpy()[..., ::-1]
         # for i, img in enumerate(imgs):
         #     cv2.imwrite(f"output/vis/vis_img/{batch_idx}_{i}.jpg", np.array(img*255, dtype=int))
-        # import pdb; pdb.set_trace()
 
         if not args.prefetcher:
             input = input.to(device)

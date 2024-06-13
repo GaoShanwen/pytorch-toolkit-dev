@@ -263,7 +263,6 @@ if __name__ == "__main__":
     loader_train = torch.utils.data.DataLoader(data, batch_size=64, sampler=sample)
     # loader_train = create_loader(dataset_train, input_size=(3, 224, 224), batch_size=64, shuffle=False)
     # loader_train.sampler = sample
-    # import pdb; pdb.set_trace()
     for i, d in enumerate(loader_train):
         print(i, d[1])
         if i == 10:

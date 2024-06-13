@@ -1,6 +1,5 @@
 import umap
 import faiss
-import pdb
 import numpy as np
 import os
 import shutil

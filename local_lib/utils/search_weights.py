@@ -86,7 +86,7 @@ if __name__ == "__main__":
         .15, .145, .125, .11, .097, .095, .092, .09, .087, .084,
         .082, .08, .078, .075, .073, .071, .068, .065, .063, .06,
     ]).view(50,1)
-    import pdb; pdb.set_trace()
+    
     b = torch.zeros((5, 1), requires_grad=False)
     optimizer = torch.optim.Adam([W, b], lr=learning_rate)
 
@@ -122,7 +122,6 @@ if __name__ == "__main__":
             for X, y in data_iter:
                 metric.add(accuracy(net(X), y), y.numel())
 
-        # import pdb; pdb.set_trace()
         return metric[0] / metric[1]
 
     test_iter = zip(x_val, y_val)

@@ -201,5 +201,4 @@ if __name__ == "__main__":
     o = m(torch.randn(2, 3, 224, 224))
     # load_checkpoint(model, "output/train/20231011-120458-mobilenetv3_large_100-224/model_best.pth.tar", False)
     # model.reset_classifier(0) # 移除分类层
-    import pdb; pdb.set_trace()
     print(m)

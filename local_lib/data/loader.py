@@ -74,7 +74,6 @@ def rebuild_custom_loader(
         re_count=1,
         re_num_splits=0,
     ):
-    # import pdb; pdb.set_trace()
     config_loader = loader.loader
     loader_class = DataLoader if isinstance(config_loader, DataLoader) else MultiEpochsDataLoader
 

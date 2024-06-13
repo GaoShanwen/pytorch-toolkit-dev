@@ -152,7 +152,6 @@ def cross_entropy_loss(pred_class_outputs, gt_classes, smooth_param=0.1):
         targets *= smooth_param / (num_classes - 1)
         targets.scatter_(1, gt_classes.data.unsqueeze(1), (1 - smooth_param))
 
-    import pdb; pdb.set_trace()
     loss = (-targets * log_probs).sum(dim=1)
     with torch.no_grad():
         non_zero_cnt = max(loss.nonzero(as_tuple=False).size(0), 1)

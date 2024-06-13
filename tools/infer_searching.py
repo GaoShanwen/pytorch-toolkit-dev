@@ -211,7 +211,6 @@ def copy_error(I, g_labels, q_labels, g_files, save_root="output/temp"):
                 continue
             need_index = np.where(g_labels[I[keeps]] == searched_cat)  # [0]
             need_index = I[keeps][need_index]
-            # import pdb; pdb.set_trace()
             save_dir = os.path.join(save_root, label_map[searched_cat])
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
@@ -249,7 +248,6 @@ def run_search(q_labels, query_files, args):
     # copy_error(I, g_labels, q_labels, g_files)
     static_top1(D[:, 0], q_labels, args.save_root)
     return
-    # import pdb; pdb.set_trace()
     # if base_name[:-4] in ["search", "1029"]:
     #     res = np.concatenate((q_labels[:, np.newaxis], I), axis=1)
     #     # np.save('output/feats/searched_res-148c.npy', res)
@@ -267,7 +265,6 @@ def run_search(q_labels, query_files, args):
 
     # blacklist = np.arange(110110110001, 110110110010)
     blacklist = np.array([110110110001, 110110110002] + list(range(110110110005, 110110110010)))
-    # import pdb; pdb.set_trace()
     black_nums = np.sum(np.isin(g_labels[I][:, :11], blacklist), axis=1)
     choose_idx = np.where(black_nums >= 2)[0]
 

@@ -6,21 +6,19 @@ numpy==1.24.4
 setuptools==56.1.0
 opencv-python==4.8.1.78
 tqdm #==4.64.0
-# torch==1.10.1+cu102
-# torchvision==0.11.2+cu102
 
-# torch==2.0.1+cu117
-# torchvision==0.15.2+cu117
-# torchaudio==2.0.2+cu117
+torch==2.0.1+cu117 # for cuda11.2
+torchvision==0.15.2+cu117
+torchaudio==2.0.2+cu117
 
-torch==2.3.0+cu121
-torchvision==0.18.0+cu121
-torchaudio==2.3.0+cu121
+# torch==2.3.0+cu121 # for cuda12.2
+# torchvision==0.18.0+cu121
+# torchaudio==2.3.0+cu121
 
 pyyaml==6.0.1
 huggingface_hub==0.18.0
 safetensors==0.4.0
-timm==0.9.12 #==1.0.3 # not support newest !
+timm==1.0.3 
 scipy==1.5.4
 requests==2.27.1
 protobuf==3.20.3

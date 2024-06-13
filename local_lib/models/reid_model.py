@@ -38,7 +38,7 @@ class ReidModel(nn.Module):
         self.weights = {k: torch.tensor(v) for k, v in weights.items()}
         self.num_features = feat_dim
         self.metric_loss = eval(metric_loss)
-        # import pdb; pdb.set_trace()
+        
         if getattr(model, 'classifier', None): #for mobilenetv3
             num_pooled_features = model.classifier.in_features
             model.classifier = nn.Identity()
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     print(m)
     print("feats", o["feats"].shape)
     print("cls", o["cls"].shape)
-    # import pdb; pdb.set_trace()
+    
     m = m.remove_head()
     m.last_layer = nn.Flatten(1)
     o = m(torch.randn(2, 3, 224, 224))

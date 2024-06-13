@@ -137,11 +137,9 @@ def print_static(static_res, th=0.01):
             check_objs += searched
             masks[idx] = True
         print()
-        # import pdb; pdb.set_trace()
 
 
 def run_test(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
-    import pdb; pdb.set_trace()
     keeps = feat_tools.run_choose(g_feats, g_label, args)
     new_g_files, new_g_label = g_files[keeps], g_label[keeps]
     save_imgs(new_g_files, new_g_label, args.save_root)
@@ -212,7 +210,6 @@ if __name__ == "__main__":
         org_object = g_label if args.filter_mode == "label" else g_files
         choice = np.isin(org_object, g_objects)
         keeps = choice if args.do_keep else ~choice
-        # import pdb; pdb.set_trace()
         g_feats, g_label, g_files = g_feats[keeps], g_label[keeps], g_files[keeps]
 
         org_object = q_label if args.filter_mode == "label" else q_files
