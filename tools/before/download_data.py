@@ -45,9 +45,13 @@ def main(download_urls, dst_root):
 
 
 if __name__ == "__main__":
-    brand_id = 1438 #1267 #1386
-    urls_file = f"test_{brand_id}.csv"
-    obj_root = f"dataset/function_test/package_way/{brand_id}"
+    # brand_id = 1438 #1267 #1386
+    # urls_file = f"test_{brand_id}.csv"
+    # obj_root = f"dataset/function_test/package_way/{brand_id}"
+    brand_id = 1386 #1438 #1267 #
+    task = "gallery"
+    urls_file = f"new_{brand_id}_{task}.csv"
+    obj_root = f"dataset/function_test/new_{brand_id}/{task}"
     if not os.path.exists(obj_root):
         os.makedirs(obj_root)
 

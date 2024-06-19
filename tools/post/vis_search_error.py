@@ -2,8 +2,8 @@
 # author: gaowenjie
 # email: gaowenjie@rongxwy.com
 # date: 2023.11.16
-# filenaem: vis_error.py
-# function: visualize the error picture
+# filenaem: vis_search_error.py
+# function: visualize the error picture for search results.
 ######################################################
 import argparse
 

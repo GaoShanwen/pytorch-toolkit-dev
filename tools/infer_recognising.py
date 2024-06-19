@@ -88,9 +88,6 @@ def run_infer(model, args):
     # resolve AMP arguments based on PyTorch / Apex availability
     amp_autocast = suppress
 
-    if args.cats_path:
-        with open(args.cats_path, "r") as f:
-            class_list = sorted([line.strip() for line in f.readlines()], key=natural_key)
     assert args.input_mode in ["path", "dir", "file"], "please set infer_mode to path, dir, or files"
     start_idx = 1 if args.multilabel else 0
     if args.input_mode == "file":
@@ -101,8 +98,12 @@ def run_infer(model, args):
             load_data = list(zip(*([line.strip().split(",") for line in f.readlines()[start_idx:]])))
         query_files, query_labels = load_data[0], load_data[need_index]
         query_files, query_labels = np.array(query_files), np.array(query_labels)
-        keeps = np.isin(query_labels, class_list)
-        query_files, query_labels = query_files[keeps], query_labels[keeps]
+
+        if args.cats_path:
+            with open(args.cats_path, "r") as f:
+                class_list = sorted([line.strip() for line in f.readlines()], key=natural_key)
+            keeps = np.isin(query_labels, class_list)
+            query_files, query_labels = query_files[keeps], query_labels[keeps]
     else: # args.input_mode == "path" or "dir"
         query_files = np.array(
             [os.path.join(args.data_path, path) for path in os.listdir(args.data_path)]
@@ -111,7 +112,7 @@ def run_infer(model, args):
         )
         query_labels = np.array([None] * len(query_files))
     
-    class_to_idx = {c: idx for idx, c in enumerate(class_list)}
+    class_to_idx = {c: idx for idx, c in enumerate(class_list)} if args.cats_path else None
     images_and_targets = list(zip(*(query_files, query_labels)))
     _logger.info(f"Loaded {len(query_files)} imgs")
     dataset = create_custom_dataset("txt_data", images_and_targets, class_to_idx=class_to_idx, split="infer")
@@ -126,29 +127,24 @@ def run_infer(model, args):
         transfrom_mode="custom",
     )
 
-    choices, predicts = np.zeros(len(query_files)).astype(bool), []
+    predicts = np.zeros((len(query_files), args.num_classes)).astype(np.float64)
     pbar = tqdm.tqdm(total=len(loader))
     model.eval()
+    batch_size = args.batch_size
     with torch.no_grad():
         for batch_idx, (input, _) in enumerate(loader):
-            pbar.update(1)
+            pbar.update()
             if device.type == "cuda":
                 input = input.to(device)
 
             with amp_autocast():
                 output = model(input)
-            pred = output
-            if args.multilabel:
-                pred = pred[args.need_attr]
-            pred = pred.softmax(dim=1).cpu().numpy()
-            this_choices = np.ones(pred.shape[0]).astype(bool)
-            predicts += pred[this_choices].tolist()
-            # keeps = np.arange(pred.shape[0])[this_choices] + (batch_idx * args.batch_size)
-            # choices[keeps] = True
+            pred = output[args.need_attr] if args.multilabel else output
+            start_idx = batch_idx * batch_size
+            predicts[start_idx : start_idx + pred.shape[0]] = pred.softmax(dim=1).cpu().numpy()
+             
     pbar.close()
-    predicts = np.array(predicts) # choices = np.array(choices)
-    # choices_files, choices_gts = query_files[choices], query_labels[choices]
-    # np.savez("recognize_scores.npz", pscores=predicts, gts=choices_gts, files=choices_files)
+    print("save prediction in recognize_scores.npz.")
     np.savez("recognize_scores.npz", pscores=predicts, gts=query_labels, files=query_files)
 
 

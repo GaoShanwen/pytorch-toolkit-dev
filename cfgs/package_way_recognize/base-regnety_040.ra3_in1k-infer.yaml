@@ -1,0 +1,34 @@
+# args for model
+model: regnety_040.ra3_in1k
+device: cuda
+in_chans: null
+input_size: null
+pretrained: true
+no_prefetcher: true
+num_classes: 6
+channels_last: false
+drop: null
+drop_path: null
+drop_block: null
+gp: null
+workers: 8
+torchscript: false
+model_kwargs: {}
+# args for infer
+num_gpu: 8
+img_size: 224
+batch_size: 256
+input_mode: file # path, dir, file
+gallerys: ""
+label_file: '' #dataset/zero_dataset/label_names.csv
+cats_path: null #dataset/function_test/package_way/6_cats.txt
+data_path: dataset/function_test/package_way/val.txt
+use_gpu: true
+topk: 9
+feat_extract_dim: null
+mode_function: feat_extract
+num_choose: null
+results_dir: output/vis/errors
+only_need: false
+threshold: null
+multilabel: null

@@ -213,7 +213,7 @@ def extract(args):
             with amp_autocast():
                 output = model(input)
             save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
-            pbar.update(1)
+            pbar.update()
 
     pbar.close()
     img_files = dataset.reader.samples

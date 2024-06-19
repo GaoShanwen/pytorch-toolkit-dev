@@ -7,12 +7,26 @@
 ######################################################
 import tqdm
 import argparse
+import datetime
 import numpy as np
 
 from local_lib.utils.file_tools import MySQLHelper
 from local_lib.utils.file_tools import save_dict2csv
 
 from tools.eval_sql import parse_args, create_sql_server
+
+
+def create_dates(set_dates):
+    def convert_datetypes(str_date):
+        year, month, day = [int(num) for num in str_date.split("-")]
+        return datetime.date(year, month, day)
+    
+    start_date = convert_datetypes(set_dates[0])
+    end_date = convert_datetypes(set_dates[1])
+    date_range = range((end_date - start_date).days + 1)
+    date_list = [(start_date + datetime.timedelta(days=x)).strftime('%Y-%m-%d') for x in date_range]
+    return date_list
+
 
 def run_sql_with_save(sql_server, args):
     if args.label_names_path is not None:
@@ -30,8 +44,12 @@ def run_sql_with_save(sql_server, args):
     if args.set_cats is not None:
         keeps = np.isin(gts, args.set_cats)
     elif args.set_date is not None:
+        assert len(args.set_date) <= 2, "the set_date must be a list with length 2 or 1!"
         dates = np.array([res[args.date_column] for res in read_res])
-        keeps = np.isin(dates, args.set_date)
+        set_dates = args.set_date
+        if len(set_dates) == 2:
+            set_dates = create_dates(set_dates)
+        keeps = np.isin(dates, set_dates)
     else:
         raise ValueError("Invalid set_cats or set_date!")
     assert keeps.shape[0] >= 1, "the sql data number must be greater than 0!"
@@ -48,3 +66,4 @@ if __name__ == '__main__':
     args = parse_args()
     sql_server = create_sql_server(args.brand_id)
     run_sql_with_save(sql_server, args)
+    # print(create_dates(args.set_date))

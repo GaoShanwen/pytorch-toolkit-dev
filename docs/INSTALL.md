@@ -23,6 +23,19 @@
 <$root> ~$ sudo apt-get install -y nvidia-docker2
 <$root> ~$ sudo systemctl restart docker
 
+<$root> ~$ # 1、执行以下命令，下载docker-ce的yum源
+<$root> ~$ sudo wget -O /etc/yum.repos.d/docker-ce.repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+<$root> ~$ # 2、执行以下命令，安装docker-ce
+<$root> ~$ sudo yum -y install docker-ce
+<$root> ~$ # 3、确认Docker是否部署成功，看图1
+<$root> ~$ docker -v
+<$root> ~$ # 4、执行以下命令，启动Docker服务
+<$root> ~$ sudo systemctl start docker
+<$root> ~$ # 5、执行以下命令，设置Docker开机自启动
+<$root> ~$ sudo systemctl enable docker
+<$root> ~$ # 6、执行以下命令，查看Docker服务的运行状态，看图2
+<$root> ~$ systemctl status docker
+
 <pytorch-toolkit-dev> ~$ yum install git tree curl vim zsh tmux -y # 安装git tree curl vim
 <pytorch-toolkit-dev> ~$ # 生成github ssh key，添加到github账户中
 <pytorch-toolkit-dev> ~$ git config --global user.name "your-name" # 设置用户名

@@ -9,9 +9,8 @@ bce_loss: false
 bce_target_thresh: null
 bn_eps: null
 bn_momentum: null
-cats_path: ''
 channels_last: false
-checkpoint_hist: 30
+checkpoint_hist: 10
 class_map: ''
 clip_grad: null
 clip_mode: norm
@@ -153,8 +152,9 @@ real_labels: ''
 results_file: ''
 results_format: csv
 compute_by_cat: true
-label_file: dataset/zero_dataset/label_names.csv
+label_file: null #dataset/zero_dataset/label_names.csv
 custom_aa: false
 multilabel: null
 feat_extract_dim: null
 model_classes: 6
+num_gpu: 8

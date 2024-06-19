@@ -104,13 +104,13 @@ class ReaderImageTxt(Reader):
 class ReaderImagePaths(Reader):
     def __init__(self, images_and_targets: List, class_to_idx: Optional[Dict] = None, sort: bool = True):
         super().__init__()
-        filepaths, _ = zip(*(images_and_targets))
+        filepaths, labels = zip(*(images_and_targets))
         assert len(filepaths), (
             f"Found 0 images in subfolders of filenames. "
             f'Supported image extensions are {", ".join(get_img_extensions())}'
         )
-        if class_to_idx is not None:
-            images_and_targets = [(f, class_to_idx[l]) for f, l in images_and_targets if l in class_to_idx]
+        class_to_idx = class_to_idx or {c: idx for idx, c in enumerate(sorted(labels, key=natural_key))}
+        images_and_targets = [(f, class_to_idx[l]) for f, l in images_and_targets if l in class_to_idx]
         if sort:
             images_and_targets = sorted(images_and_targets, key=lambda k: natural_key(k[0]))
         self.samples, self.class_to_idx = images_and_targets, class_to_idx

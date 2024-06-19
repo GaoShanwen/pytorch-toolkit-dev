@@ -10,6 +10,7 @@ import os
 import cv2
 import shutil
 import numpy as np
+import tqdm
 from PIL import Image, ImageDraw, ImageFont
 
 _RED = (255, 0, 0)
@@ -135,7 +136,9 @@ class VisualizeResults:
             p_files = np.full(gt_labels.shape[0], np.nan)
         if scores is None:
             scores = np.full(gt_labels.shape[0], np.nan)
+        pbar = tqdm.tqdm(total=gt_labels.shape[0], desc="visualizing")
         for gt_label, gt_file, p_label, p_file, score in zip(gt_labels, gt_files, p_labels, p_files, scores):
+            pbar.update()
             if self.only_error and gt_label in p_label[:30]:#p_label[:5]:
                 continue
             if not os.path.exists(gt_file):
