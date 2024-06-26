@@ -49,7 +49,7 @@ if __name__ == "__main__":
     ret = rknn.init_runtime()
     assert ret == 0, "init rknn failed!"
 
-    path = "dataset/quantizate/1616902053311_0_S730103_C7301S730103fd23bacf3ea585f61616902051925.jpg"
+    path = "dataset/function_test/box_recognize/exp-data/bag/3982_IAIS09B3X22A70341_1677022065935_1677022069543.jpg"
     img = cv2.imread(path)
     inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)

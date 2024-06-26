@@ -188,3 +188,32 @@ export PATH=/usr/local/gcc-8.2.0/bin:$PATH
 ```bash
     ImportError: libGL.so.1: cannot open shared object file: No such file or directory
 ```
+
+5.安装解决‘nvcc --version’报错问题
+
+```bash
+    wget https://developer.download.nvidia.com/compute/cuda/12.2.0/local_installers/cuda_12.2.0_535.54.03_linux.run
+    sh cuda_12.2.0_535.54.03_linux.run
+    
+    Do you accept the above EULA? (accept/decline/quit): 
+    <$root> ~$ accept
+    │ CUDA Installer                                                               │
+    │ - [ ] Driver                                                                 │
+    │      [ ] 535.54.03                                                           │
+    │ + [X] CUDA Toolkit 12.2                                                      │
+    │   [ ] CUDA Demo Suite 12.2                                                   │
+    │   [ ] CUDA Documentation 12.2                                                │
+    │ - [ ] Kernel Objects                                                         │
+    │      [ ] nvidia-fs                                                           │
+    │   Options                                                                    │
+    │   Install 
+    add this option to ~/.zshrc:
+    export PATH=$PATH:$CUDA_HOME/bin
+    export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+```
+
+6.安装1.7.3版本的faiss-gpu，解决faiss-gpu卡住问题
+
+```bash
+    conda install -c pytorch -c nvidia faiss-gpu=1.7.3
+```

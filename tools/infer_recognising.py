@@ -25,6 +25,7 @@ from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelMo
 from local_lib.utils.set_parse import parse_args
 
 _logger = logging.getLogger("validate")
+torch.cuda.empty_cache()
 
 
 def load_model(args):

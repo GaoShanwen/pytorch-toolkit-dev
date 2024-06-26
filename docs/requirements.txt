@@ -40,7 +40,7 @@ onnxoptimizer #==0.2.7
 onnxscript
 
 # Tools --------------------------------------
-faiss-gpu==1.7.2
+faiss-gpu #==1.7.2
 grad-cam==1.4.8
 argparse
 umap-learn

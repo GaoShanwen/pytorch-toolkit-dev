@@ -1,7 +1,8 @@
 import os
 import multiprocessing
 
-import wget
+# import wget
+import requests
 import tqdm
 
 
@@ -23,9 +24,13 @@ def load_csv_file(label_file: str, idx_column: int=1, url_column: int=3):
 def copy_file(file_info):
     ori_path, dst_path = file_info
     try:
-        wget.download(ori_path, dst_path, bar=False)
+        # wget.download(ori_path, dst_path, bar=False)
+        base_name = os.path.basename(ori_path)
+        response = requests.get(ori_path).content
+        with open(os.path.join(dst_path, base_name), 'wb') as file:
+            file.write(response)
     except:
-        # print(f"{ori_path} is error!")
+        # print(f"{ori_path, dst_path} is error!")
         pass
  
 
@@ -49,9 +54,9 @@ if __name__ == "__main__":
     # urls_file = f"test_{brand_id}.csv"
     # obj_root = f"dataset/function_test/package_way/{brand_id}"
     brand_id = 1386 #1438 #1267 #
-    task = "gallery"
-    urls_file = f"new_{brand_id}_{task}.csv"
-    obj_root = f"dataset/function_test/new_{brand_id}/{task}"
+    task = "img" #"gallery" #"query"
+    urls_file = f"need_{brand_id}_{task}.csv"
+    obj_root = f"dataset/function_test/need_{brand_id}/{task}"
     if not os.path.exists(obj_root):
         os.makedirs(obj_root)
 

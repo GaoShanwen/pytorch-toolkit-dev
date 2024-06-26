@@ -47,16 +47,20 @@ def parse_args():
     return parser.parse_args()
 
 
+def get_label_names(args):
+    if args.brand_id:
+        sql_server = create_sql_server(args.brand_id)
+        return {int(product_id): name for product_id, name in sql_server.read_names()}
+    else:
+        return load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
+
+
 def eval_server(g_feats, g_label, q_feats, q_label, args, acc_file_name="eval_res.csv"):
     index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
     D, I = index.search(q_feats, args.topk)
     p_label, p_scores = feat_tools.get_predict_label(D, I, g_label, threshold=args.similarity_th, trick_id=args.trick_id)
     if acc_file_name:
-        if args.brand_id:
-            sql_server = create_sql_server(args.brand_id)
-            label_map = {int(product_id): name for product_id, name in sql_server.read_names()}
-        else:
-            label_map = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
+        label_map = get_label_names(args)
         acc_map = feat_tools.compute_acc_by_cat(p_label, q_label, p_scores, label_map, threshold=args.final_th)
         for key, value in acc_map.items():
             g_num = np.sum(np.isin(g_label, [int(key)])) if key != "all_data" else g_label.shape[0]
@@ -72,7 +76,8 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
         save_root, text_size = args.save_root, 48
         index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
         D, I = index.search(q_feats, args.topk)
-        label_maps = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
+        label_maps = get_label_names(args)
+        # label_maps = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)
         visualizer = VisualizeResults(save_root, args.vis_way, text_size, label_maps, ["show_gt"]) #"only_error", 
         if args.vis_way == "search":
             visualizer.do_visualize(q_label, q_files, g_label[I], p_files=g_files[I], scores=D)

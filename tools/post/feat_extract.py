@@ -193,6 +193,8 @@ def extract(args):
     pbar = tqdm.tqdm(total=len(loader))
 
     model.eval()
+    batch_size = args.batch_size
+    feats = np.zeros((len(dataset), 128)).astype(np.float64)
     with torch.no_grad():
         # warmup, reduce variability of first batch time, especially for comparing torchscript vs non
         input = torch.randn((args.batch_size,) + tuple(data_config["input_size"])).to(device)
@@ -212,17 +214,19 @@ def extract(args):
             # compute output
             with amp_autocast():
                 output = model(input)
-            save_feat(output.cpu().numpy(), batch_idx, args.results_dir)
+            start_idx = batch_idx * batch_size
+            feats[start_idx : start_idx + output.shape[0]] = output.cpu().numpy()
             pbar.update()
 
     pbar.close()
-    img_files = dataset.reader.samples
     class_to_idx = dataset.reader.class_to_idx
+    fpaths, gts = zip(*(dataset.reader.samples))
     cat_list = None
     if not args.cats_path or (np.array(sorted(list(class_to_idx.values()))) == np.arange(args.data_classes)).all():
         cat_list = np.array(list(map(int, class_to_idx.keys())))
+        gts = cat_list[list(gts)]
     # _logger.info(f"cat_list are {cat_list}.")
-    merge_feat_files(args.results_dir, args.infer_mode, img_files, cat_list)
+    np.savez(f"{args.results_dir}-{args.infer_mode}.npz", feats=feats, gts=gts, fpaths=fpaths)
     _logger.info(f"feat saved in {args.results_dir}-{args.infer_mode}.npz")
 
 

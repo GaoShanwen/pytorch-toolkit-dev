@@ -57,8 +57,8 @@ except ImportError:
 has_compile = hasattr(torch, "compile")
 _logger = logging.getLogger("train")
 
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128" #总是报显存不足的问题，是因为碎片没完全释放
+# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128" #总是报显存不足的问题，是因为碎片没完全释放
 
 
 def main():

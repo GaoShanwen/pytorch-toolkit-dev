@@ -26,7 +26,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train/Validate a model")
     parser.add_argument("--config", type=str, help="train config file path")
     parser.add_argument("--resume", type=str, default="", help="resume from checkpoint path directory.")
-    parser.add_argument("--amp", action="store_true", help="enable automatic-mixed-precision training")
     parser.add_argument(
         "--options",
         nargs="+",
