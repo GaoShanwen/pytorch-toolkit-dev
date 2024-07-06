@@ -7,6 +7,7 @@
 ######################################################
 import argparse
 import numpy as np
+import datetime
 
 from local_lib.utils.file_tools import MySQLHelper
 from local_lib.utils.feat_tools import run_compute, compute_acc_by_cat
@@ -45,13 +46,27 @@ def create_sql_server(brand_id):
     )
 
 
+def create_dates(set_dates):
+    def convert_datetypes(str_date):
+        year, month, day = [int(num) for num in str_date.split("-")]
+        return datetime.date(year, month, day)
+    
+    start_date = convert_datetypes(set_dates[0])
+    end_date = convert_datetypes(set_dates[1])
+    date_range = range((end_date - start_date).days + 1)
+    date_list = [(start_date + datetime.timedelta(days=x)).strftime('%Y-%m-%d') for x in date_range]
+    return date_list
+
+
 if __name__ == '__main__':
     args = parse_args()
     sql_server = create_sql_server(args.brand_id)
     read_res = sql_server.read_table()
     set_length, gt_column, pred_column = args.length, args.groundture_column, args.predict_column
     product_id_column = args.product_column
-    read_res = [res for res in read_res if res[args.date_column]==args.set_date]
+    assert args.set_date is not None, "please set a value for date!"
+    set_date = create_dates(args.set_date) if len(args.set_date) == 2 else args.set_date
+    read_res = [res for res in read_res if res[args.date_column] in set_date]
     # read_res = [res for res in read_res if res[args.date_column].startswith("2024-05-2")]
     assert len(read_res) >= 1, "the sql data number must be greater than 0!"
     predicts, gts = np.full((len(read_res), 5), np.nan), np.zeros(len(read_res)).astype(int)

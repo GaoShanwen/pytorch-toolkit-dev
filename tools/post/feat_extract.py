@@ -203,7 +203,7 @@ def extract(args):
         with amp_autocast():
             model(input)
 
-        init_feats_dir(args.results_dir)
+        # init_feats_dir(args.results_dir)
         for batch_idx, (input, target) in enumerate(loader):
             if args.no_prefetcher:
                 target = target.to(device)

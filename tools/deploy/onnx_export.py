@@ -24,7 +24,7 @@ parser.add_argument(
     default="mobilenetv3_large_100",
     help="model architecture (default: mobilenetv3_large_100)",
 )
-parser.add_argument("--opset", type=int, default=None, help="ONNX opset to use (default: 10)")
+parser.add_argument("--opset", type=int, default=12, help="ONNX opset to use (default: 10)")
 parser.add_argument(
     "--keep-init",
     action="store_true",

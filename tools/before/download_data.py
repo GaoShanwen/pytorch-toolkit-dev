@@ -53,9 +53,10 @@ if __name__ == "__main__":
     # brand_id = 1438 #1267 #1386
     # urls_file = f"test_{brand_id}.csv"
     # obj_root = f"dataset/function_test/package_way/{brand_id}"
-    brand_id = 1386 #1438 #1267 #
-    task = "img" #"gallery" #"query"
-    urls_file = f"need_{brand_id}_{task}.csv"
+    brand_id = 1386 #1438 #1267 # _1386_test.csv
+    tag = "need"
+    task = "vis" #"gallery" #"query"
+    urls_file = f"{tag}_{brand_id}_{task}.csv"
     obj_root = f"dataset/function_test/need_{brand_id}/{task}"
     if not os.path.exists(obj_root):
         os.makedirs(obj_root)

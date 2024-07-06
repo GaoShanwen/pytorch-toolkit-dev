@@ -8,7 +8,8 @@
 <pytorch-toolkit-dev> ~$ # install timm and its environment(include rknn-tools2)
 <pytorch-toolkit-dev> ~$ git clone https://github.com/GaoShanwen/pytorch-toolkit-dev.git
 <pytorch-toolkit-dev> ~$ git checkout timm-dev
-<pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117
+# <pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt # --extra-index-url https://download.pytorch.org/whl/cu117
+<pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --ignore-installed
 <pytorch-toolkit-dev> ~$ python setup.py install
 ```
 
@@ -216,4 +217,10 @@ export PATH=/usr/local/gcc-8.2.0/bin:$PATH
 
 ```bash
     conda install -c pytorch -c nvidia faiss-gpu=1.7.3
+```
+
+7.解决只读文件系统导致的下载失败问题(unable to open file</root/.cache...> in read-only mode)
+
+```bash
+    chmod -R 777 /root/.cache/huggingface/hub/
 ```
