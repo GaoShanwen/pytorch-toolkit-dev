@@ -168,7 +168,7 @@ int main() {
     int data_length;
     unsigned char* out = read_binary_file(infile, data_length);
     
-    std::cout << "end:" << data_length << std::endl;
+    // std::cout << "end:" << data_length << std::endl;
     out = AES_ECB_Decrypt(out, data_length);  // 读取原始 AES 密文到 outfile
     std::cout << "end:" << data_length << std::endl;
     bool flag = buffer2index(out, data_length);  // 解析 NX 文件内容

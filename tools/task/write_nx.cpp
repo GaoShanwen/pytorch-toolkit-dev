@@ -4,9 +4,8 @@
 // date: 2024.07.05
 // filenaem: write_nx.cpp
 // function: convert binary file to encrypted binary file.
-// note: g++ ./project/debug/write_nx.cpp -o ./project/debug/write_nx -lssl -lcrypto
+// use case: g++ ./tools/task/write_nx.cpp -o ./tools/task/write_nx -lssl -lcrypto
 ////////////////////////////////////////////////////////////////////////////////////
-
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
@@ -39,9 +38,10 @@ unsigned char * read_binary_file(const std::string filename, int &nDataLen) {
     fin.read((char *) pszDataBuf, nDataLen);
     fin.close();
     std::cout << "read_key_file, 读取索引文件成功！" << std::endl;
-    std::cout << "end:" << nDataLen << std::endl;
+    // std::cout << "end:" << nDataLen << std::endl;
     return pszDataBuf; // true;
 }
+
 
 void write_binary_file(const std::string strFileName, unsigned char *pszDataBuf, int nDataLen) {
     std::ofstream fout;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
     int data_length;
     unsigned char* buffer = read_binary_file(infile, data_length);  // 读取原始 NX 文件到内存
     
-    std::cout << "end:" << data_length << std::endl;
+    // std::cout << "end:" << data_length << std::endl;
     buffer = AES_ECB_encrypt(buffer, data_length);  // 读取原始 AES 密文到 outfile
     std::cout << "end:" << data_length << std::endl;
     write_binary_file(outfile, buffer, data_length);  // 写入解密后文件

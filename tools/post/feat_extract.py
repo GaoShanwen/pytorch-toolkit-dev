@@ -13,7 +13,9 @@ from functools import partial
 import numpy as np
 import torch
 import torch.nn.parallel
+import math
 import tqdm
+import time
 from timm.data import resolve_data_config
 from timm.layers import apply_test_time_pool, set_fast_norm
 from timm.models import load_checkpoint
@@ -190,7 +192,8 @@ def extract(args):
         tf_preprocessing=args.tf_preprocessing,
         transfrom_mode="custom",
     )
-    pbar = tqdm.tqdm(total=len(loader))
+    start_time = time.time()
+    pbar = tqdm.tqdm(total=len(loader)) if not args.tqdm_disabled else None
 
     model.eval()
     batch_size = args.batch_size
@@ -216,9 +219,13 @@ def extract(args):
                 output = model(input)
             start_idx = batch_idx * batch_size
             feats[start_idx : start_idx + output.shape[0]] = output.cpu().numpy()
-            pbar.update()
+            if pbar is not None:
+                pbar.update()
+            elif batch_idx % (math.ceil(len(loader) / 4)) == 0:
+                elapsed_time = time.time() - start_time
+                _logger.info(f"running... {batch_idx} / {len(loader)}, spent time: {elapsed_time:.3f}s")
 
-    pbar.close()
+    if pbar is not None: pbar.close()
     class_to_idx = dataset.reader.class_to_idx
     fpaths, gts = zip(*(dataset.reader.samples))
     cat_list = None

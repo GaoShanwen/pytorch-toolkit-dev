@@ -28,10 +28,10 @@ def run_convert(src_file, dst_file, index_map, label_file, prefix, brand_id=None
     feats, labels, fpaths = data['feats'], data['gts'], data['fpaths']
 
     label_list = sorted(list(set(labels)))
-    label_map = {i+1: index_map[label] for i, label in enumerate(label_list)}
+    label_map = {i: index_map[label] for i, label in enumerate(label_list)}
     with open(label_file, 'w', encoding='utf-8') as f:
         json.dump(label_map, f)
-    labels = np.where(labels[:, None] == label_list)[1] + 1 # start from 1 for labels in labels list
+    labels = np.where(labels[:, None] == label_list)[1] # start from 0 for labels in labels list
     
     real_size = min(120000, labels.shape[0])
     dst_feats, dst_labels = np.zeros((120000, 128), dtype=np.float32), np.zeros((120000), dtype=np.int32)
