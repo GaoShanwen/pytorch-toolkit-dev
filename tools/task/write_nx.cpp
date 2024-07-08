@@ -38,7 +38,7 @@ unsigned char * read_binary_file(const std::string filename, int &nDataLen) {
     fin.read((char *) pszDataBuf, nDataLen);
     fin.close();
     std::cout << "read_key_file, 读取索引文件成功！" << std::endl;
-    // std::cout << "end:" << nDataLen << std::endl;
+
     return pszDataBuf; // true;
 }
 

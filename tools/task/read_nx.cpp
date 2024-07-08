@@ -14,6 +14,7 @@
 #include <sstream>
 #include <openssl/aes.h>
 #include <openssl/err.h>
+#include <iomanip>
 
 
 void LOGE(const std::string& message1, const std::string& message2) {
@@ -118,7 +119,12 @@ bool buffer2index(unsigned char * pszDataBuf, int nDataLen) {
     memcpy((unsigned char *) m_pnClsIDMap, pszDataBuf + nOffset, sizeof(int) * m_nListLen);
     nOffset += sizeof(int) * m_nListLen;
     // LOGE("buffer2index，memcpy3  nOffset=%d", to_string(nOffset));
-    cout << "m_pnClsIDMap: " << m_pnClsIDMap[0] << endl;
+    cout << "m_pnClsIDMap[    0]:" << m_pnClsIDMap[0] << endl;
+    cout << "m_pnClsIDMap[  200]:" << m_pnClsIDMap[200] << endl;
+    cout << "m_pnClsIDMap[ 1000]:" << m_pnClsIDMap[1000] << endl;
+    cout << "m_pnClsIDMap[15000]:" << m_pnClsIDMap[15000] << endl;
+    cout << "m_pnClsIDMap[30000]:" << m_pnClsIDMap[30000] << endl;
+    cout << "m_pnClsIDMap[60000]:" << m_pnClsIDMap[60000] << endl;
 
     int *m_pnClsIDMapSearchTimes;
     m_pnClsIDMapSearchTimes = new(std::nothrow) int[m_nListLen];
@@ -154,17 +160,31 @@ bool buffer2index(unsigned char * pszDataBuf, int nDataLen) {
     nOffset += sizeof(char) * m_OssLength * m_nListLen;
     // LOGE("buffer2index，memcpy8  nOffset=%d", to_string(nOffset));
 
+    int nums[6] = {0, 200, 1000, 15000, 30000, 60000};
     string m_pnClsID0 = "";
-    for (int i=0; i<150; i++) {
-        m_pnClsID0 += m_pnClsIDOss[i];
+    for (int j = 0; j < 6; j++) {
+        for (int i=0; i<150; i++) {
+            m_pnClsID0 += m_pnClsIDOss[i+nums[j]*150];
+        }
+        cout << "m_pnClsIDOss[" << setw(6) << setfill('0') << nums[j] << "]: " << m_pnClsID0 << endl;
+        m_pnClsID0 = "";
+        // LOGE("buffer2index，m_pnClsIDOss[]: ", m_pnClsID0.c_str());
     }
-    LOGE("buffer2index，memcpy8.1  m_pnClsIDOss[0]: ", m_pnClsID0.c_str());
+
+    delete[] m_pfFeaMat;
+    delete[] m_pnClsIDMap;
+    delete[] m_pnClsIDMapSearchTimes;
+    delete[] m_pnClsIDMapSelectTimes;
+    delete[] m_pnClsIDMapSameTimes;
+    delete[] m_pnClsIDMapReplaceTimes;
+    delete[] m_pnClsIDOss;
 
     return true;
 }
 
-int main() {
-    std::string infile = "dataset/test/modelnew1.nx";
+int main(int argc, char *argv[]) {
+    const char *infile = argv[1];
+    // std::string infile = "dataset/test/modelnew1.nx";
     int data_length;
     unsigned char* out = read_binary_file(infile, data_length);
     

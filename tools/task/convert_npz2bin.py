@@ -9,6 +9,7 @@ import numpy as np
 # import struct
 import os
 import json
+import faiss
 import argparse
 
 
@@ -25,7 +26,8 @@ def parse_args():
 
 def run_convert(src_file, dst_file, index_map, label_file, prefix, brand_id=None):
     data = np.load(src_file)
-    feats, labels, fpaths = data['feats'], data['gts'], data['fpaths']
+    feats, labels, fpaths = data['feats'].astype(np.float32), data['gts'], data['fpaths']
+    faiss.normalize_L2(feats)
 
     label_list = sorted(list(set(labels)))
     label_map = {i: index_map[label] for i, label in enumerate(label_list)}
@@ -43,10 +45,10 @@ def run_convert(src_file, dst_file, index_map, label_file, prefix, brand_id=None
     
     int_array = np.array([120000, 128, 120000, real_size]+[0,]*6, dtype=np.int32)
     with open(dst_file, 'wb') as f:
-        int_array.tofile(f)
-        dst_feats.flatten().tofile(f)
-        dst_labels.tofile(f)
-        for i in range(4):
+        int_array.tofile(f) # 40
+        dst_feats.flatten().tofile(f) # 4*128*120000
+        dst_labels.tofile(f) # 4*120000
+        for i in range(4): # 4*4*120000
             zero_array.tofile(f)
         dst_fpaths.tofile(f)
 
