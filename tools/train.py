@@ -29,6 +29,7 @@ from torch.nn.parallel import DistributedDataParallel as NativeDDP
 
 from local_lib.data import create_custom_dataset, CustomRandAADataset
 from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel # for regster local model
+from local_lib.models.checkpoint import load_custom_checkpoint, filter_inconsistent_channels
 from local_lib.utils import TensorBoardWriter, parse_args
 
 try:
@@ -238,13 +239,16 @@ def main():
     # optionally resume from a checkpoint
     resume_epoch = None
     if args.resume:
-        resume_epoch = resume_checkpoint(
-            model,
-            args.resume,
-            optimizer=None if args.no_resume_opt else optimizer,
-            loss_scaler=None if args.no_resume_opt else loss_scaler,
-            log_info=utils.is_primary(args),
-        )
+        if args.finetune:
+            load_custom_checkpoint(model, args.resume, strict=False)
+        else:
+            resume_epoch = resume_checkpoint(
+                model,
+                args.resume,
+                optimizer=None if args.no_resume_opt else optimizer,
+                loss_scaler=None if args.no_resume_opt else loss_scaler,
+                log_info=utils.is_primary(args),
+            )
 
     # setup exponential moving average of model weights, SWA could be used here too
     model_ema = None
@@ -256,7 +260,8 @@ def main():
             device="cpu" if args.model_ema_force_cpu else None,
         )
         if args.resume:
-            load_checkpoint(model_ema.module, args.resume, use_ema=True)
+            filter_fn = filter_inconsistent_channels if args.finetune else None
+            load_checkpoint(model_ema.module, args.resume, use_ema=True, strict=False, filter_fn=filter_fn)
 
     # setup distributed training
     if args.distributed:
