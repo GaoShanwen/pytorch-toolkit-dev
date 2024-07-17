@@ -2,8 +2,16 @@ import os
 import multiprocessing
 
 # import wget
+import argparse
 import requests
 import tqdm
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Download data from urls file')
+    parser.add_argument('--brand-id', type=int, help='destination root path')
+    parser.add_argument('--tag', type=str, help='tag of the dateset')
+    parser.add_argument('--task', type=str, help='the task destination root path')
+    return parser.parse_args()
 
 
 def load_csv_file(label_file: str, idx_column: int=1, url_column: int=3):
@@ -50,14 +58,14 @@ def main(download_urls, dst_root):
 
 
 if __name__ == "__main__":
-    # brand_id = 1438 #1267 #1386
-    # urls_file = f"test_{brand_id}.csv"
-    # obj_root = f"dataset/function_test/package_way/{brand_id}"
-    brand_id = 1386 #1438 #1267 # _1386_test.csv
-    tag = "need"
-    task = "vis" #"gallery" #"query"
+    args = parse_args()
+    brand_id = args.brand_id # 1386 #1438 #1267
+    task = args.task # "gallery" #"query" # "vis" #
+    tag = args.tag
     urls_file = f"{tag}_{brand_id}_{task}.csv"
-    obj_root = f"dataset/function_test/need_{brand_id}/{task}"
+    assert os.path.exists(urls_file), "please make sure the url file exists!"
+
+    obj_root = f"dataset/function_test/{tag}_{brand_id}/{task}"
     if not os.path.exists(obj_root):
         os.makedirs(obj_root)
 
