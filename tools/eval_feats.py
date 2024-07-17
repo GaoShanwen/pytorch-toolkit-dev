@@ -35,6 +35,7 @@ def parse_args():
     parser.add_argument("--save-sql", action="store_true", default=False)
     parser.add_argument("--do-keep", action="store_true", default=False)
     parser.add_argument("--debug", action="store_true", default=False)
+    parser.add_argument("--choices-cats", type=int, nargs='*', default=None)
     parser.add_argument("--similarity-th", type=float, default=None)
     parser.add_argument("--final-th", type=float, default=None)
     parser.add_argument("--trick-id", type=int, default=None)
@@ -75,6 +76,8 @@ def main(g_feats, g_label, g_files, q_feats, q_label, q_files, args):
     if args.vis_way is not None:
         save_root, text_size = args.save_root, 48
         index = feat_tools.create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
+        keeps = np.isin(q_label, args.choices_cats) if args.choices_cats else np.ones(q_label.shape[0], dtype=bool)
+        q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
         D, I = index.search(q_feats, args.topk)
         label_maps = get_label_names(args)
         # label_maps = load_names(args.label_file, idx_column=args.idx_column, name_column=args.name_column)

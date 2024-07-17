@@ -159,3 +159,5 @@ feat_extract_dim: null
 model_classes: 2066
 num_gpu: 8
 data_classes: null
+tqdm_disabled: false
+finetune: false

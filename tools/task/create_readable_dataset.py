@@ -20,14 +20,13 @@ def parse_args():
 def create_readable_dataset(img_root, dst_file):
     with open(dst_file, 'w') as f:
         for label in os.listdir(img_root):
-            if not label.isdecimal():
+            if not label.isdecimal(): # skip non-numeric label
                 continue
             label_dir = os.path.join(img_root, label)
             for img_name in os.listdir(label_dir):
                 img_path = os.path.join(label_dir, img_name)
                 if check_img(img_path):
                     f.write(f'{img_path},{label}\n')
-
 
 
 if __name__ == '__main__':
