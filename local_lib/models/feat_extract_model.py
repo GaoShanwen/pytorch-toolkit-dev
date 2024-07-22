@@ -15,20 +15,22 @@ class FeatExtractModel(nn.Module):
     def __init__(self, model, model_name, feat_dim=128):
         super().__init__()
         model_name = model_name.split("_")[0]
-        assert model_name in ["mobilenetv3", "regnety", "haloregnetz"], f"{model_name} is not support yet!"
-        num_pooled_features = model.num_features
+        assert model_name in ["mobilenetv3", "mobilenetv4", "regnety", "haloregnetz"], f"{model_name} is not support yet!"
+        # num_pooled_features = model.num_features
         self.num_classes = model.num_classes
         self.num_features = feat_dim
-        if model_name == "mobilenetv3":
+        if model_name.startswith("mobilenet"):
+            cls_in_features = model.classifier.in_features
             model.classifier = nn.Identity()
             use_conv = False
         else:
+            # num_pooled_features *= model.head.global_pool.feat_mult()
+            cls_in_features = model.head.fc.in_features
             model.head.fc = nn.Identity()
             model.head.flatten = nn.Identity()
-            num_pooled_features *= model.head.global_pool.feat_mult()
             use_conv = model.head.use_conv
         self.out_layer = nn.Flatten(1)
-        self.reduction = _create_fc(num_pooled_features, feat_dim, use_conv)
+        self.reduction = _create_fc(cls_in_features, feat_dim, use_conv)
         self.classifier = _create_fc(feat_dim, self.num_classes, use_conv)
         self.base_model = model
 
@@ -49,10 +51,10 @@ class FeatExtractModel(nn.Module):
     
 if __name__ == "__main__":
     import timm
-    model_name = "regnety_160.swag_ft_in1k" # "mobilenetv3_large_100.miil_in21k_ft_in1k" #
+    model_name = "mobilenetv4_conv_large.e500_r256_in1k" #"regnety_160.swag_ft_in1k" # "mobilenetv3_large_100.miil_in21k_ft_in1k" #
     m = timm.create_model(model_name, pretrained=True, num_classes=20)
     m = FeatExtractModel(m, model_name)
     m.classifier = nn.Identity()
     o = m(torch.randn(2, 3, 224, 224))
     print(m)
-    print(o)
+    print(o.shape)

@@ -13,7 +13,7 @@ import torch
 from timm import utils
 from timm.utils.model import reparameterize_model
 
-from local_lib.models import create_custom_model  # for regster local model
+from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel  # for regster local model
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument("output", metavar="ONNX_FILE", help="output model filename")
@@ -107,6 +107,13 @@ parser.add_argument(
     action="store_true",
     help="Export in training mode (default is eval)",
 )
+parser.add_argument(
+    "--feat-extract-dim",
+    default=None,
+    type=int,
+    help="Feature extraction layer dimension (default: None)",
+)
+parser.add_argument("--multilabel", default=None, type=dict, help="Multi-label classification")
 parser.add_argument("--verbose", default=False, action="store_true", help="Extra stdout output")
 
 
@@ -216,10 +223,15 @@ def main():
         num_classes=args.num_classes,
         in_chans=3,
         pretrained=args.pretrained,
-        checkpoint_path=args.checkpoint,
+        checkpoint_path='', #args.checkpoint,
         exportable=True,
         **args.model_kwargs,
     )
+
+    if args.feat_extract_dim is not None: #feat_extract
+        model = FeatExtractModel(model, args.model, args.feat_extract_dim)
+    if args.multilabel:
+        model = MultiLabelModel(model, args.multilabel)
 
     timm.models.load_checkpoint(model, args.checkpoint, args.use_ema)
 
@@ -235,6 +247,9 @@ def main():
             model.head.fc = nn.Identity()  # 移除分类层
         else:
             raise f"not support {args.model} !"
+
+    if args.feat_extract_dim is not None:
+        model.remove_head() # 只留特征提取层
 
     onnx_export(
         model,

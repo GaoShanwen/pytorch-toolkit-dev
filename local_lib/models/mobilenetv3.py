@@ -27,7 +27,7 @@ class MobileNetV3Redution(MobileNetV3):
         super(MobileNetV3Redution, self).__init__(block_args, num_classes, **kwargs)
         del self.classifier
         self.reduction_dim = reduction_dim
-        self.reduction = Linear(self.num_features, self.reduction_dim)
+        self.reduction = Linear(self.conv_head.out_channels, self.reduction_dim)
         self.classifier = Linear(self.reduction_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def as_sequential(self):
@@ -42,7 +42,7 @@ class MobileNetV3Redution(MobileNetV3):
         # cannot meaningfully change pooling of efficient head after creation
         self.global_pool = SelectAdaptivePool2d(pool_type=global_pool)
         self.flatten = nn.Flatten(1) if global_pool else nn.Identity()  # don't flatten if pooling disabled
-        self.reduction = Linear(self.num_features, self.reduction_dim)
+        self.reduction = Linear(self.conv_head.out_channels, self.reduction_dim)
         self.classifier = Linear(self.reduction_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def forward_head(self, x, pre_logits: bool = False):
