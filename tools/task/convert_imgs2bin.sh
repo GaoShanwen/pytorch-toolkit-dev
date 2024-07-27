@@ -32,7 +32,7 @@ do
             # display the dataset information.
             printf "\033[0m\n[\033[32m%4s\033[0m /\033[32m%4s\033[0m]" "$this_task_count" "$task_num" 
             printf "\033[34m Task dataset info \033[0m|"
-            printf "\033[34m brand_id:\033[31m%5d\033[34m, images:\033[33m%6d" "$brand_id" "$this_img_count"
+            printf "\033[34m brand_id:\033[31m%5d\033[34m, images:\033[33m%6d\033[34m," "$brand_id" "$this_img_count"
             total_img_count=$(expr $total_img_count + $this_img_count)
             this_task_count=$(expr $this_task_count + 1)
             # 开始转特征库
@@ -43,9 +43,9 @@ do
                 # 有空闲卡则开始转特征库
                 if [[ $free_result == *"true"* ]]; then
                     gpu_id=${free_result: -1}
-                    printf "\033[34m, Running task on GPU \033[1;35m$gpu_id\033[0m |"
+                    printf " Running task on GPU \033[1;35m$gpu_id\033[0m |"
                     nohup sh ./tools/task/convert_server.sh $rmodel_version $gpu_id $rmodel_dir $txt_dir \
-                            $task_root $brand_id $used_dir $batch_size > $log_dir/$brand_id.log 2>&1 &
+                            $task_root $brand_id $used_dir $batch_size > $log_dir/$brand_id-$rmodel_version.log 2>&1 &
                 else
                     echo "error", $free_result
                 fi
@@ -61,5 +61,3 @@ do
     echo $(printf "\033[0m, total img count: \033[1;33m$total_img_count")
     break # will be removed after testing
 done
-
-
