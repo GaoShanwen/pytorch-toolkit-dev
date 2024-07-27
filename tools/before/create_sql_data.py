@@ -5,14 +5,9 @@
 # filenaem: create_sql_data.py
 # function: create csv file of sql data date=xxxx-xx-xx, brand_id=xxxx.
 ######################################################
-import tqdm
-import argparse
-import numpy as np
 
-from local_lib.utils.file_tools import MySQLHelper
-from local_lib.utils.file_tools import save_dict2csv
-
-from tools.eval_sql import parse_args, create_sql_server, create_dates
+from local_lib.utils.file_tools import save_dict2csv, create_sql_server, read_sql_data
+from tools.eval_sql import parse_args
 
 
 def run_sql_with_save(sql_server, args):
@@ -21,40 +16,17 @@ def run_sql_with_save(sql_server, args):
         save_dict2csv(label_map, args.label_names_path, index=['name'])
         return
 
-    read_res = sql_server.read_table()
-    assert len(read_res) >= 1, "the sql data number must be greater than 0!"
-    assert len(read_res[0]) == args.length, "the sql data number must be equal with set length!"
-    product_id_column, gt_column, url_column, date_column, predict_column = \
-        args.product_column, args.groundture_column, args.url_column, args.date_column, args.predict_column
-    product_ids, gts, urls, dates, predictions = \
-        zip(*[(instance[product_id_column], instance[gt_column], instance[url_column], \
-            instance[date_column], instance[predict_column]) for instance in read_res])
-    product_ids, gts, urls, dates, predictions = \
-        np.array(product_ids), np.array(gts), np.array(urls), np.array(dates), np.array(predictions)
-    if args.set_cats is not None:
-        keeps = np.isin(gts, args.set_cats)
-    elif args.set_date is not None:
-        assert len(args.set_date) <= 2, "the set_date must be a list with length 2 or 1!"
-        # dates = np.array([res[args.date_column] for res in read_res])
-        set_dates = args.set_date
-        if len(set_dates) == 2:
-            set_dates = create_dates(set_dates)
-        keeps = np.isin(dates, set_dates)
-    else:
-        raise ValueError("Invalid set_cats or set_date!")
-    assert keeps.shape[0] >= 1, "the sql data number must be greater than 0!"
-    product_ids, gts, urls, dates, predictions = \
-        product_ids[keeps], np.array(gts)[keeps], np.array(urls)[keeps], dates[keeps], predictions[keeps]
+    product_ids, gts, urls, dates, preds = read_sql_data(sql_server, args.set_date, args.set_cats)
+    assert gts.shape[0] >= 1, "the sql data number must be greater than 0!"
     url_map = {}
-    for idx, (product_id, gt, url, date, prediction) in enumerate(zip(product_ids, gts, urls, dates, predictions)):
+    for idx, (product_id, gt, url, date, pred) in enumerate(zip(product_ids, gts, urls, dates, preds)):
         product_id = product_id or f"{idx:34d}"
-        url_map.update({product_id: {"gt": gt, "url": url, "date": date, "prediction": prediction}})
+        url_map.update({product_id: {"gt": gt, "url": url, "date": date, "prediction": pred}})
     print(f"save {len(url_map)} urls to test_{args.brand_id}.csv")
-    save_dict2csv(url_map, f"test_{args.brand_id}.csv")
+    save_dict2csv(url_map, f"need_{args.brand_id}.csv")
 
 
 if __name__ == '__main__':
     args = parse_args()
-    sql_server = create_sql_server(args.brand_id)
+    sql_server = create_sql_server(args.brand_id, args.custom_keys)
     run_sql_with_save(sql_server, args)
-    # print(create_dates(args.set_date))
