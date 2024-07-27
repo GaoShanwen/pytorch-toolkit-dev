@@ -51,7 +51,9 @@ class FeatExtractModel(nn.Module):
     
 if __name__ == "__main__":
     import timm
-    model_name = "mobilenetv4_conv_large.e500_r256_in1k" #"regnety_160.swag_ft_in1k" # "mobilenetv3_large_100.miil_in21k_ft_in1k" #
+    model_name = "mobilenetv4_hybrid_medium.e500_r224_in1k" 
+    # model_name = "mobilenetv4_conv_large.e500_r256_in1k" 
+    # model_name = "regnety_160.swag_ft_in1k" # "mobilenetv3_large_100.miil_in21k_ft_in1k" #
     m = timm.create_model(model_name, pretrained=True, num_classes=20)
     m = FeatExtractModel(m, model_name)
     m.classifier = nn.Identity()

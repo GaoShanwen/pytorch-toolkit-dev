@@ -126,6 +126,11 @@ def main():
         **args.model_kwargs,
     )
 
+    if args.feat_extract_dim is not None: #feat_extract
+        model = FeatExtractModel(model, args.model, args.feat_extract_dim)
+    if args.multilabel:
+        model = MultiLabelModel(model, args.multilabel)
+
     if args.head_init_scale is not None:
         with torch.no_grad():
             model.get_classifier().weight.mul_(args.head_init_scale)
@@ -162,11 +167,6 @@ def main():
     model.to(device=device)
     if args.channels_last:
         model.to(memory_format=torch.channels_last)
-
-    if args.feat_extract_dim is not None: #feat_extract
-        model = FeatExtractModel(model, args.model, args.feat_extract_dim).to(device=device)
-    if args.multilabel:
-        model = MultiLabelModel(model, args.multilabel).to(device=device)
 
     # setup synchronized BatchNorm for distributed training
     if args.distributed and args.sync_bn:
