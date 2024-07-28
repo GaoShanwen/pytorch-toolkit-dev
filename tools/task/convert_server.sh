@@ -28,7 +28,7 @@ python tools/task/convert_npz2bin.py $task_root/tmp/feats/r${version_num}_$brand
     $task_root/tmp/bin/r${version_num}_$brand_id.bin --src-img-dir $task_root/gallery/$brand_id \
     --label-file $task_root/nx/$brand_id/R${version_num}/labelext.txt --brand-id $brand_id
 # aes ecb encode the bin file
-./tools/task/write_nx $task_root/tmp/bin/r${version_num}_$brand_id.bin $task_root/nx/$brand_id/R${version_num}/modelnew.nx
+./tools/task/write_nx.so $task_root/tmp/bin/r${version_num}_$brand_id.bin $task_root/nx/$brand_id/R${version_num}/modelnew.nx
 version=$(echo $rmodel_version | cut -d- -f1)
 cp $rmodel_dir/$rmodel_version/*.zip $task_root/nx/$brand_id/R${version_num}/
 cp $rmodel_dir/$rmodel_version/*.onnx $task_root/nx/$brand_id/R${version_num}/
@@ -36,11 +36,11 @@ cp $rmodel_dir/$rmodel_version/*.onnx $task_root/nx/$brand_id/R${version_num}/
 rm -rf $task_root/tmp/feats/r${version_num}_$brand_id-train.npz
 rm -rf $task_root/tmp/bin/r${version_num}_$brand_id.bin
 # rm -rf $task_root/tasklist/$brand_id.txt
-# publish
-ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/labelext.txt oss://rx-gallery/$brand_id/rmodelnx/
-ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/modelnew.nx oss://rx-gallery/$brand_id/rmodelnx/
-ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.zip oss://rx-gallery/$brand_id/rbig/
-ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.onnx oss://rx-gallery/$brand_id/onnx/
+# # publish
+# ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/labelext.txt oss://rx-gallery/$brand_id/rmodelnx/
+# ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/modelnew.nx oss://rx-gallery/$brand_id/rmodelnx/
+# ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.zip oss://rx-gallery/$brand_id/rbig/
+# ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.onnx oss://rx-gallery/$brand_id/onnx/
 
 # ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/labelext.txt oss://rx-gallery/1386/rmodelnx/
 # ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/modelnew.nx oss://rx-gallery/1386/rmodelnx/

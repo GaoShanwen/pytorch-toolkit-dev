@@ -29,11 +29,12 @@ MANIFEST
 
 # input files
 dataset/
+assert/
 # nouse codes
 debug/
 # output files
 wandb/
-output
+output/
 *.onnx
 *.csv
 *.npy

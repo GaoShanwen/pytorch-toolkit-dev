@@ -127,5 +127,6 @@ TODO:
  - **2** try reid example again
  - **3** add eval/draw function for reid
  - **4** add resume function for wandb
+ - **5** add logger function for local-lib
 
 </details>
