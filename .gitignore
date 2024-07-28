@@ -34,7 +34,7 @@ assert/
 debug/
 # output files
 wandb/
-output/
+output
 *.onnx
 *.csv
 *.npy
