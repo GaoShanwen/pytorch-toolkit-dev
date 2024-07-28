@@ -1,0 +1,43 @@
+# args for model
+model: regnety_040.ra3_in1k
+device: cuda
+in_chans: null
+input_size: null
+pretrained: true
+no_prefetcher: true
+num_classes: null
+channels_last: false
+drop: null
+drop_path: null
+drop_block: null
+gp: null
+workers: 4
+torchscript: false
+model_kwargs: {}
+# args for infer
+data_path: ''
+img_size: 224
+batch_size: 256
+input_mode: file # path, dir, file
+gallerys: output/feats/regnety_040-train-0.93.npz
+label_file: dataset/zero_dataset/label_names.csv
+cats_file: dataset/removeredundancy/629_cats.txt
+use_gpu: true
+topk: 9
+mode_function: "feat_extract"
+num_choose: null
+results_dir: ""
+only_need: false
+threshold: null
+multilabel:
+  attributes: 
+    - product_id
+    - package_type
+  weights:
+    - 0.8
+    - 0.2
+  label_nums:
+    - 1510
+    - 4
+feat_extract_dim: 128
+need_attr: package_type
