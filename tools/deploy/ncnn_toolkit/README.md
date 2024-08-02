@@ -8,12 +8,16 @@ get newest version from this [link](https://github.com/Tencent/ncnn/releases/lat
 
 these libraries are needed:
 
-- **onnx2ncnn**: onnx -> ncnn (fp32)
-- **ncnnoptimize**: ncnn -> ncnn (fp16)
-- **ncnn2table**: quantize.txt -> table
-- **ncnn2int8**: ncnn, table -> ncnn (fp32 -> int8)
-- **ncnn2mem**: ncnn -> ncnn (encoded memory)
-- **ncnnmerge**: merge ncnn
+```bash
+<tools/deploy/ncnn_toolkit>
+    ├── ncnn2int8    # ncnn, table -> ncnn (fp32 -> int8)
+    ├── ncnn2mem     # ncnn -> ncnn (encoded memory)
+    ├── ncnn2table   # quantize.txt -> table
+    ├── ncnnmerge    # merge ncnn models
+    ├── ncnnoptimize # optimize ncnn model (fp32 -> fp16)
+    ├── onnx2ncnn    # onnx2ncnn (fp32)
+    └── README.md    # README.md
+```
 
 ### Command Guides
 
