@@ -10,6 +10,8 @@ import tqdm
 from PIL import Image
 import collections
 from local_lib.utils.file_tools import save_dict2csv, load_csv_file
+from local_lib.data.readers.reader_image_in_txt import check_img
+
 
 def load_data(anno_path):
     with open(anno_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -19,16 +21,8 @@ def load_data(anno_path):
 
 
 def check_data(filenames):
-    for filename in filenames:#tqdm.tqdm(filenames):
-        if not os.path.exists(filename):
-            print(filename)
-        try:  
-            # Image.open(filename).verify()  
-            with open(filename, 'rb') as f:
-                f.seek(-2, 2)
-                if not f.read() == b'\xff\xd9':
-                    print(filename)
-        except IOError:
+    for filename in filenames:
+        if not check_img:
             print(filename)
 
 
@@ -39,13 +33,17 @@ def static_data(train_data, val_data, cat_map):
     for idx, (id, num1) in enumerate(train_counter):#.items():
         num2 = val_dict.get(id, '')
         id = id.replace(' ', '')
-        cat = cat_map[id] if id in cat_map else cat_map[id[10:]]#''
+        cat = cat_map.get(id, '')
+        cat = cat_map.get(cat[10:], cat)
         num_dict.update({idx: {"product_id": id, "name": cat, "train": num1, "val": num2}})
     save_dict2csv(num_dict, "data_static.csv")
 
 
 if __name__=="__main__":
-    data_root = "./dataset/optimize_task3" # "./dataset/optimize_24q3" #"dataset/function_test/need_1386" # 
+    # data_root = "./dataset/optimize_task3" # 
+    # data_root = "./dataset/optimize_24q3" #
+    # data_root = "dataset/function_test/need_1386" # 
+    data_root = "dataset/function_test/need_1386/version_0802"
     load_train_path = f"{data_root}/train.txt"
     # load_train_path = "train.txt"
     train_files, train_labels = load_data(load_train_path)

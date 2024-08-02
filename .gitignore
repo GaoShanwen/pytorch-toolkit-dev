@@ -30,6 +30,7 @@ MANIFEST
 # input files
 dataset/
 assert/
+ncnn_toolkit/
 # nouse codes
 debug/
 # output files
