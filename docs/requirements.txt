@@ -47,6 +47,7 @@ umap-learn
 black==22.12.0 # black==22.* for dev/linter.sh
 isort==4.3.21 # isort==4.3.21 for dev/linter.sh
 pymysql==1.1.0
+onnx-simplifier # onnx simplifier for onnx2ncnn
 # optuna==3.5.0
 # pymongo==4.6.0
 
