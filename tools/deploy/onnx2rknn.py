@@ -57,13 +57,20 @@ class CustomRKNN(RKNN):
 
 
 def onnx_init(input):
-    # print("x: ", x[0,:6,:])
     sess_options = onnxruntime.SessionOptions()
     sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
     session = onnxruntime.InferenceSession(
         input, sess_options, providers=['AzureExecutionProvider', 'CPUExecutionProvider']
     )
     return session
+
+
+def data_process(img, mean_values, std_values):
+    inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
+    x = np.array(inputs).astype(np.float32) / 255.0  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
+    x = (x - np.array(mean_values)) / np.array(std_values)  # Normalize操作，使用ImageNet标准进行标准化
+    return x, inputs
 
 
 if __name__ == "__main__":
@@ -81,13 +88,10 @@ if __name__ == "__main__":
     rknn.rknn_func("init_runtime")
 
     path = "dataset/function_test/box_recognize/exp-data/bag/3982_IAIS09B3X22A70341_1677022065935_1677022069543.jpg"
-    img = cv2.imread(path)
-    inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
-    x = np.array(inputs).astype(np.float32) / 255.0  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
-    x = (x - np.array(args.mean)) / np.array(args.std)  # Normalize操作，使用ImageNet标准进行标准化
-    session = onnx_init(args.input)
+    x, inputs = data_process(cv2.imread(path), args.mean, args.std)
+    # print("x: ", x[0,:6,:])
 
+    session = onnx_init(args.input)
     output2 = session.run([], {session.get_inputs()[0].name: [x.transpose(2, 0, 1)]})
     output = rknn.rknn_func("inference", return_flag=True, inputs=[inputs[np.newaxis, ...]], data_format="nhwc")
     # 打印ONNX和RKNN模型的前N个结果，并对其进行归一化操作

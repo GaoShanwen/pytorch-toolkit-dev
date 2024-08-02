@@ -195,15 +195,8 @@ if __name__ == "__main__":
 
     # 加载npz文件
     g_feats, g_label, g_files = load_data(args.gallerys)
-    # g_files = np.array([path.replace("/exp-data", "") for path in g_files])
-    # ori_prefix = "./dataset/function_test/test_subo/train"
-    # obj_prefix = "/data/AI-scales/images/1173/backflow"
-    # g_files = np.array([file.replace(ori_prefix, obj_prefix) for file in g_files])
     if args.querys:
         q_feats, q_label, q_files = load_data(args.querys)
-        # q_files = np.array([path.replace("/exp-data", "") for path in q_files])
-        # ori_prefix = "./dataset/function_test/test_subo/val"
-        # q_files = np.array([file.replace(ori_prefix, obj_prefix) for file in q_files])
 
     if args.filter_mode is not None:
         assert args.filter_mode in ["label", "file_path"], "filter_model must be label or file_path!"
@@ -236,5 +229,6 @@ if __name__ == "__main__":
     # keeps = np.isin(q_label, [40038,])
     # q_feats, q_label, q_files = q_feats[keeps], q_label[keeps], q_files[keeps]
     print(f"Loaded cats number={len(cats)}, query number={q_label.shape[0]}")
+    # g_feats, q_feats = g_feats.round(decimals=3), q_feats.round(decimals=3)
     function_name = "run_test" if args.run_test else "main"
     eval(function_name)(g_feats, g_label, g_files, q_feats, q_label, q_files, args)
