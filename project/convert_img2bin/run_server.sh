@@ -19,7 +19,7 @@ do
         sleep 20
     else
         total_img_count=0
-        this_task_count=0
+        this_task_count=1
         printf "Starting convert imgs to bin for $task_num tasks..."
         rm $used_dir/* 2>/dev/null
         for task_file in $task_dir/*.txt;
@@ -27,7 +27,7 @@ do
             brand_id=$(basename $task_file | cut -d'.' -f1)
             # create txt file for readable images in this brandd.
             mkdir $txt_dir/$brand_id 2>/dev/null
-            python tools/task/create_readable_dataset.py $task_root/gallery/$brand_id $txt_dir/$brand_id/train.txt
+            python project/convert_img2bin/create_readable_dataset.py $task_root/gallery/$brand_id $txt_dir/$brand_id/train.txt
             this_img_count=$(cat $txt_dir/$brand_id/train.txt | wc -l)
             # display the dataset information.
             printf "\033[0m\n[\033[32m%4s\033[0m /\033[32m%4s\033[0m]" "$this_task_count" "$task_num" 
@@ -39,18 +39,17 @@ do
             for rmodel_version in `ls $rmodel_dir`;
             do
                 # 获取空闲显卡, 每20秒再查询一次，直到有空闲显卡
-                free_result=$(python tools/task/get_free_gpu.py -s $start_gpu_id -e $end_gpu_id -t 10 -r $used_dir)
+                free_result=$(python project/convert_img2bin/get_free_gpu.py -s $start_gpu_id -e $end_gpu_id -t 10 -r $used_dir)
                 # 有空闲卡则开始转特征库
                 if [[ $free_result == *"true"* ]]; then
                     gpu_id=${free_result: -1}
                     printf " Running task on GPU \033[1;35m$gpu_id\033[0m |"
-                    nohup sh ./tools/task/convert_server.sh $rmodel_version $gpu_id $rmodel_dir $txt_dir \
+                    nohup sh ./project/convert_img2bin/convert_server.sh $rmodel_version $gpu_id $rmodel_dir $txt_dir \
                             $task_root $brand_id $used_dir $batch_size > $log_dir/$brand_id-$rmodel_version.log 2>&1 &
                 else
                     echo "error", $free_result
                 fi
             done
-            # break # will be removed after testing
         done
     fi
     while [ $(find $used_dir -type f | wc -l) -gt 0 ]; do

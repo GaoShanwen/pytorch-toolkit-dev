@@ -42,7 +42,7 @@ rm -rf $task_root/tmp/bin/r${version_num}_$brand_id.bin
 # ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.zip oss://rx-gallery/$brand_id/rbig/
 # ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.onnx oss://rx-gallery/$brand_id/onnx/
 
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/labelext.txt oss://rx-gallery/1386/rmodelnx/
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/modelnew.nx oss://rx-gallery/1386/rmodelnx/
+# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/labelext.txt oss://rx-gallery/1482/rmodelnx/
+# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/modelnew.nx oss://rx-gallery/1482/rmodelnx/
 # ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/*.zip oss://rx-gallery/1386/rbig/
 # ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/*.onnx oss://rx-gallery/1386/onnx/

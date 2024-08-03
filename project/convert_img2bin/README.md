@@ -6,8 +6,8 @@
 
 ```bash
 <pytorch-toolkit-dev> ~$ # cpp -> so
-        g++ ./tools/task/write_nx.cpp -o ./tools/task/write_nx -lssl -lcrypto
-        g++ ./tools/task/read_nx.cpp -o ./tools/task/read_nx -lssl -lcrypto
+        g++ ./project/convert_img2bin/write_nx.cpp -o ./project/convert_img2bin/write_nx.so -lssl -lcrypto
+        g++ ./project/convert_img2bin/read_nx.cpp -o ./project/convert_img2bin/read_nx.so -lssl -lcrypto
 ```
 
 </details>
@@ -17,7 +17,7 @@
 <summary>Start convert tasks</summary>
 
 ```bash
-<pytorch-toolkit-dev> ~$ sh tools/task/convert_imgs2bin.sh
+<pytorch-toolkit-dev> ~$ sh project/convert_imgs2bin/run_server.sh
 ```
 
 the output will show the convert log, details of each brand will be shown in 'dataset/feature_pack/tmp/log'.
