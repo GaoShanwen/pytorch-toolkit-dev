@@ -7,7 +7,7 @@ building a multitask training platform based on Pytorch
 [![](https://img.shields.io/badge/Python-3.8.18-3776AB?style=flat-square&logo=python&logoColor=FFFFFF)](https://www.python.org)
 [![](https://img.shields.io/github/v/release/pytorch/pytorch?style=flat-square&logo=pytorch&logoColor=FFFFFF&label=PyTorch&color=EE4C2C)](https://pytorch.org)
 [![](https://img.shields.io/github/v/release/huggingface/pytorch-image-models.svg?style=flat-square&logo=github&color=black&label=Timm)](https://github.com/huggingface/pytorch-image-models/tree/main)
-[![](https://img.shields.io/github/v/release/onnx/onnx.svg?style=flat-square&logo=ONNX&logoColor=FFFFFF&label=ONNX&color=005CED)](https://onnx.ai)
+[![](https://img.shields.io/badge/ONNX-1.14.1-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF&label=ONNX)](https://onnx.ai)
 [![](https://img.shields.io/github/v/release/PyMySQL/PyMySQL.svg?style=flat-square&logo=mysql&logoColor=FFFFFF&label=PyMySQL&color=FFBE00)](https://zetcode.com/python/pymysql/)
 
 timm-dev branch for classfication or re-identification tasks.
