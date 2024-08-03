@@ -2,29 +2,25 @@
 # Example: pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117
 
 # Base ----------------------------------------
-numpy #==1.24.4
-setuptools==56.1.0
-opencv-python #==4.8.1.78
-tqdm #==4.64.0
+numpy # ==1.24.4
+setuptools # ==56.1.0
+opencv-python # ==4.8.1.78
+tqdm # ==4.64.0
 
-# torch==2.0.1+cu117 # for cuda11.2
-# torchvision==0.15.2+cu117
-# torchaudio==2.0.2+cu117
-
-torch==2.3.0+cu121 # for cuda12.2
-torchvision==0.18.0+cu121
-torchaudio==2.3.0+cu121
+torch==2.4.0+cu121 # for cuda12.2
+torchvision==0.19.0+cu121
+torchaudio==2.4.0+cu121
 
 pyyaml #==6.0.1
 huggingface_hub #==0.22.0
 safetensors #==0.4.2
 timm #==1.0.3 
-scipy==1.5.4
-requests==2.27.1
-protobuf==3.20.3
-psutil==5.9.0
-fast-histogram==0.11
-ruamel.yaml==0.17.4
+scipy #==1.5.4
+requests #==2.27.1
+protobuf # ==3.20.3
+psutil # ==5.9.0
+fast-histogram # ==0.11
+ruamel.yaml # ==0.17.4
 opencv-python-headless #==4.8.1.78
 
 # Plotting ------------------------------------
@@ -34,19 +30,19 @@ mplfonts # for matplotlib chinese fonts
 # seaborn>=0.11.0
 
 # Export --------------------------------------
-onnx==1.14.1
-onnxruntime==1.16.0
+onnx #==1.14.1
+onnxruntime #==1.16.0
 onnxoptimizer #==0.2.7
 onnxscript
 
 # Tools --------------------------------------
-faiss-gpu #==1.7.2
-grad-cam==1.4.8
+faiss-gpu # ==1.7.2
+grad-cam # ==1.4.8
 argparse
 umap-learn
-black==22.12.0 # black==22.* for dev/linter.sh
-isort==4.3.21 # isort==4.3.21 for dev/linter.sh
-pymysql==1.1.0
+black # ==22.12.0 # black==22.* for dev/linter.sh
+isort # ==4.3.21 # isort==4.3.21 for dev/linter.sh
+pymysql # ==1.1.0
 onnx-simplifier # onnx simplifier for onnx2ncnn
 # optuna==3.5.0
 # pymongo==4.6.0
@@ -54,7 +50,7 @@ onnx-simplifier # onnx simplifier for onnx2ncnn
 # Logging -------------------------------------
 # tensorboard==2.14.0
 wandb==0.12.18 # wandb==0.12.18 to support auto stop
-optuna-dashboard==0.14.0
+# optuna-dashboard==0.14.0
 # dvclive>=2.12.0
 # clearml
 # comet
