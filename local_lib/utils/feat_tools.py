@@ -6,11 +6,10 @@
 # function: the functions tools for feat extract or eval.
 ######################################################
 import math
-from collections import Counter
-
+import tqdm
 import faiss
 import numpy as np
-import tqdm
+from collections import Counter
 
 
 weights75 = [
@@ -69,11 +68,6 @@ def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshol
         keeps = np.ones(shape=data_num, dtype=bool) if cat == "all_data" else np.isin(q_label, [cat])
         cat_pl, cat_ql = p_label[keeps], q_label[keeps]
         cat_ps = p_scores[keeps] if p_scores is not None else p_scores
-        # cat_pl, cat_ql = p_label.copy(), q_label.copy()
-        # cat_ps = p_scores.copy() if p_scores is not None else p_scores
-        # if cat != "all_data":
-        #     cat_pl[p_label!=cat] = 0
-        #     cat_ql[q_label!=cat] = 0
         top1_num, top5_num, display_num, only_ones = \
             run_compute(cat_pl, cat_ql, cat_ps, do_output=False, th=threshold)
         cat_res = {
@@ -293,8 +287,6 @@ def get_predict_label(scores, initial_rank, gallery_label, k=5, threshold=None, 
     if trick_id in [11, 65, 75]:
         weights = eval(f"weights{trick_id}")
         p_labels, p_scores = merge_topN_scores(scores, gallery_label[initial_rank], final_cat=k, weights=weights)
-    # elif trick_id == 65:
-    #     res = create_matrix(scores, gallery_label[initial_rank], choose_pic=scores.shape[1], final_cat=k)
     elif trick_id == 55:
         p_labels, p_scores = everycat_Npic(scores, gallery_label[initial_rank], final_cat=k, do_sqrt=False, weights=weights)
     return np.array(p_labels), np.array(p_scores)

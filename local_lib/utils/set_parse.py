@@ -2,7 +2,7 @@
 # author: gaowenjie
 # email: gaowenjie@rongxwy.com
 # date: 2023.12.11
-# filenaem: args_parse.py
+# filenaem: set_parse.py
 # function: load options parses to args.
 ######################################################
 import argparse
