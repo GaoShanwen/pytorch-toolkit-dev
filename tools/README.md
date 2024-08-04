@@ -85,9 +85,9 @@ Run this comand, make sure your folder format is follow:
         --options model_classes=629 data_classes=10 checkpoint=<your/model/path/xx.pth.tar> \
         batch_size=512 results_dir=output/feats/blacklist infer_mode=train 
 <pytorch-toolkit-dev> ~$ # eval features
-        python tools/eval_feats.py -g output/feats/mobilenet_large_100-train.npz -q output/feats/mobilenet_large_100-val.npz
+        CUDA_VISIBLE_DEVICES=6,7 python tools/evaluate.py -g output/feats/mobilenet_large_100-train.npz -q output/feats/mobilenet_large_100-val.npz
 <pytorch-toolkit-dev> ~$ # eval features in sql
-        python tools/eval_sql.py --set-date 2024-07-27 --brand-id 1386 
+        python tools/evaluate.py --eval-sql --set-date 2024-07-27 --brand-id 1386 
 ```
 
 </details>
@@ -123,10 +123,9 @@ Watch [wandb](https://wandb.ai/) curve after run this commands.
 <details open>
 
 TODO:
- - **1** merge eval_feats and eval_sql
- - **2** try reid example again
- - **3** add eval/draw function for reid
- - **4** add resume function for wandb
- - **5** add logger function for local-lib
+ - **1.** try reid example again
+ - **2.** add eval/draw function for reid
+ - **3.** add resume function for wandb
+ - **4.** add logger function for local-lib
 
 </details>
