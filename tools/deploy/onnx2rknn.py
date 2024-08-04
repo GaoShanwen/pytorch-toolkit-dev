@@ -8,18 +8,18 @@
 import argparse
 import cv2
 import faiss
-import logging
 import numpy as np
-import onnxruntime
+
+import logging
+from colorama import Fore, Style
+
 from rknn.api import RKNN
 
 from local_lib.utils import hidden_std_info, disable_std_info, onnx_init
 from local_lib.data.loader import data_process
 
 logging.basicConfig(level=logging.INFO)
-
-_logger = logging.getLogger("[\033[34m onnx2rknn\033[0m ]")
-_logger.setLevel(logging.INFO)  # 设置日志级别为INFO
+_logger = logging.getLogger(f"[{Fore.MAGENTA} onnx2rknn {Style.RESET_ALL}]")
 
 
 def args_parse():
@@ -50,15 +50,16 @@ class CustomRKNN(RKNN):
         ret = self.custom_func(func_name, **kwargs)
         if not check_flag:
             return ret
-        check_res = "\033[32msuccess" if ret == 0 else "\033[31mfailure"
-        _logger.info(f"run \033[34m{func_name}\033[0m {check_res}\033[0m!")
+        check_res = f"{Fore.GREEN}success" if ret == 0 else f"{Fore.RED}failure"
+        _logger.info(f"run {Fore.BLUE}{func_name}{Style.RESET_ALL} {check_res}{Style.RESET_ALL}!")
 
 
 def print_out(name, out, number=5):
     out = np.array(out[0]).astype(np.float32)
-    _logger.info(f"{name} before normalize: {out[:, :number]}")
+    prefix = f"{Fore.BLUE}{name}{Style.RESET_ALL}"
+    _logger.info(f"{prefix} original   out:{Fore.YELLOW}{out[:, :number]}{Style.RESET_ALL}")
     faiss.normalize_L2(out)
-    _logger.info(f"{name} after normalize: {out[:, :number]}")
+    _logger.info(f"{prefix} normalized out:{Fore.YELLOW}{out[:, :number]}{Style.RESET_ALL}")
 
 
 if __name__ == "__main__":
@@ -79,8 +80,8 @@ if __name__ == "__main__":
     img = cv2.imread(path)
     x, inputs = data_process(img, args.mean, args.std)
     np.set_printoptions(suppress=True) # 取消科学计数法输出
-    _logger.info(f"original   img: \n{img[0, :6]}")
-    _logger.info(f"normalized img: \n{x[0, :6]}")
+    _logger.info(f"original   img: \n{Fore.YELLOW}{img[0, :6]}{Style.RESET_ALL}")
+    _logger.info(f"normalized img: \n{Fore.YELLOW}{x[0, :6]}{Style.RESET_ALL}")
 
     session = onnx_init(args.input)
     output2 = session.run([], {session.get_inputs()[0].name: [x.transpose(2, 0, 1)]})

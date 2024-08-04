@@ -24,11 +24,11 @@ CUDA_VISIBLE_DEVICES=$gpu_id python tools/post/feat_extract.py --config cfgs/bas
 rm -f $used_dir/$gpu_id
 # convert npz to bin
 mkdir -p $task_root/nx/$brand_id/R${version_num}
-python tools/task/convert_npz2bin.py $task_root/tmp/feats/r${version_num}_$brand_id-train.npz \
+python project/convert_img2bin/convert_npz2bin.py $task_root/tmp/feats/r${version_num}_$brand_id-train.npz \
     $task_root/tmp/bin/r${version_num}_$brand_id.bin --src-img-dir $task_root/gallery/$brand_id \
     --label-file $task_root/nx/$brand_id/R${version_num}/labelext.txt --brand-id $brand_id
 # aes ecb encode the bin file
-./tools/task/write_nx.so $task_root/tmp/bin/r${version_num}_$brand_id.bin $task_root/nx/$brand_id/R${version_num}/modelnew.nx
+./project/convert_img2bin/write_nx.so $task_root/tmp/bin/r${version_num}_$brand_id.bin $task_root/nx/$brand_id/R${version_num}/modelnew.nx
 version=$(echo $rmodel_version | cut -d- -f1)
 cp $rmodel_dir/$rmodel_version/*.zip $task_root/nx/$brand_id/R${version_num}/
 cp $rmodel_dir/$rmodel_version/*.onnx $task_root/nx/$brand_id/R${version_num}/
