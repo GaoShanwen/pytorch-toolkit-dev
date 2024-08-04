@@ -1,3 +1,10 @@
+##################################################################
+# author: gaowenjie
+# email: gaowenjie@rongxwy.com
+# date: 2024.08.03
+# filenaem: onnx_utils.py
+# function: onnx runtime initialization.
+##################################################################
 import onnxruntime
 
 

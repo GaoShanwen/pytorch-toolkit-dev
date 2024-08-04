@@ -9,8 +9,14 @@ import math
 import tqdm
 import faiss
 import numpy as np
+import logging
+from colorama import Fore, Style
 from collections import Counter
 
+from .file_tools import save_dict2csv
+
+logging.basicConfig(level=logging.INFO)
+_logger = logging.getLogger(f"[{Fore.MAGENTA} feat_tools {Style.RESET_ALL}]")
 
 weights75 = [
     1.8, 1.5, 1.4, 1.36, .967, .86, .75, .74, .63, .55,
@@ -52,11 +58,15 @@ def run_compute(p_label, q_label, scores=None, do_output=True, k=5, th=None):
     if not do_output:
         return top1_num, top5_num, display_num, only_ones
     q_num = max(q_label.shape[0], 1)
-    print(f"top1-acc(th={th}): {top1_num}/{q_label.shape[0]}|{top1_num / q_num * 100:.2f}")
-    print(f"top5-acc(th={th}): {top5_num}/{q_label.shape[0]}|{top5_num / q_num * 100:.2f}")
-    print(f"display-avg(th={th}): {display_num / q_num:.2f}")
-    print(f"display-one(th={th}): {only_ones / q_num * 100:.2f}")
-    print(f"{top1_num / q_num * 100:.2f}/{top5_num / q_num * 100:.2f}-{display_num / q_num:.2f}/{only_ones / q_num * 100:.2f}")
+    top1_ratio = f"{Fore.YELLOW}{top1_num / q_num * 100:.2f}{Style.RESET_ALL}"
+    top5_ratio = f"{Fore.YELLOW}{top5_num / q_num * 100:.2f}{Style.RESET_ALL}"
+    display_avg = f"{Fore.YELLOW}{display_num / q_num:.2f}{Style.RESET_ALL}"
+    display_one = f"{Fore.YELLOW}{only_ones / q_num * 100:.2f}{Style.RESET_ALL}"
+    _logger.info(f"top1-acc(th={th}): {top1_num}/{q_num} | {top1_ratio}")
+    _logger.info(f"top5-acc(th={th}): {top5_num}/{q_num} | {top5_ratio}")
+    _logger.info(f"display-avg(th={th}): {display_avg}")
+    _logger.info(f"display-one(th={th}): {display_one}")
+    _logger.info(f"summary: {top1_ratio}/{top5_ratio}-{display_avg}/{display_one}")
 
 
 def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshold=None):
@@ -72,7 +82,7 @@ def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshol
             run_compute(cat_pl, cat_ql, cat_ps, do_output=False, th=threshold)
         cat_res = {
             "name": label_map[cat] if label_map is not None and cat in label_map else '',
-            "gallery_num": 0,
+            # "gallery_num": 0,
             "query_num": data_num,
             "top1_acc": top1_num / data_num * 100,
             "top5_acc": top5_num / data_num * 100,
@@ -81,6 +91,22 @@ def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshol
         }
         acc_map.update({cat: cat_res})
     return acc_map
+
+
+def eval_server(g_feats, g_label, q_feats, q_label, args, label_map, acc_file_name="eval_res.csv"):
+    index = create_index(g_feats, use_gpu=args.use_gpu, param=args.param, measure=args.measure)
+    D, I = index.search(q_feats, args.topk)
+    p_label, p_scores = get_predict_label(D, I, g_label, threshold=args.similarity_th, trick_id=args.trick_id)
+    if acc_file_name:
+        acc_map = compute_acc_by_cat(p_label, q_label, p_scores, label_map, threshold=args.final_th)
+        for key, value in acc_map.items():
+            g_num = np.sum(np.isin(g_label, [int(key)])) if key != "all_data" else g_label.shape[0]
+            value.update({"gallery_num": g_num})
+        
+        keys = ['name', 'gallery_num', 'query_num', 'top1_acc', 'top5_acc', 'display_avg', 'display_one']
+        save_dict2csv(acc_map, acc_file_name, index=keys)
+    
+    run_compute(p_label, q_label, p_scores, do_output=True, th=args.final_th)
 
 
 def create_index(data_embedding, use_gpu=False, param="Flat", measure=faiss.METRIC_INNER_PRODUCT):
@@ -161,10 +187,12 @@ def softmax(x, do_sqrt=False):
     e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
     return e_x / e_x.sum(axis=1, keepdims=True)
 
+
 def normalize_scores(scores):
     s = scores.copy()
-    s[s<0] = 0
+    s[s <= 0] = 1e-8
     return s / s.sum(axis=1, keepdims=True)
+
 
 def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
     """_summary_
@@ -180,11 +208,6 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
     """
     weight = np.array(
         [
-            # 1.8, 1.5, 1.4, 1.36, .967, .86, .75, .74, .63, .55,
-            # .52, .5, .48, .42, .4, .38, .37, .35, .34, .32,
-            # .3, .28, .27, .26, .25, .24, .23, .225, .21, .2,
-            # .15, .145, .125, .11, .097, .095, .092, .09, .087, .084,
-            # .082, .08, .078, .075, .073, .071, .068, .065, .063, .06,
             1.216, 1.151, 1.059, 1.006, 1.004, .991, .981, .967, .954, .937,
             .923, .91, .892, .878, .861, .845, .814, .792, .77, .761,
             .74, .72, .68, .65, .63, .62, .615, .607, .592, .581,
@@ -192,8 +215,6 @@ def create_matrix(scores, plabels, choose_pic=30, final_cat=5):
             .46, .454, .441, .438, .421, .42, .4, .38, .37, .35,
         ]
     )[:choose_pic]
-    # weight = np.ones((choose_pic))
-    # bias = np.zeros((final_cat,))
     input_x, index_cats = [], []
     
     for score, plabel in zip(scores, plabels):

@@ -5,9 +5,20 @@
 # filenaem: create_sql_data.py
 # function: create csv file of sql data date=xxxx-xx-xx, brand_id=xxxx.
 ######################################################
-
+import argparse
 from local_lib.utils.file_tools import save_dict2csv, create_sql_server, read_sql_data
-from tools.eval_sql import parse_args
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Create SQL Arguments")
+    parser.add_argument("--instance-idx", type=int, default=0)
+    parser.add_argument("--custom-keys", type=str, 
+        default="sBarcode,sImgUrl,sTradeFlowNo,dCreateDate,src")
+    parser.add_argument("--brand-id", type=int, default=1386)
+    parser.add_argument("--set-date", type=str, nargs='*', default=None)
+    parser.add_argument("--set-cats", type=str, nargs='*', default=None)
+    parser.add_argument("--label-names-path", type=str, default=None)
+    return parser.parse_args()
 
 
 def run_sql_with_save(sql_server, args):

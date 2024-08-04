@@ -12,7 +12,6 @@ def save_dict2csv(data, csv_name, index=None):
     #     df = pd.DataFrame(data, index=[0]).transpose()
     df = pd.DataFrame(data, index).transpose()
     df.to_csv(csv_name)
-    # print(df)
 
 
 def load_data(file_path):
