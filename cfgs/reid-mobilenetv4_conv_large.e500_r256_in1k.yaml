@@ -20,7 +20,7 @@ crop_pct: null
 cutmix: 0.0
 cutmix_minmax: null
 data: null
-cats_path: dataset/optimize_task3/2351_cats.txt
+cats_path: dataset/optimize_task3/2353_cats.txt
 data_dir: dataset/optimize_task3
 dataset: txt_data
 dataset_download: false
@@ -58,7 +58,7 @@ local_rank: 0
 log_interval: 50
 log_wandb: false
 lr: null
-lr_base: 0.00375
+lr_base: 0.001875
 lr_base_scale: ''
 lr_base_size: 256
 lr_cycle_decay: 0.5
@@ -89,7 +89,7 @@ no_ddp_bb: false
 no_prefetcher: false
 no_resume_opt: false
 num_choose: null
-num_classes: 2351
+num_classes: 2353
 opt: rmsproptf
 opt_betas: null
 opt_eps: 0.001

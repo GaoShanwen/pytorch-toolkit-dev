@@ -43,7 +43,7 @@ except ImportError:
 
 has_native_amp = False
 try:
-    if getattr(torch.cuda.amp, "autocast") is not None:
+    if getattr(torch.amp, "autocast") is not None:
         has_native_amp = True
 except AttributeError:
     pass
@@ -57,7 +57,6 @@ except ImportError:
 
 has_compile = hasattr(torch, "compile")
 _logger = logging.getLogger("train")
-_logger.setLevel(logging.INFO)
 
 # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128" #总是报显存不足的问题，是因为碎片没完全释放

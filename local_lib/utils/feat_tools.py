@@ -15,7 +15,6 @@ from collections import Counter
 
 from .file_tools import save_dict2csv
 
-logging.basicConfig(level=logging.INFO)
 _logger = logging.getLogger(f"[{Fore.MAGENTA} feat_tools {Style.RESET_ALL}]")
 
 weights75 = [
@@ -82,7 +81,6 @@ def compute_acc_by_cat(p_label, q_label, p_scores=None, label_map=None, threshol
             run_compute(cat_pl, cat_ql, cat_ps, do_output=False, th=threshold)
         cat_res = {
             "name": label_map[cat] if label_map is not None and cat in label_map else '',
-            # "gallery_num": 0,
             "query_num": data_num,
             "top1_acc": top1_num / data_num * 100,
             "top5_acc": top5_num / data_num * 100,
