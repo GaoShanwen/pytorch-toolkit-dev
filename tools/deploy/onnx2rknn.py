@@ -46,10 +46,13 @@ class CustomRKNN(RKNN):
     def normal_run(self, func, **kwargs):
         return eval(f"self.{func}(**kwargs)")
     
-    def rknn_func(self, func_name, check_flag=True, **kwargs):
+    def rknn_func(self, func_name, show_type=False, check_flag=True, **kwargs):
         ret = self.custom_func(func_name, **kwargs)
         if not check_flag:
             return ret
+        if show_type:
+            out_type = "int8" if kwargs.get("do_quantization", False) else "fp16"
+            _logger.info(f"{'':4s} rknn type: {Fore.YELLOW}{out_type}{Style.RESET_ALL}")
         check_res = f"{Fore.GREEN}success" if ret == 0 else f"{Fore.RED}failure"
         _logger.info(f"run {Fore.BLUE}{func_name}{Style.RESET_ALL} {check_res}{Style.RESET_ALL}!")
 
@@ -72,7 +75,7 @@ if __name__ == "__main__":
 
     rknn.rknn_func("config", mean_values=mean_values, std_values=std_values, target_platform=args.target_platform)
     rknn.rknn_func("load_onnx", model=args.input)
-    rknn.rknn_func("build", do_quantization=args.do_quantizate, dataset=data_file)
+    rknn.rknn_func("build", show_type=True, do_quantization=args.do_quantizate, dataset=data_file)
     rknn.rknn_func("export_rknn", export_path=args.output)
     rknn.rknn_func("init_runtime")
 
