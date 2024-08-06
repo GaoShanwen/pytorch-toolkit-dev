@@ -49,7 +49,7 @@ onnx-simplifier # onnx simplifier for onnx2ncnn
 
 # Logging -------------------------------------
 # tensorboard==2.14.0
-wandb==0.12.18 # wandb==0.12.18 to support auto stop
+wandb # wandb==0.12.18 to support auto stop
 # optuna-dashboard==0.14.0
 # dvclive>=2.12.0
 # clearml
