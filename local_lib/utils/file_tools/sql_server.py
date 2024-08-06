@@ -66,8 +66,9 @@ class MySQLHelper(object):
 
 def create_sql_server(brand_id, custom_keys=None):
     assert brand_id is not None, f"please set a value for brand_id!"
-    private_hostmap= {479: 1, 1000: 4, 684: 0}
+    private_hostmap= {479: 1, 684: 0, 849: 2}
     host_base = private_hostmap.get(brand_id, brand_id//100)
+    host_base = 4 if host_base == 10 else host_base
     return MySQLHelper(
         host=f"balance-open{host_base:02d}.mysql.rds.aliyuncs.com",
         port=3350,
