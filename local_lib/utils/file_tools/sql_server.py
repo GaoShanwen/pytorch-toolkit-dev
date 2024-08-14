@@ -93,12 +93,10 @@ def create_dates(set_dates):
     return date_list
 
 
-def read_sql_data(sql_server, set_date, set_cats, set_stores):
+def read_sql_data(sql_server, set_date, set_cats, set_stores, _url=False):
     assert set_date or set_cats is not None, "please set a value for date!"
-    read_res = sql_server.read_table()
-    gts, store_ids, urls, product_ids, dates, preds = zip(*(read_res))
-    product_ids, gts, store_ids, urls, dates, preds = \
-        np.array(product_ids), np.array(gts), np.array(store_ids), np.array(urls), np.array(dates), np.array(preds)
+    read_res = np.array(sql_server.read_table())
+    gts, store_ids, _, _, dates, _ = read_res.T # hidden urls, products and preds
     keeps = np.ones(gts.shape, dtype=bool)
     if set_cats is not None:
         keeps = np.isin(gts, set_cats)
@@ -108,7 +106,13 @@ def read_sql_data(sql_server, set_date, set_cats, set_stores):
     if set_stores is not None:
         keeps[keeps] = np.isin(store_ids[keeps], set_stores)
     assert keeps.sum() >= 1, "the sql data number must be greater than 0!"
-    return product_ids[keeps], gts[keeps], store_ids[keeps], urls[keeps], dates[keeps], preds[keeps]
+    if not _url:
+        return read_res[keeps].T
+    url_map = {}
+    for idx, (gt, store, url, product_id, date, pred) in enumerate(read_res[keeps]):
+        product_id = product_id or f"{idx:34d}"
+        url_map.update({product_id: {"gt": gt, "url": url, "store": store, "date": date, "prediction": pred}})
+    return url_map
 
 
 def save_keeps2mysql(feats, labels, files, update_times=0):

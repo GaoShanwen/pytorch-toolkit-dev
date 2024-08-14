@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument("--topk", type=int, default=5)
 
     parser.add_argument("--custom-keys", type=str, 
-        default="sBarcode,sImgUrl,sTradeFlowNo,dCreateDate,src")
+        default="sBarcode,sStoreId,sImgUrl,sTradeFlowNo,dCreateDate,src")
     parser.add_argument("--set-date", type=str, nargs='*', default=None)
     parser.add_argument("--set-cats", type=str, nargs='*', default=None)
     return parser.parse_args()
@@ -142,12 +142,10 @@ def eval_feats(args, sql_server):
 
 
 def eval_sql(args, sql_server):
-    product_ids, gts, _, _, preds = read_sql_data(sql_server, args.set_date, args.set_cats)
+    gts, _, _, product_ids, _, preds = read_sql_data(sql_server, args.set_date, args.set_cats, args.set_stores)
 
-    assert gts.shape[0] >= 1, "the sql data number must be greater than 0!"
     compare_preds, compare_gts = np.full((gts.shape[0], 5), np.nan), np.zeros(gts.shape[0]).astype(int)
     product_idx, this_prodict_code = 0, None
-    
     for product_id, gt, pred in zip(product_ids, gts, preds):
         pred_res = eval(pred) if len(pred) else pred
         if not len(pred_res):

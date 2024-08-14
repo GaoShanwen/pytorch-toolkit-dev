@@ -28,12 +28,7 @@ def run_sql_with_save(sql_server, args):
         save_dict2csv(label_map, args.label_names_path, index=['name'])
         return
 
-    product_ids, gts, store_ids, urls, dates, preds = read_sql_data(sql_server, args.set_date, args.set_cats, args.set_stores)
-    assert gts.shape[0] >= 1, "the sql data number must be greater than 0!"
-    url_map = {}
-    for idx, (product_id, gt, store, url, date, pred) in enumerate(zip(product_ids, gts, store_ids, urls, dates, preds)):
-        product_id = product_id or f"{idx:34d}"
-        url_map.update({product_id: {"gt": gt, "url": url, "store": store, "date": date, "prediction": pred}})
+    url_map = read_sql_data(sql_server, args.set_date, args.set_cats, args.set_stores, _url=True)
     print(f"save {len(url_map)} urls to test_{args.brand_id}.csv")
     save_dict2csv(url_map, f"need_{args.brand_id}.csv")
 
@@ -41,5 +36,4 @@ def run_sql_with_save(sql_server, args):
 if __name__ == '__main__':
     args = parse_args()
     sql_server = create_sql_server(args.brand_id, args.custom_keys)
-    # sql_server = create_sql_server(args.brand_id)
     run_sql_with_save(sql_server, args)
