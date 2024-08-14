@@ -93,21 +93,22 @@ def create_dates(set_dates):
     return date_list
 
 
-def read_sql_data(sql_server, set_date, set_cats):
+def read_sql_data(sql_server, set_date, set_cats, set_stores):
     assert set_date or set_cats is not None, "please set a value for date!"
     read_res = sql_server.read_table()
-    gts, urls, product_ids, dates, preds = zip(*(read_res))
-    product_ids, gts, urls, dates, preds = \
-        np.array(product_ids), np.array(gts), np.array(urls), np.array(dates), np.array(preds)
+    gts, store_ids, urls, product_ids, dates, preds = zip(*(read_res))
+    product_ids, gts, store_ids, urls, dates, preds = \
+        np.array(product_ids), np.array(gts), np.array(store_ids), np.array(urls), np.array(dates), np.array(preds)
+    keeps = np.ones(gts.shape, dtype=bool)
     if set_cats is not None:
         keeps = np.isin(gts, set_cats)
-    elif set_date is not None:
+    if set_date is not None:
         assert len(set_date) <= 2, "the set_date must be a list with length 2 or 1!"
-        keeps = np.isin(dates, create_dates(set_date))
-    else:
-        raise ValueError("Invalid set_cats or set_date!")
-    assert keeps.shape[0] >= 1, "the sql data number must be greater than 0!"
-    return product_ids[keeps], gts[keeps], urls[keeps], dates[keeps], preds[keeps]
+        keeps[keeps] = np.isin(dates[keeps], create_dates(set_date))
+    if set_stores is not None:
+        keeps[keeps] = np.isin(store_ids[keeps], set_stores)
+    assert keeps.sum() >= 1, "the sql data number must be greater than 0!"
+    return product_ids[keeps], gts[keeps], store_ids[keeps], urls[keeps], dates[keeps], preds[keeps]
 
 
 def save_keeps2mysql(feats, labels, files, update_times=0):
