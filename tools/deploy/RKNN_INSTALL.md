@@ -6,7 +6,6 @@
 + [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装gcc820)
 + [glib=2.29](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装glibc-229)
 + [rknn-tools2 for py38](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装rknn)
-+ [apex=0.1](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#apex安装)
 
 ### 安装gcc和make依赖，先安装低版本用于编译环境
 
@@ -78,20 +77,4 @@ export PATH=/usr/local/gcc-8.2.0/bin:$PATH
 ```bash
     git clone https://github.com/rockchip-linux/rknn-toolkit2.git
     cd rknn-toolkit2; pip install rknn-toolkit2/packages/rknn_toolkit2-*-cp38-cp38-linux_x86_64.whl --no-deps
-```
-
-### 安装apex
-
-```bash
-    git clone -b master https://gitee.com/ascend/apex.git && cd apex/
-    bash scripts/build.sh --python=3.8
-    pip install -r requirements.txt --no-deps -t p/root/anaconda3/envs/py38/lib/python3.8/site-packages
-    pip3 uninstall apex
-    pip3 install --upgrade apex-0.1+ascend-{version}.whl
-    pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
-
-    <pytorch-toolkit-dev> ~$ # install apex for speed training
-    < other-workspace > ~$ git clone https://github.com/NVIDIA/apex
-    < other-workspace > ~$ cd apex
-    < other-workspace/apex > ~$ pip install -v --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" --global-option="--deprecated_fused_adam" --global-option="--xentropy" --global-option="--fast_multihead_attn" ./
 ```

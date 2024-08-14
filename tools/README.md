@@ -127,5 +127,7 @@ TODO:
  - **2.** add eval/draw function for reid
  - **3.** add resume function for wandb
  - **4.** add logger function for local-lib
+ - **5.** add Hugging Face Hub support
+ - **6.** add svg for rknn and ncnn
 
 </details>
