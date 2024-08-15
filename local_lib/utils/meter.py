@@ -21,7 +21,7 @@ class ClassAccuracyMap:
         self.index_to_name = {}
         if index_to_name is not None:
             assert isinstance(index_to_name, str), f"index_to_name must be str, but you set {type(index_to_name)}"
-            self.index_to_name = {k: v.split("/")[0] for k, v in load_csv_file(index_to_name).items()}
+            self.index_to_name = load_csv_file(index_to_name, frist_name=True)
         self.reset()
 
     def reset(self):

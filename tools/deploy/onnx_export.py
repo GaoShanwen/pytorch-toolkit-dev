@@ -8,12 +8,12 @@
 import argparse
 from typing import List, Optional, Tuple
 
-import timm
 import torch
 from timm import utils
 from timm.utils.model import reparameterize_model
 
 from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel  # for regster local model
+from local_lib.models.checkpoint import load_custom_checkpoint, filter_inconsistent_channels
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument("output", metavar="ONNX_FILE", help="output model filename")
@@ -117,17 +117,6 @@ parser.add_argument("--multilabel", default=None, type=dict, help="Multi-label c
 parser.add_argument("--verbose", default=False, action="store_true", help="Extra stdout output")
 
 
-def onnx_forward(onnx_file, example_input):
-    import onnxruntime
-
-    sess_options = onnxruntime.SessionOptions()
-    session = onnxruntime.InferenceSession(onnx_file, sess_options)
-    input_name = session.get_inputs()[0].name
-    output = session.run([], {input_name: example_input.numpy()})
-    output = output[0]
-    return output
-
-
 def onnx_export(
     model: torch.nn.Module,
     output_file: str,
@@ -182,7 +171,7 @@ def onnx_export(
     else:
         export_type = torch.onnx.OperatorExportTypes.ONNX
 
-    torch_out = torch.onnx.export(
+    _ = torch.onnx.export(
         model,
         example_input,
         output_file,
@@ -196,16 +185,6 @@ def onnx_export(
         opset_version=opset,
         operator_export_type=export_type,
     )
-
-    if check:
-        onnx_model = onnx.load(output_file)
-        onnx.checker.check_model(onnx_model, full_check=True)  # assuming throw on error
-        if check_forward and not training:
-            import numpy as np
-
-            onnx_out = onnx_forward(output_file, example_input)
-            np.testing.assert_almost_equal(torch_out.data.numpy(), onnx_out, decimal=3)
-            np.testing.assert_almost_equal(original_out.data.numpy(), torch_out.data.numpy(), decimal=5)
 
 
 def main():
@@ -233,7 +212,7 @@ def main():
     if args.multilabel:
         model = MultiLabelModel(model, args.multilabel)
 
-    timm.models.load_checkpoint(model, args.checkpoint, args.use_ema)
+    load_custom_checkpoint(model, args.checkpoint, strict=False)
 
     if args.reparam:
         model = reparameterize_model(model)
@@ -264,52 +243,6 @@ def main():
         input_size=(3, args.img_size, args.img_size),
         batch_size=args.batch_size,
     )
-
-    def run_test(model, onnx_path, image_path="1.jpg"):
-        import cv2
-        import numpy as np
-
-        img = cv2.imread(image_path)
-        inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
-        x = np.array(inputs).astype(np.float32) / 255.0  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
-        x = (x - np.array([0.485, 0.456, 0.406])) / np.array([0.229, 0.224, 0.225])  # Normalize操作，使用ImageNet标准进行标准化
-        input = x.transpose(2, 0, 1)[np.newaxis, ...]
-        input = torch.from_numpy(input).float()  # .to(device)
-        output = model(input)
-        print("pth", output.detach().numpy())
-
-        import onnxruntime
-
-        sess_options = onnxruntime.SessionOptions()
-        sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
-        session = onnxruntime.InferenceSession(onnx_path, sess_options)
-        input_name = session.get_inputs()[0].name
-        output2 = session.run([], {input_name: [x.transpose(2, 0, 1)]})
-        print("onnx", output2)
-
-    if args.run_test:
-        # path = "/data/AI-scales/images/0/backflow/00001/1831_8fdaa0cf410f1c36_1673323817187_1673323817536.jpg"
-        # from torchvision import transforms
-        # from local_lib.data.loader import CustomResize
-        # from PIL import Image
-        # import numpy as np
-        # transform = transforms.Compose([
-        #     # transforms.Resize([224, 224], interpolation=InterpolationMode.BICUBIC, antialias=False),
-        #     CustomResize([224, 224]),
-        #     transforms.ToTensor(),
-        #     transforms.Normalize(mean=torch.tensor([0.485, 0.456, 0.406]), std=torch.tensor([0.229, 0.224, 0.225]))
-        # ])
-        # img = Image.open(path)
-        # input = transform(img).unsqueeze(0).float()
-        # model.eval()
-        # output = model(input)
-        # print('pth', output.detach().numpy(), path)
-        run_test(model, args.output)
-    # export onnx (it is recommended to set the opset_version to 12)
-    # model.eval()
-    # x = torch.randn((args.batch_size, 3, args.img_size, args.img_size))
-    # torch.onnx.export(model, x, args.output, opset_version=12, input_names=['input'], output_names=['output'])
 
 
 if __name__ == "__main__":

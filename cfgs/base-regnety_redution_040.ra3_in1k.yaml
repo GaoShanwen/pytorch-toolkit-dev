@@ -79,7 +79,7 @@ mixup_prob: 1.0
 mixup_switch_prob: 0.5
 model: regnety_redution_040.ra3_in1k
 model_ema: true
-model_ema_decay: 0.9998
+model_ema_decay: 0.9999
 model_ema_warmup: false
 model_ema_force_cpu: false
 model_kwargs: {}
