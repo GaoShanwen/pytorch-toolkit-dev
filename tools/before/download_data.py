@@ -4,6 +4,8 @@ import argparse
 import os
 import tqdm
 
+from local_lib.utils.file_tools import load_csv_file
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Download data from urls file')
@@ -11,22 +13,6 @@ def parse_args():
     parser.add_argument('--tag', type=str, help='tag of the dateset')
     parser.add_argument('--task', type=str, help='the task destination root path')
     return parser.parse_args()
-
-
-def load_csv_file(label_file: str, idx_column: int=1, url_column: int=3):
-    product_id_map = {}
-    with open(label_file, "r") as f:
-        lines = f.readlines()
-        for line in lines[1:]:
-            try:
-                id_record = line.strip().replace('"', "").split(",")
-                if id_record[idx_column] not in product_id_map.keys():
-                    product_id_map[id_record[idx_column]] = []
-                product_id_map[id_record[idx_column]].append(id_record[url_column])
-            except:
-                print(f"line={line} is error!")
-    return product_id_map, len(lines)-1
-
 
 
 async def download_file(url, save_path):
@@ -45,8 +31,8 @@ async def download_file(url, save_path):
         raise Exception(f"Error downloading {url}: {e}")
 
 
-async def main(download_urls, dst_root, workers=50):
-    res, _ = load_csv_file(download_urls, idx_column=1, url_column=2)
+async def main(download_urls, dst_root, workers=200):
+    res = load_csv_file(download_urls, concat_value=True)
     tasks = []
 
     global semaphore
