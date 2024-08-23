@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: mobilenetv3.py
 # function: reduce the last fc layers' dim of mobilenetv3 for reid.

@@ -1,6 +1,6 @@
 ################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.07.27
 # filenaem: sql_server.py
 # function: toolkit for reading or writing data from mysql database

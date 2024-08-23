@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: onnx2rknn.py
 # function: convert onnx model to rknn model.
@@ -88,10 +88,9 @@ if __name__ == "__main__":
 
     session = onnx_init(args.input)
     output2 = session.run([], {session.get_inputs()[0].name: [x.transpose(2, 0, 1)]})
-    output = rknn.rknn_func("inference", check_flag=False, inputs=[inputs[np.newaxis, ...]], data_format="nhwc")
-
     print_out("onnx", output2)
-    print_out("rknn", output)
 
+    output = rknn.rknn_func("inference", check_flag=False, inputs=[inputs[np.newaxis, ...]], data_format="nhwc")
+    print_out("rknn", output)
     rknn.rknn_func("release", check_flag=False)
     disable_std_info()

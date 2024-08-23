@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: eval_feats.py
 # function: eval the accuracy of features in .npz-file.

@@ -1,6 +1,6 @@
 ##################################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.08.03
 # filenaem: onnx_utils.py
 # function: onnx runtime initialization.

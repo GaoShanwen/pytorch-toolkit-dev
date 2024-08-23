@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.04.12
 # filenaem: create_sql_data.py
 # function: create csv file of sql data date=xxxx-xx-xx, brand_id=xxxx.
@@ -36,4 +36,5 @@ def run_sql_with_save(sql_server, args):
 if __name__ == '__main__':
     args = parse_args()
     sql_server = create_sql_server(args.brand_id, args.custom_keys)
+    # print(sql_server.read_column_names())
     run_sql_with_save(sql_server, args)

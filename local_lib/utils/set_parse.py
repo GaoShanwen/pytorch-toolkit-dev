@@ -1,20 +1,21 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.12.11
 # filenaem: set_parse.py
 # function: load options parses to args.
 ######################################################
 import argparse
 import os
-
+import logging
 import yaml
 
+_logger = logging.getLogger("set_parse")
 
 def merge_from_dict(args, merge_key="options"):
     args_dict = vars(args)
     if merge_key not in args:
-        print(f"{merge_key} not in args")
+        _logger.info(f"{merge_key} not in args")
         return args_dict
     merge_value = args_dict.pop(merge_key)
     for add_key, add_v in merge_value.items():
@@ -161,4 +162,4 @@ class DictAction(argparse.Action):
 
 if __name__ == "__main__":
     args, args_text = parse_args()
-    print(args_text)
+    _logger.info(args_text)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: feat_extract.py
 # function: extract the features of custom data (train/val).

@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: mongo_client.py
 # function: read file from mongo.

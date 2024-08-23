@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: validate.py
 # function: validate custom valset / trainset.

@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.05.03
 # filenaem: reid_model.py
 # function: Rebuild Model for Re-ID task.

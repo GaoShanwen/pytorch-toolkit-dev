@@ -31,7 +31,7 @@ def load_csv_file(
     with open(label_file) as f:
         reader = csv.DictReader(f)
         for row in reader:
-            k, v = row[key_name], row[value_name]
+            k, v = row[key_name].strip(" "), row[value_name].strip(" ")
             k = int(k) if to_int else k
             v = v.split("/")[0] if frist_name else v
             try:

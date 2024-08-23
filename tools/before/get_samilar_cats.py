@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.08.04
 # filenaem: get_samilar_cats.py
 # function: get the similar categories of the top 2-5 categories.

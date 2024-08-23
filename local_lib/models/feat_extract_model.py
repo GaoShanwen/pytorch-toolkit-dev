@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.04.25
 # filenaem: feat_extract_model.py
 # function: REbuild Model for Feature Extract.

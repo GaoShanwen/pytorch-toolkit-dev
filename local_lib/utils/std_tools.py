@@ -1,6 +1,6 @@
 ##################################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.08.03
 # filenaem: sys_tools.py
 # function: Disable system information output, such as stdout 

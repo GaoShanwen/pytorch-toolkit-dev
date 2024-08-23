@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // author: gaowenjie
-// email: gaowenjie@rongxwy.com
+// email: gaoshanwen@bupt.cn
 // date: 2024.07.05
 // filenaem: read_nx.cpp
 // function: load binary file check the file format and read the data.

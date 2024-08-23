@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: onnx_export.py
 # function: convert pth model to onnx model.
@@ -13,7 +13,8 @@ from timm import utils
 from timm.utils.model import reparameterize_model
 
 from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel  # for regster local model
-from local_lib.models.checkpoint import load_custom_checkpoint, filter_inconsistent_channels
+from local_lib.models.checkpoint import load_custom_checkpoint
+
 
 parser = argparse.ArgumentParser(description="PyTorch ImageNet Validation")
 parser.add_argument("output", metavar="ONNX_FILE", help="output model filename")
@@ -219,7 +220,6 @@ def main():
 
     if "redution" in args.model:
         import torch.nn as nn
-
         if "mobilenetv3" in args.model:
             model.classifier = nn.Identity()  # 移除分类层
         elif "regnet" in args.model:

@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.07.05
 # filenaem: convert_npz2bin.py
 # function: create readable dataset from raw dataset.

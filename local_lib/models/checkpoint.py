@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.07.16
 # filenaem: checkpoint.py
 # function: load and save customized checkpoints.

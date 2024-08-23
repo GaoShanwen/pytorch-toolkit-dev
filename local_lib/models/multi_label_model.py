@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.04.25
 # filenaem: multi_label_model.py
 # function: Rebuild Model for Multi-Label Classification.

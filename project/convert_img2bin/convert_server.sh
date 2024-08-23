@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.07.05
 # filenaem: convert server for convert_imgs2bin task.
 ######################################################
@@ -42,7 +42,7 @@ rm -rf $task_root/tmp/bin/r${version_num}_$brand_id.bin
 # ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.zip oss://rx-gallery/$brand_id/rbig/
 # ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.onnx oss://rx-gallery/$brand_id/onnx/
 
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/labelext.txt oss://rx-gallery/1482/rmodelnx/
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/modelnew.nx oss://rx-gallery/1482/rmodelnx/
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/*.zip oss://rx-gallery/1386/rbig/
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/*.onnx oss://rx-gallery/1386/onnx/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/labelext.txt oss://rx-gallery/$obj_brand/rmodelnx/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/modelnew.nx oss://rx-gallery/$obj_brand/rmodelnx/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/*.zip oss://rx-gallery/$obj_brand/rbig/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/*.onnx oss://rx-gallery/$obj_brand/onnx/
