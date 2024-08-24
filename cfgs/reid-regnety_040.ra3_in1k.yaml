@@ -22,7 +22,7 @@ cutmix: 0.0
 cutmix_minmax: null
 data: null
 data_dir: dataset/optimize_task3
-dataset: reid_data
+dataset: txt_data
 dataset_download: false
 decay_epochs: 90
 decay_milestones:
@@ -36,7 +36,7 @@ drop_block: null
 drop_connect: null
 drop_path: null
 epoch_repeats: 0.0
-epochs: 10
+epochs: 30
 eval_metric: top1
 experiment: ''
 fast_norm: false
@@ -58,7 +58,7 @@ local_rank: 0
 log_interval: 50
 log_wandb: false
 lr: null
-lr_base: 0.0001
+lr_base: 0.00375
 lr_base_scale: ''
 lr_base_size: 256
 lr_cycle_decay: 0.5
@@ -80,6 +80,7 @@ mixup_switch_prob: 0.5
 model: regnety_040.ra3_in1k
 model_ema: true
 model_ema_decay: 0.9999
+model_ema_warmup: false
 model_ema_force_cpu: false
 model_kwargs: {}
 momentum: 0.9
@@ -97,6 +98,7 @@ pass_path: ''
 patience_epochs: 10
 pin_mem: false
 pretrained: true
+pretrained_path: null
 ratio:
 - 0.75
 - 1.3333333333333333
@@ -155,12 +157,12 @@ label_file: "dataset/zero_dataset/label_names.csv"
 custom_aa: false
 convert_epoch: 0
 multilabel: null
-feat_extract_dim: null
-re_identifier:
-  metric_loss: triplet_loss
-  num_instance: 8
-  feat_dim: 128
-  weights:
-    feats: 1.0
-    cls: 1.0 
+feat_extract_dim: 128
+re_identifier: null
+#   metric_loss: triplet_loss
+#   num_instance: 8
+#   feat_dim: 128
+#   weights:
+#     feats: 1.0
+#     cls: 1.0 
 tqdm_disabled: false

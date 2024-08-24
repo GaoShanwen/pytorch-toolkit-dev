@@ -1,13 +1,25 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.04.12
 # filenaem: create_sql_data.py
 # function: create csv file of sql data date=xxxx-xx-xx, brand_id=xxxx.
 ######################################################
-
+import argparse
 from local_lib.utils.file_tools import save_dict2csv, create_sql_server, read_sql_data
-from tools.eval_sql import parse_args
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Create SQL Arguments")
+    parser.add_argument("--instance-idx", type=int, default=0)
+    parser.add_argument("--custom-keys", type=str, 
+        default="sBarcode,sStoreId,sImgUrl,sTradeFlowNo,dCreateDate,src")
+    parser.add_argument("--brand-id", type=int, default=1386)
+    parser.add_argument("--set-date", type=str, nargs='*', default=None)
+    parser.add_argument("--set-cats", type=str, nargs='*', default=None)
+    parser.add_argument("--set-stores", type=str, nargs='*', default=None)
+    parser.add_argument("--label-names-path", type=str, default=None)
+    return parser.parse_args()
 
 
 def run_sql_with_save(sql_server, args):
@@ -16,12 +28,7 @@ def run_sql_with_save(sql_server, args):
         save_dict2csv(label_map, args.label_names_path, index=['name'])
         return
 
-    product_ids, gts, urls, dates, preds = read_sql_data(sql_server, args.set_date, args.set_cats)
-    assert gts.shape[0] >= 1, "the sql data number must be greater than 0!"
-    url_map = {}
-    for idx, (product_id, gt, url, date, pred) in enumerate(zip(product_ids, gts, urls, dates, preds)):
-        product_id = product_id or f"{idx:34d}"
-        url_map.update({product_id: {"gt": gt, "url": url, "date": date, "prediction": pred}})
+    url_map = read_sql_data(sql_server, args.set_date, args.set_cats, args.set_stores, _url=True)
     print(f"save {len(url_map)} urls to test_{args.brand_id}.csv")
     save_dict2csv(url_map, f"need_{args.brand_id}.csv")
 
@@ -29,4 +36,5 @@ def run_sql_with_save(sql_server, args):
 if __name__ == '__main__':
     args = parse_args()
     sql_server = create_sql_server(args.brand_id, args.custom_keys)
+    # print(sql_server.read_column_names())
     run_sql_with_save(sql_server, args)

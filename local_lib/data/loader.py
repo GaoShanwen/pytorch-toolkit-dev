@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: loader.py
 # function: custom dataloader, to create the same input with rknn.
@@ -15,6 +15,7 @@ from torchvision.transforms import Resize
 from torch.utils.data import DataLoader
 from timm.data.loader import MultiEpochsDataLoader, PrefetchLoader
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+
 
 class CustomResize(Resize):
     def __init__(self, size, interpolation):
@@ -37,19 +38,23 @@ class CustomResize(Resize):
         return self.__class__.__name__ + f"(size={self.size}, interpolation={interpolate_str})"
 
 
-def custom_transfrom(input_size=[3, 224, 224]):
+def custom_transfrom(input_size=[3, 224, 224], mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
     img_size = input_size[1:]
-    custom_trans = transforms.Compose(
+    return transforms.Compose(
         [
             CustomResize(img_size, interpolation=cv2.INTER_CUBIC),
             transforms.ToTensor(),
-            transforms.Normalize(
-                mean=torch.tensor([0.485, 0.456, 0.406]),
-                std=torch.tensor([0.229, 0.224, 0.225]),
-            ),
+            transforms.Normalize(mean=torch.tensor(mean), std=torch.tensor(std)),
         ]
     )
-    return custom_trans
+
+
+def data_process(img, mean_values, std_values):
+    inputs = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    inputs = cv2.resize(inputs, (224, 224), interpolation=cv2.INTER_CUBIC)
+    x = np.array(inputs).astype(np.float32) / 255.0  # ToTensor操作，将像素值范围从[0, 255]转换为[0.0, 1.0]
+    x = (x - np.array(mean_values)) / np.array(std_values)  # Normalize操作，使用ImageNet标准进行标准化
+    return x, inputs
 
 
 def create_custom_loader(dataset, input_size, batch_size, transfrom_mode="trainval", **kwargs):
@@ -109,6 +114,7 @@ def rebuild_custom_loader(
             re_num_splits=re_num_splits
         )
     return custom_loader
+
 
 if __name__ == "__main__":
     img_path = "dataset/test_imgs/1.jpg"

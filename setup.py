@@ -18,7 +18,7 @@ setup(
     version=local_lib.__version__,
     python_requires="==3.8",
     author="GaoWenJie",
-    author_email="gaowenjie@rongxwy.com",
+    author_email="gaoshanwen@bupt.cn",
     url="https://github.com/GaoShanwen/pytorch-toolkit-dev/tree/timm-dev",
     description="Build a multi-task training platform based on Pytorch",
     license="Apache-2.0",

@@ -1,18 +1,13 @@
 import os
-
+import csv
 import numpy as np
 import pandas as pd
 from typing import Union, List
 
 
 def save_dict2csv(data, csv_name, index=None):
-    # try:
-    #     df = pd.DataFrame(data).transpose()
-    # except:
-    #     df = pd.DataFrame(data, index=[0]).transpose()
     df = pd.DataFrame(data, index).transpose()
     df.to_csv(csv_name)
-    # print(df)
 
 
 def load_data(file_path):
@@ -24,19 +19,31 @@ def load_data(file_path):
     return feas, labels, fpaths
 
 
-def load_csv_file(label_file, to_int=False, frist_name=False):
+def load_csv_file(
+    label_file: str, 
+    key_name: str="gt", 
+    value_name: str="url", 
+    to_int: bool=False, 
+    frist_name: bool=False,
+    concat_value: bool=False,
+)->dict:
     product_id_map = {}
     with open(label_file) as f:
-        for line in f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            k, v = row[key_name].strip(" "), row[value_name].strip(" ")
+            k = int(k) if to_int else k
+            v = v.split("/")[0] if frist_name else v
             try:
-                id_record = line.strip().replace('"', "").split(",")
-                product_id = int(id_record[0]) if to_int else id_record[0]
-                product_name = id_record[1].split("/")[0] if frist_name else id_record[1]
-                product_id_map[product_id] = product_name
+                if concat_value:
+                    if k not in product_id_map.keys():
+                        product_id_map[row[key_name]] = []
+                    product_id_map[k].append(v)
+                else:
+                    product_id_map.update({k: v})
             except:
-                print(f"line={line} is error!")
+                print(f"line={row} is error!")
     return product_id_map
-
 
 def load_names(
         label_files: Union[str, List[str]], 

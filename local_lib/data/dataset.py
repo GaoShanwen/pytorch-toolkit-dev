@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.12.08
 # filenaem: dataset.py
 # function: create custom dataset(read imgs by txt-file).

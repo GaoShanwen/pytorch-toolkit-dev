@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2023.11.09
 # filenaem: train.py
 # function: train custom data use timm.
@@ -43,7 +43,7 @@ except ImportError:
 
 has_native_amp = False
 try:
-    if getattr(torch.cuda.amp, "autocast") is not None:
+    if getattr(torch.amp, "autocast") is not None:
         has_native_amp = True
 except AttributeError:
     pass
@@ -110,6 +110,11 @@ def main():
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
+    factory_kwargs = {}
+    if args.pretrained_path:
+        # merge with pretrained_cfg of model, 'file' has priority over 'url' and 'hf_hub'.
+        factory_kwargs['pretrained_cfg_overlay'] = dict(file=args.pretrained_path)
+
     model = create_custom_model(
         args.model,
         pretrained=args.pretrained,
@@ -123,6 +128,7 @@ def main():
         bn_eps=args.bn_eps,
         scriptable=args.torchscript,
         checkpoint_path=args.initial_checkpoint,
+        **factory_kwargs,
         **args.model_kwargs,
     )
 
@@ -254,14 +260,17 @@ def main():
     model_ema = None
     if args.model_ema:
         # Important to create EMA model after cuda(), DP wrapper, and AMP but before DDP wrapper
-        model_ema = utils.ModelEmaV2(
+        model_ema = utils.ModelEmaV3(
             model,
             decay=args.model_ema_decay,
-            device="cpu" if args.model_ema_force_cpu else None,
+            use_warmup=args.model_ema_warmup,
+            device='cpu' if args.model_ema_force_cpu else None,
         )
         if args.resume:
             filter_fn = filter_inconsistent_channels if args.finetune else None
             load_checkpoint(model_ema.module, args.resume, use_ema=True, strict=False, filter_fn=filter_fn)
+        if args.torchcompile:
+            model_ema = torch.compile(model_ema, backend=args.torchcompile)
 
     # setup distributed training
     if args.distributed:
@@ -538,10 +547,11 @@ def main():
                     utils.distribute_bn(model_ema, args.world_size, args.dist_bn == "reduce")
 
                 ema_eval_metrics = validate(
-                    model_ema.module,
+                    model_ema,
                     loader_eval,
                     validate_loss_fn,
                     args,
+                    device=device,
                     amp_autocast=amp_autocast,
                     log_suffix=" (EMA)",
                 )
@@ -624,12 +634,6 @@ def train_one_epoch(
         update_idx = batch_idx // accum_steps
         if batch_idx >= last_batch_idx_to_accum:
             accum_steps = last_accum_steps
-        # import cv2
-        # import numpy as np
-        # # imgs = paddle.transpose(images, perm=[0, 2, 3, 1]).numpy()[..., ::-1]
-        # imgs = input.permute([0,2,3,1]).cpu().numpy()[..., ::-1]
-        # for i, img in enumerate(imgs):
-        #     cv2.imwrite(f"output/vis/vis_img/{batch_idx}_{i}.jpg", np.array(img*255, dtype=int))
 
         if not args.prefetcher:
             input = input.to(device)
@@ -697,7 +701,7 @@ def train_one_epoch(
         num_updates += 1
         optimizer.zero_grad()
         if model_ema is not None:
-            model_ema.update(model)
+            model_ema.update(model, step=num_updates)
 
         if args.synchronize_step and device.type == "cuda":
             torch.cuda.synchronize()
@@ -721,7 +725,7 @@ def train_one_epoch(
             if utils.is_primary(args):
                 _logger.info(
                     f"Train: {epoch} [{update_idx:>4d}/{updates_per_epoch} "
-                    f"({100. * update_idx / (updates_per_epoch - 1):>3.0f}%)]  "
+                    f"({100. * (update_idx + 1) / updates_per_epoch:>3.0f}%)]  "
                     f"Loss: {losses_m.val:#.3g} ({losses_m.avg:#.3g})  "
                     f"Time: {update_time_m.val:.3f}s, {update_sample_count / update_time_m.val:>7.2f}/s  "
                     f"({update_time_m.avg:.3f}s, {update_sample_count / update_time_m.avg:>7.2f}/s)  "

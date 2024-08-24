@@ -4,11 +4,11 @@ building a multitask training platform based on Pytorch
 
 ## Introduction
 
-[![](https://img.shields.io/badge/Python-3.8.18-3776AB?style=flat-square&logo=python&logoColor=FFFFFF)](https://www.python.org)
-[![](https://img.shields.io/badge/PyTorch-2.3.1+cu121-EE4C2C?style=flat-square&logo=pytorch&logoColor=FFFFFF)](https://pytorch.org)
-[![](https://img.shields.io/badge/Timm-1.0.7-blue.svg?style=flat-square&logo=github&logoColor=FFFFFF)](https://github.com/huggingface/pytorch-image-models/tree/main)
-[![](https://img.shields.io/badge/ONNX-1.14.1-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)](https://onnx.ai)
-[![](https://img.shields.io/badge/PyMySQL-1.4.6-FFBE00?style=flat-square&logo=mysql&logoColor=FFFFFF)](https://zetcode.com/python/pymysql/)
+[![](https://img.shields.io/badge/Python-3.8-3776AB?style=plastic&logo=python&logoColor=FFFFFF)](https://www.python.org)
+[![](https://img.shields.io/github/v/release/pytorch/pytorch?style=plastic&logo=pytorch&logoColor=FFFFFF&label=PyTorch&color=EE4C2C)](https://pytorch.org)
+[![](https://img.shields.io/github/v/release/huggingface/pytorch-image-models.svg?style=plastic&logo=github&color=black&label=Timm)](https://github.com/huggingface/pytorch-image-models/tree/main)
+[![](https://img.shields.io/badge/ONNX-1.14.1-005CED?style=plastic&logo=ONNX&logoColor=FFFFFF&label=ONNX)](https://onnx.ai)
+[![](https://img.shields.io/github/v/release/PyMySQL/PyMySQL.svg?style=plastic&logo=mysql&logoColor=FFFFFF&label=PyMySQL&color=FFBE00)](https://zetcode.com/python/pymysql/)
 
 timm-dev branch for classfication or re-identification tasks.
 
@@ -25,7 +25,7 @@ timm-dev branch for classfication or re-identification tasks.
 - [ ] Visualize Precision-Recall / Receiver-Operating-Characteristic curve.
 - [x] Mixed-Precision Training for faster speed.
 - [x] Visualize models' heatmaps and U-MAPs.
-- [x] Convert pth model to onnx / rknn.
+- [x] Convert pth model to onnx / rknn / ncnn format.
 
 ### Major Motivation
 

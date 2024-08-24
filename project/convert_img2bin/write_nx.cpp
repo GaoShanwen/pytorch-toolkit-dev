@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////
 // author: gaowenjie
-// email: gaowenjie@rongxwy.com
+// email: gaoshanwen@bupt.cn
 // date: 2024.07.05
 // filenaem: write_nx.cpp
 // function: convert binary file to encrypted binary file.

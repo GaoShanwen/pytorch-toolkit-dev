@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.04.30
 # filenaem: reid_sampler.py
 # function: REbuild Sampler for Metric Learning.

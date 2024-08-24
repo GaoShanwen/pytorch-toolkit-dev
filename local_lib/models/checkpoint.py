@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.07.16
 # filenaem: checkpoint.py
 # function: load and save customized checkpoints.
@@ -16,8 +16,9 @@ def filter_inconsistent_channels(state_dict, model):
 
 def load_custom_checkpoint(model, filename, strict=True):
     if os.path.isfile(filename):
-        print(f"=> loading checkpoint '{filename}'")
-        state_dict = torch.load(filename)['state_dict']
+        print(f"=> loading checkpoint from '{filename}'")
+        state_dict = torch.load(filename, weights_only=filename.endswith('.pt'))
+        state_dict = state_dict.get('state_dict', state_dict)
         state_dict = filter_inconsistent_channels(state_dict, model)
         model.load_state_dict(state_dict, strict=strict)
     else:

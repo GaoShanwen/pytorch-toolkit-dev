@@ -1,6 +1,6 @@
 ######################################################
 # author: gaowenjie
-# email: gaowenjie@rongxwy.com
+# email: gaoshanwen@bupt.cn
 # date: 2024.07.05
 # filenaem: convert server for convert_imgs2bin task.
 ######################################################
@@ -24,11 +24,11 @@ CUDA_VISIBLE_DEVICES=$gpu_id python tools/post/feat_extract.py --config cfgs/bas
 rm -f $used_dir/$gpu_id
 # convert npz to bin
 mkdir -p $task_root/nx/$brand_id/R${version_num}
-python tools/task/convert_npz2bin.py $task_root/tmp/feats/r${version_num}_$brand_id-train.npz \
+python project/convert_img2bin/convert_npz2bin.py $task_root/tmp/feats/r${version_num}_$brand_id-train.npz \
     $task_root/tmp/bin/r${version_num}_$brand_id.bin --src-img-dir $task_root/gallery/$brand_id \
     --label-file $task_root/nx/$brand_id/R${version_num}/labelext.txt --brand-id $brand_id
 # aes ecb encode the bin file
-./tools/task/write_nx.so $task_root/tmp/bin/r${version_num}_$brand_id.bin $task_root/nx/$brand_id/R${version_num}/modelnew.nx
+./project/convert_img2bin/write_nx.so $task_root/tmp/bin/r${version_num}_$brand_id.bin $task_root/nx/$brand_id/R${version_num}/modelnew.nx
 version=$(echo $rmodel_version | cut -d- -f1)
 cp $rmodel_dir/$rmodel_version/*.zip $task_root/nx/$brand_id/R${version_num}/
 cp $rmodel_dir/$rmodel_version/*.onnx $task_root/nx/$brand_id/R${version_num}/
@@ -42,7 +42,7 @@ rm -rf $task_root/tmp/bin/r${version_num}_$brand_id.bin
 # ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.zip oss://rx-gallery/$brand_id/rbig/
 # ossutil cp -r -u $task_root/nx/$brand_id/R${version_num}/*.onnx oss://rx-gallery/$brand_id/onnx/
 
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/labelext.txt oss://rx-gallery/1386/rmodelnx/
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/modelnew.nx oss://rx-gallery/1386/rmodelnx/
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/*.zip oss://rx-gallery/1386/rbig/
-# ossutil cp -r -u dataset/feature_pack/nx/1386/Rv4.2-240726/*.onnx oss://rx-gallery/1386/onnx/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/labelext.txt oss://rx-gallery/$obj_brand/rmodelnx/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/modelnew.nx oss://rx-gallery/$obj_brand/rmodelnx/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/*.zip oss://rx-gallery/$obj_brand/rbig/
+# ori_brand=1386; obj_brand=1386; version_dir=v4.4-240813; ossutil cp -r -u dataset/feature_pack/nx/$ori_brand/R$version_dir/*.onnx oss://rx-gallery/$obj_brand/onnx/
