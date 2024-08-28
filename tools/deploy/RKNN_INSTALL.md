@@ -1,6 +1,8 @@
 ### RKNN 环境准备
 
-如果需要转换模型，则需另外安装以下内容：
+(ubuntu 18.04/20.04/24.04)借鉴[野火RKNN安装教程](https://doc.embedfire.com/linux/rk356x/Ai/zh/latest/lubancat_ai/env/toolkit2.html)
+
+(Centos 7)如果需要转换模型，则需另外安装以下内容：
 
 + [make=4.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装-make-42)
 + [gcc=8.2](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/docs/environment.md#安装gcc820)

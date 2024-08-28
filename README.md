@@ -6,7 +6,7 @@ building a multitask training platform based on Pytorch
 
 [![](https://img.shields.io/badge/Python-3.8-3776AB?style=plastic&logo=python&logoColor=FFFFFF)](https://www.python.org)
 [![](https://img.shields.io/github/v/release/pytorch/pytorch?style=plastic&logo=pytorch&logoColor=FFFFFF&label=PyTorch&color=EE4C2C)](https://pytorch.org)
-[![](https://img.shields.io/github/v/release/huggingface/pytorch-image-models.svg?style=plastic&logo=huggingface&color=black&label=Timm)](https://github.com/huggingface/pytorch-image-models/tree/main)
+[![](https://img.shields.io/github/v/release/huggingface/pytorch-image-models.svg?style=plastic&logo=huggingface&logoColor=FFFFFF&label=Timm&color=FFD21E)](https://github.com/huggingface/pytorch-image-models/tree/main)
 [![](https://img.shields.io/badge/ONNX-1.14.1-005CED?style=plastic&logo=ONNX&logoColor=FFFFFF&label=ONNX)](https://onnx.ai)
 [![](https://img.shields.io/github/v/release/PyMySQL/PyMySQL.svg?style=plastic&logo=mysql&logoColor=FFFFFF&label=PyMySQL&color=FFBE00)](https://zetcode.com/python/pymysql/)
 
@@ -44,21 +44,21 @@ cls-dev branch for classfication or re-identification tasks.
 
 ### Install Environment
 
-For detailed installation guides, please refer to [INSTALL.md](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/main/docs/INSTALL.md).
+For detailed installation guides, please refer to [INSTALL.md](docs/INSTALL.md).
 
 ### Command Guides
 
 + Train & Validate with Training Curve
 
-Refer to [README-Train/Val Models](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/main/tools/README.md) for details.
+Refer to [README-Train/Val Models](tools/README.md) for details.
 
 + Convert Pth Model To ONNX/RKNN
 
-Refer to [README-Convert Models](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/main/tools/deploy/README.md) for details.
+Refer to [README-Convert Models](tools/deploy/README.md) for details.
 
 ## License
 
-This project is released under the [Apache 2.0 license](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/main/LICENSE).
+This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Contribute
 
