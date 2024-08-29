@@ -13,7 +13,7 @@ building a multitask training platform based on Pytorch
 cls-dev branch for classfication or re-identification tasks.
 
 <div align="center";style="display: none;">
-    <img src="./docs/demo4reid.jpg" width="70%" alt="" />
+    <img src="docs/demo4reid.jpg" width="70%" alt="" />
 </div>
 
 ### Supported Functions

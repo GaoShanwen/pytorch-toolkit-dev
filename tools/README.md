@@ -46,7 +46,7 @@ Run this comand, make sure your folder format is follow:
 
 </details>
 
-<details open>
+<details close>
 
 <summary> Train Dataset </summary>
 
@@ -61,7 +61,7 @@ Run this comand, make sure your folder format is follow:
 
 </details>
 
-<details open>
+<details close>
 
 <summary> Validate Dataset </summary>
 
@@ -128,6 +128,6 @@ TODO:
  - **3.** add resume function for wandb
  - **4.** add logger function for local-lib
  - **5.** add Hugging Face Hub support
- - **6.** add svg for rknn and ncnn
+ - **6.** remove backbone's rebuild for feature-extraction
 
 </details>
