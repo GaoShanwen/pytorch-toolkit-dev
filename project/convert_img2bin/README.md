@@ -6,6 +6,8 @@
 
 ```bash
 <pytorch-toolkit-dev> ~$ # cpp -> so
+		apt install g++ libssl-dev (after )
+
         g++ ./project/convert_img2bin/write_nx.cpp -o ./project/convert_img2bin/write_nx.so -lssl -lcrypto
         g++ ./project/convert_img2bin/read_nx.cpp -o ./project/convert_img2bin/read_nx.so -lssl -lcrypto
 ```
