@@ -18,11 +18,11 @@ import tqdm
 import time
 from timm.data import resolve_data_config
 from timm.layers import apply_test_time_pool, set_fast_norm
-from timm.models import load_checkpoint
+from timm.models import load_checkpoint, create_model
 from timm.utils import reparameterize_model, setup_default_logging
 
 from local_lib.data import create_custom_dataset, create_custom_loader
-from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel # enable local model
+from local_lib.models import FeatExtractModel, MultiLabelModel # enable local model
 from local_lib.utils import parse_args
 from local_lib.utils.file_tools import init_feats_dir, merge_feat_files, save_feat
 
@@ -92,7 +92,7 @@ def extract(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_custom_model(
+    model = create_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.model_classes,

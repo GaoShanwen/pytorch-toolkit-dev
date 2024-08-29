@@ -15,13 +15,13 @@ import numpy as np
 import torch
 import torch.nn.parallel
 import tqdm
-from timm.models import load_checkpoint
+from timm.models import load_checkpoint, create_model
 from timm.utils import setup_default_logging
 from timm.utils.misc import natural_key
 
 from local_lib.data.dataset_factory import create_custom_dataset
 from local_lib.data.loader import create_custom_loader
-from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel
+from local_lib.models import FeatExtractModel, MultiLabelModel
 from local_lib.utils.set_parse import parse_args
 
 _logger = logging.getLogger("validate")
@@ -46,7 +46,7 @@ def load_model(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_custom_model(
+    model = create_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.num_classes,

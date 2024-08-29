@@ -10,9 +10,9 @@ from typing import List, Optional, Tuple
 
 import torch
 from timm import utils
-from timm.utils.model import reparameterize_model
+from timm.utils.model import reparameterize_model, create_model
 
-from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel  # for regster local model
+from local_lib.models import FeatExtractModel, MultiLabelModel  # for regster local model
 from local_lib.models.checkpoint import load_custom_checkpoint
 
 
@@ -198,7 +198,7 @@ def main():
     print("==> Creating PyTorch {} model".format(args.model))
     # NOTE exportable=True flag disables autofn/jit scripted activations and uses Conv2dSameExport layers
     # for models using SAME padding
-    model = create_custom_model(
+    model = create_model(
         args.model,
         num_classes=args.num_classes,
         in_chans=3,

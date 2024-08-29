@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.nn.parallel
 from timm.data import create_loader, resolve_data_config
 from timm.layers import apply_test_time_pool, set_fast_norm
-from timm.models import is_model, list_models, load_checkpoint
+from timm.models import is_model, list_models, load_checkpoint, create_model
 from timm.utils import (
     AverageMeter,
     accuracy,
@@ -34,7 +34,7 @@ from timm.utils import (
 )
 
 from local_lib.data import RealLabelsCustomData, create_custom_dataset
-from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel
+from local_lib.models import FeatExtractModel, MultiLabelModel
 from local_lib.utils import ClassAccuracyMap, parse_args
 
 try:
@@ -106,7 +106,7 @@ def validate(args):
     elif args.input_size is not None:
         in_chans = args.input_size[0]
 
-    model = create_custom_model(
+    model = create_model(
         args.model,
         pretrained=args.pretrained,
         num_classes=args.num_classes,

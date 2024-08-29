@@ -21,14 +21,14 @@ from timm import utils
 from timm.data import AugMixDataset, FastCollateMixup, Mixup, create_loader, resolve_data_config
 from timm.layers import convert_splitbn_model, convert_sync_batchnorm, set_fast_norm
 from timm.loss import BinaryCrossEntropy, JsdCrossEntropy, LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
-from timm.models import load_checkpoint, model_parameters, resume_checkpoint, safe_model_name
+from timm.models import load_checkpoint, model_parameters, resume_checkpoint, safe_model_name, create_model
 from timm.optim import create_optimizer_v2, optimizer_kwargs
 from timm.scheduler import create_scheduler_v2, scheduler_kwargs
 from timm.utils import ApexScaler, NativeScaler
 from torch.nn.parallel import DistributedDataParallel as NativeDDP
 
 from local_lib.data import create_custom_dataset, CustomRandAADataset
-from local_lib.models import create_custom_model, FeatExtractModel, MultiLabelModel # for regster local model
+from local_lib.models import FeatExtractModel, MultiLabelModel # for regster local model
 from local_lib.models.checkpoint import load_custom_checkpoint, filter_inconsistent_channels
 from local_lib.utils import TensorBoardWriter, parse_args
 
@@ -115,7 +115,7 @@ def main():
         # merge with pretrained_cfg of model, 'file' has priority over 'url' and 'hf_hub'.
         factory_kwargs['pretrained_cfg_overlay'] = dict(file=args.pretrained_path)
 
-    model = create_custom_model(
+    model = create_model(
         args.model,
         pretrained=args.pretrained,
         in_chans=in_chans,
