@@ -6,10 +6,13 @@
     AttributeError: module ‘distutils‘ has no attribute ‘version‘
 ```
 
-2.使用yum安装'mesa-libGL'解决如下问题：
+2.执行如下安装命令解决加载第三方库报错问题：
 
 ```bash
+    'yum install -y mesa-libGL'--centos / 'apt-get install libgl1-mesa-glx'--ubuntu
     ImportError: libGL.so.1: cannot open shared object file: No such file or directory
+    'apt-get install libglib2.0-0'--ubuntu
+    ImportError: libgthread-2.0.so.0: cannot open shared object file: No such file or directory
 ```
 
 3.加`HF_ENDPOINT=https://hf-mirror.com`到python前，解决预训练模型下载失败：
