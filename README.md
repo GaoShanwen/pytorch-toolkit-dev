@@ -12,9 +12,9 @@ yolo-dev branch for object detection tasks.
 
 ### Supported Functions
 
-- [x] Detect object by YOLOv5/YOLOv6/YOLOv8.
+- [x] Detect/Track object by YOLOv5/YOLOv6/YOLOv8.
 - [ ] Convert model to ONNX/RKNN.
-- [x] Normalize codes before commit.
+- [ ] Support videos and images.
 
 ### Major Motivation
 
