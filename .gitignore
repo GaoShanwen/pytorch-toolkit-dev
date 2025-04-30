@@ -38,6 +38,7 @@ pip-delete-this-directory.txt
 
 # Input
 dataset/
+ckpts
 # unused file
 tools/before
 debug/
