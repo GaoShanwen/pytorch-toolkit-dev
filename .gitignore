@@ -39,11 +39,16 @@ pip-delete-this-directory.txt
 # Input
 dataset/
 ckpts
+*.pt
+data/*-dataset
+data/*_videos
 # unused file
-tools/before
 debug/
+core
 # output
 output
+vis_imgs
+
 
 # Unit test / coverage reports
 htmlcov/

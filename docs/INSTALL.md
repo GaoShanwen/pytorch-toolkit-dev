@@ -11,4 +11,6 @@ reference [Ultralytics’ INSTALL](https://docs.ultralytics.com/zh/quickstart/) 
 <pytorch-toolkit-dev> ~$ apt install ffmpeg
 <pytorch-toolkit-dev> ~$ git checkout yolo-dev
 <pytorch-toolkit-dev> ~$ pip install -r docs/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu102
+<pytorch-toolkit-dev> ~$ install opencv-contrib-python for yolov5 infer
+<pytorch-toolkit-dev> ~$ pip install opencv-contrib-python
 ```
