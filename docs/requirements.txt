@@ -3,15 +3,15 @@
 
 # Base ----------------------------------------
 matplotlib>=3.3.0
-ultralytics
+ultralytics==8.1.47
 numpy>=1.22.2 # pinned by Snyk to avoid a vulnerability
 opencv-python>=4.6.0
 pillow>=7.1.2
 pyyaml>=5.3.1
 requests>=2.23.0
 scipy>=1.4.1
-torch>=1.8.0
-torchvision>=0.9.0
+torch>=2.3.1+cu121
+torchvision>=0.18.1+cu121
 tqdm>=4.64.0
 
 # Logging -------------------------------------

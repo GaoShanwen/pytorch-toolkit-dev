@@ -12,13 +12,13 @@ yolo-dev branch for object detection tasks.
 
 ### Supported Functions
 
-- [x] Detect/Track object by YOLOv[3,5,6,8-12].
+- [x] Detect/Segment/Track object by YOLOv[3,5,6,8-12].
 - [ ] Convert model to ONNX/RKNN.
-- [x] Support videos and images.
+- [x] Support videos and images' inference.
 
 ### Major Motivation
 
-1.👀 Use the State-of-the-Art AI-classfication toolkit.
+1.👀 Use the State-of-the-Art AI-detection toolkit.
  + Various backbones and pretrained models
  + Bag of training tricks
  + Large-scale training configs
@@ -33,7 +33,7 @@ yolo-dev branch for object detection tasks.
 
 ### Install Environment
 
-For detailed installation guides, please refer to [INSTALL.md](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/yolo-dev/docs/environment.md).
+For detailed installation guides, please refer to [INSTALL.md](docs/INSTALL.md).
 
 ### Command Guides
 
@@ -43,7 +43,7 @@ Refer to [README-Train/Val Models](tools/README.md) for details.
 
 ## License
 
-This project is released under the [Apache 2.0 license](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/yolo-dev/LICENSE).
+This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Contribute
 
