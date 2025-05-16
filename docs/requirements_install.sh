@@ -1,5 +1,5 @@
 #!/bin/bash
-pip3 install numpy==1.21.6
+# pip3 install numpy==1.21.6
 pip3 install scipy==1.5.4
 pip3 install attrs==20.3.0
 pip3 install bcrypt==3.2.0
@@ -57,7 +57,7 @@ pip3 install zipp==3.6.0
 pip3 install pymongo
 pip3 install docker
 pip3 install DBUtils
-pip3 install pandas
+pip3 install pandas==2.0
 pip3 install PyMySQL
 pip3 install scikit-learn==0.19.2
 pip3 install scikit-image==0.17.2
@@ -66,3 +66,7 @@ pip3 install PyNaCl==1.2.1
 pip3 install opencv-python==4.1.0.25
 pip3 install lap
 pip3 install supervision
+
+pip3 install numpy==1.23.0
+pip3 install torch==2.3.1
+pip3 install ultralytics==8.1.47

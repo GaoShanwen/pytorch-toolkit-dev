@@ -14,3 +14,9 @@ reference [Ultralytics’ INSTALL](https://docs.ultralytics.com/zh/quickstart/) 
 <pytorch-toolkit-dev> ~$ install opencv-contrib-python for yolov5 infer
 <pytorch-toolkit-dev> ~$ pip install opencv-contrib-python
 ```
+
+this command for `libgthread-2.0.so.0` error.
+
+```bash
+apt-get install libglib2.0-dev
+```
