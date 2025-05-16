@@ -6,15 +6,15 @@ building a multitask training platform based on Pytorch
 yolo-dev branch for object detection tasks.
 
 [![](https://img.shields.io/badge/Python-3.8.18-3776AB?style=flat-square&logo=python&logoColor=FFFFFF)](https://www.python.org)
-[![](https://img.shields.io/badge/PyTorch-1.10.1+cu102-EE4C2C?style=flat-square&logo=pytorch&logoColor=FFFFFF)](https://pytorch.org)
-[![](https://img.shields.io/badge/Ultralytics-8.0.227-yellow.svg)](https://docs.ultralytics.com/zh/)
+[![](https://img.shields.io/badge/PyTorch-2.3.1+cu12-EE4C2C?style=flat-square&logo=pytorch&logoColor=FFFFFF)](https://pytorch.org)
+[![](https://img.shields.io/badge/Ultralytics-8.1.47-yellow.svg)](https://docs.ultralytics.com/zh/)
 [![](https://img.shields.io/badge/ONNX-1.14.0-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)](https://onnx.ai)
 
 ### Supported Functions
 
 - [x] Detect/Track object by YOLOv[3,5,6,8-12].
 - [ ] Convert model to ONNX/RKNN.
-- [ ] Support videos and images.
+- [x] Support videos and images.
 
 ### Major Motivation
 
@@ -39,14 +39,7 @@ For detailed installation guides, please refer to [INSTALL.md](https://github.co
 
 + Train & Validate with Training Curve
 
-Refer to [README-Train/Val Models](https://github.com/GaoShanwen/pytorch-toolkit-dev/blob/timm-dev/tools/README.md) for details.
-
-+ Normalize Codes Before Commit
-
-```bash
-<pytorch-toolkit-dev> ~$ # run this command after install black
-<pytorch-toolkit-dev> ~$ black --line-length=120 ./
-```
+Refer to [README-Train/Val Models](tools/README.md) for details.
 
 ## License
 
