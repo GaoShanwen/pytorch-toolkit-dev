@@ -1,6 +1,5 @@
 import cv2
 import os
-import json
 import numpy as np
 import argparse
 import random
@@ -20,7 +19,7 @@ def make_parser():
 
 
 def get_categories(args):
-    with open(os.path.join(f"data/{args.format}-dataset/{args.task}", "dataset.yaml"), 'r', encoding='utf-8') as file:
+    with open(os.path.join('/'.join(args.src_files.split("/")[:2]), args.task, "dataset.yaml"), 'r', encoding='utf-8') as file:
         data = yaml.safe_load(file)
     return [v for _, v in data["names"].items()]
 
@@ -28,8 +27,7 @@ def get_categories(args):
 def generate_colors(n, saturation=0.8, lightness=0.6, seed=None):
     if seed is not None:
         random.seed(seed)
-    
-    golden_ratio = 0.618033988749895 # 黄金角分割法生成色相
+    golden_ratio = 0.618
     hues = []
     for i in range(n):
         hues.append((random.random() + i * golden_ratio) % 1.0)
@@ -41,7 +39,7 @@ def generate_colors(n, saturation=0.8, lightness=0.6, seed=None):
 
 
 def visualize_yolo_detection(img_path, obj_dir, categories=None, colors=None, thickness=2):
-    anno_path = img_path.replace(".jpg", ".txt")
+    anno_path = img_path.replace(".jpg", ".txt").replace(".jpeg", ".txt")
     if not os.path.exists(anno_path):
         return
     try:
@@ -74,12 +72,12 @@ def visualize_yolo_segmentation(image_path, obj_dir, class_names=None, colors=No
         raise FileNotFoundError(f"Image not found: {image_path}")
     h, w = image.shape[:2]
     overlay = image.copy()
-    label_path = img_path.replace(".jpg", ".txt")
+    label_path = img_path.replace(".jpg", ".txt").replace(".jpeg", ".txt")
     if not os.path.exists(label_path):
         return
     with open(label_path, 'r') as f:
         lines = f.readlines()
-
+    num = 0
     for line in lines:
         parts = list(map(float, line.strip().split()))
         if len(parts) < 3 or (len(parts)-1) % 2 != 0:
@@ -89,25 +87,21 @@ def visualize_yolo_segmentation(image_path, obj_dir, class_names=None, colors=No
         class_id = int(parts[0])
         points_normalized = np.array(parts[1:], dtype=np.float32).reshape(-1, 2)
         
-        # 将归一化坐标转换为像素坐标
         points = (points_normalized * np.array([[w, h]])).astype(np.int32)
         color = colors[class_id]
 
-        # 绘制多边形填充和边界
         cv2.fillPoly(overlay, [points], color)
         cv2.polylines(overlay, [points], isClosed=True, color=color, thickness=thickness)
 
-        # 添加类别标签（若有类别名称）
         if class_names:
             label = f"{class_names[class_id]}"
             text_pos = (points[0][0], points[0][1] - 10)
             cv2.putText(overlay, label, text_pos, cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, thickness)
-
-    # 叠加透明图层
+        num += 1
+    
     img = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
     img_base = os.path.basename(image_path).split(".")[0]
     cv2.imwrite(os.path.join(obj_dir, f'vis_{img_base}.jpg'), img)
-    
 
 
 if __name__ == '__main__':

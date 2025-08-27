@@ -6,53 +6,7 @@ import argparse
 import random
 from tkinter import _flatten
 import yaml
-
-
-# 定义颜色字典
-colors = [
-    (255, 0, 0),  # 蓝色
-    (0, 255, 0), # 绿色 
-    (0, 165, 255),  # 橙色
-    (0, 0, 255),  # 红色
-    (0, 255, 255), # 
-    (0, 255, 0), # 绿色 
-    (255, 0, 0),  # 蓝色
-    (0, 255, 0), # 绿色 
-    (165, 255, 0),  # 橙色
-    (165, 0, 255),  # 红色
-    (165, 255, 255), # 
-    (165, 125, 0), # 绿色 
-    (255, 255, 255), # 绿色 
-    (125, 125, 125), # 绿色 
-    (165, 255, 0),  # 橙色
-    (165, 0, 255),  # 红色
-    (165, 255, 255), # 
-    (165, 125, 0), # 绿色 
-    (255, 255, 255), # 绿色 
-    (125, 125, 125), # 绿色 
-]
-num_labels=[f"{i:02d}" for i in range(15)]
-# categories = {
-#     "candp":["Truck", "", "Person"], 
-#     "mandp": ["MineCar", "MineCarHead", "Person"],
-#     "TailLight": ["MineCar", "PersonMineCar", "Person", "MineCarHead", "MineCarRear"],
-#     "hld": ["Truck", "", "Person", "LightGreen", "LightRed"],
-#     "allcar": num_labels,
-#     "jczy": num_labels,
-#     "stopper": ["MineCar", "MineCarHead", "Person", "FrameMineCar", "BoardMineCar", "StopperUp", "StopperDown"],
-#     "VehiclePublic": [
-#         "defaulta","animal","person","movable_object.barrier","movable_object.debris",
-#         "movable_object.pushable_pullable","movable_object.trafficcone",
-#         "static_object.bicycle_rack","vehicle.bicycle","vehicle.bus","vehicle.car",
-#         "vehicle.construction","vehicle.emergency.ambulance","vehicle.emergency.police",
-#         "vehicle.motorcycle","vehicle.trailer","vehicle.truck"
-#     ],
-#     "VehicleGeneral": [
-#         "VGRMineCarHead","VGRMineCar","Person","VPRVanCar","VGRFrameCar","VGRBoardCar","LGreenCircle",
-#         "LRedCircle","LGreenNumber","LRedNumber","LGreenMark","LRedMark","SGTTruck","SPICar","OGTBigTruck","OCIWorkingCar"
-#     ],
-#     "DargeVehicle": ["TankUP", "TriangleWarning", "DangerWarning", "LicensePlate", "BigTruck"]
-# }
+import colorsys
 
 
 def make_parser():
@@ -64,12 +18,28 @@ def make_parser():
     return parser.parse_args()
 
 
+def generate_colors(n, saturation=0.8, lightness=0.6, seed=None):
+    if seed is not None:
+        random.seed(seed)
+    
+    golden_ratio = 0.618033988749895 # 黄金角分割法生成色相
+    hues = []
+    for i in range(n):
+        hues.append((random.random() + i * golden_ratio) % 1.0)
+    colors = []
+    for h in hues:
+        r, g, b = colorsys.hls_to_rgb(h, lightness, saturation)
+        colors.append( (int(r*255), int(g*255), int(b*255)) )
+    return colors
+
+
 if __name__ == '__main__':
     args = make_parser()
     with open(os.path.join("data/det-dataset", args.task, "dataset.yaml"), 'r', encoding='utf-8') as file:
         data = yaml.safe_load(file)
         categories = [v for _, v in data["names"].items()]
     print("categories are: ", categories)
+    colors = generate_colors(len(categories))
     with open(args.src_files, 'r') as f:
         imgs = [line.strip() for line in f.readlines()]
     obj_dir = os.path.join(args.obj_root, args.task)

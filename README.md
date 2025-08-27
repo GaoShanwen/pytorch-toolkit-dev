@@ -12,8 +12,8 @@ yolo-dev branch for object detection tasks.
 
 ### Supported Functions
 
-- [x] Detect/Segment/Track object by YOLOv[3,5,6,8-12].
-- [ ] Convert model to ONNX/RKNN.
+- [x] Detect/Segment/Track object by YOLOv[8-11].
+- [x] Convert model to ONNX/Tensorrt.
 - [x] Support videos and images' inference.
 
 ### Major Motivation

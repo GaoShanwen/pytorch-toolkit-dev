@@ -2,7 +2,7 @@
 ## command for yolov8-seg-train
 
 ```bash
-<pytorch-toolkit-dev> ~$ sh tools/train.sh overflow yolov8n-seg.pt '' 20 64 640
+<pytorch-toolkit-dev> ~$ sh tools/train.sh overflow yolov8n-seg.pt '' 20 64 640 seg
 ```
 
 ## command for yolov8-seg-infer

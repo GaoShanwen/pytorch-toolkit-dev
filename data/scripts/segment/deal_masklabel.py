@@ -125,7 +125,7 @@ def labelme_to_yolo_seg(json_dir, class_map):
 
 
 if __name__ == "__main__":
-    JSON_DIR = "data/seg-dataset/overflow/train.txt"  # Labelme JSON文件目录
+    JSON_DIR = "data/seg-dataset/overflow/data.txt"  # Labelme JSON文件目录
     CLASS_MAP = {"TruckBody": 0, "Cargo": 1}  # 类别映射
 
     labelme_to_yolo_seg(JSON_DIR, CLASS_MAP)
