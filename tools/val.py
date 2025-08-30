@@ -1,39 +1,30 @@
-import argparse
-import warnings
-warnings.filterwarnings('ignore')
+######################################################
+# author: gaowenjie
+# email: gaoshanwen@bupt.cn
+# date: 2025.08.27
+# filenaem: val.py
+# function: validate dataset use yolo.
+######################################################
 from ultralytics import YOLO
+import sys
+sys.path.append('.')
+from local_lib.utils.set_parse import parse_args
+from local_lib.models.det_ignore import WithIgnoreValidator
 
-def main(opt):
-    yaml = opt.cfg
-    model = YOLO(yaml) 
-
-    model.info()
-
-    model = YOLO('yolov8n.pt')
-
+def validate(args):
+    print(args)
+    model = YOLO(model=args.model, task=args.task)
+    if args.options.pop("with_ignore", False):
+        args.options.update({"validator": WithIgnoreValidator})
     model.val(
-        data=opt.data,
+        data=args.data,
         split='val',
-        imgsz=opt.imgsz,
-        batch=opt.batch,
-        # channels=4,
-        # use_simotm='RGBT',
-        # rect=False,
-        # save_json=True, # if you need to cal coco metrice
-        # project='runs/val/LLVIP_r20',
-        # name='LLVIP_r20-yolov8n-no_pretrained',
+        imgsz=args.imgsz,
+        batch=args.batch,
+        device=args.device,
+        **args.options if args.options else {},
     )
 
 
-def parse_opt(known=False):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default= r'yolov8n.pt', help='initial weights path')
-    parser.add_argument('--artifact_alias', type=str, default='latest', help='W&B: Version of dataset artifact to use')
-
-    opt = parser.parse_known_args()[0] if known else parser.parse_args()
-    return opt
-
-
 if __name__ == "__main__":
-    opt = parse_opt()
-    main(opt)
+    validate(parse_args())

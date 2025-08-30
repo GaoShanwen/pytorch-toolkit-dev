@@ -1,0 +1,1 @@
+from .yolopro import YOLOPro
