@@ -1,5 +1,6 @@
 from ultralytics import YOLO
 import os
+import shutil
 import argparse
 
 
@@ -19,7 +20,8 @@ if __name__ == '__main__':
     src_dir = os.path.join(src_root, model_version)
     model = YOLO(os.path.join(src_dir, 'weights/last.pt'), task="detect")
 
-    obj_path = f"ckpts/{args.task}_{model_version}.onnx"
-    print(model_dirs, f"saved in {obj_path}")
+    obj_path = f"tools/convert/model/{args.task}_{model_version}.onnx"
     path = model.export(format="onnx", simplify=True, device=0, opset=12, dynamic=False, imgsz=640)
-    os.path.rename(path, obj_path)
+    # print(path, obj_path)
+    shutil.move(path, obj_path)
+    print(model_dirs, f"saved in {obj_path}")

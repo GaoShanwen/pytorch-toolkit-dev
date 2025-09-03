@@ -55,8 +55,7 @@ class WithIgnoreLoss(v8DetectionLoss):
         # Targets
         targets = torch.cat((batch["batch_idx"].view(-1, 1), batch["cls"].view(-1, 1), batch["bboxes"], batch["iscrowds"].view(-1, 1)), 1)
         targets = self.preprocess(targets.to(self.device), batch_size, scale_tensor=imgsz[[1, 0, 1, 0]])
-        gt_labels, gt_bboxes, gt_iscrowds = targets.split((1, 4, 1), 2)  # cls, xyxy
-        # Filter iscrowd targets 
+        gt_labels, gt_bboxes, gt_iscrowds = targets.split((1, 4, 1), 2)  # cls, xyxy, iscrowd
         mask_gt = gt_bboxes.sum(2, keepdim=True).gt_(0)
 
         # Pboxes
@@ -77,17 +76,16 @@ class WithIgnoreLoss(v8DetectionLoss):
             target_bboxes /= stride_tensor
             target_iscrowds = target_iscrowds[fg_mask].bool()
             if target_iscrowds.sum():
-                ig_ioas = box_ioa(pred_bboxes[fg_mask].T, target_bboxes[fg_mask], x1y1x2y2=False, istrain=True)
-                # save_idx = ((ig_ioas <= self.ioav) | target_iscrowds | \
-                #             torch.argmax(target_scores[fg_mask], dim=1) != torch.argmax(pred_scores[fg_mask], dim=1))
-                save_idx = ((ig_ioas <= self.ioav) | target_iscrowds | \
+                ig_ioas = box_ioa(pred_bboxes[fg_mask].T, target_bboxes[fg_mask], istrain=True)
+                save_idx = ((ig_ioas <= self.ioav) | ~target_iscrowds | \
                             target_labels[fg_mask] != torch.argmax(pred_scores[fg_mask], dim=1))
                 device = fg_mask.device
-                keeps = torch.zeros(fg_mask.sum()).bool().to(device)
-                keeps[save_idx] = torch.ones((save_idx.sum())).bool().to(device)
-                _mask = fg_mask.clone()
-                _mask[fg_mask] = keeps
-                fg_mask = _mask
+                keeps = torch.zeros(fg_mask.sum(), dtype=torch.float32).to(device)
+                keeps[save_idx] = torch.ones((save_idx.sum()), dtype=torch.float32).to(device)
+                target_scores[fg_mask].mul_(keeps[:, None])
+                with torch.no_grad():
+                    pred_scores[fg_mask].mul_(keeps[:, None])
+                fg_mask[fg_mask.clone()] = keeps.bool()
 
         target_scores_sum = max(target_scores.sum(), 1)
 

@@ -13,12 +13,9 @@ from local_lib.models import YOLOPro
 
 def train(args):
     print(args)
-    if args.options.pop("with_ignore", False):
-        model = YOLOPro(model=args.model, task=args.task)
-    else:
-        model = YOLO(model=args.model, task=args.task) #YOLO(args.data).load(args.model)
-    # args.options.pop("with_ignore")
-    # model = YOLOPro(model=args.model, task=args.task)
+    args.options = {} if args.options is None else args.options
+    model_name = YOLOPro if args.options.pop("with_ignore", False) else YOLO
+    model = model_name(model=args.model, task=args.task)
     model.train(
         project=args.project,  # 保存训练结果的项目目录名称。允许有组织地存储不同的实验。
         name=args.name,  # 训练运行的名称。用于在项目文件夹内创建一个子目录，用于存储训练日志和输出结果。

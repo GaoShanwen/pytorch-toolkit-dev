@@ -9,14 +9,15 @@ import torch
 from pathlib import Path
 
 from ultralytics.models.yolo.detect import DetectionValidator
+from ultralytics.data import build_dataloader
 from ultralytics.utils import ops
 
-from ...data import build_yolopro_dataset, box_ioa
+from ...data import YOLOProDataset, build_yolopro_dataset, box_ioa
 
 class WithIgnoreValidator(DetectionValidator):
-    def __init__(self, ioav=0.25, **kwargs):
+    def __init__(self, dataloader=None, save_dir=None, pbar=None, args=None, _callbacks=None, ioav=0.25):
         self.ioav = ioav
-        super(WithIgnoreValidator, self).__init__(**kwargs)
+        super(WithIgnoreValidator, self).__init__(dataloader, save_dir, pbar, args, _callbacks)
 
     def build_dataset(self, img_path, mode="val", batch=None):
         """
@@ -28,6 +29,11 @@ class WithIgnoreValidator(DetectionValidator):
             batch (int, optional): Size of batches, this is for `rect`. Defaults to None.
         """
         return build_yolopro_dataset(self.args, img_path, batch, self.data, mode=mode, stride=self.stride)
+
+    def get_dataloader(self, dataset_path, batch_size):
+        loader = super(WithIgnoreValidator, self).get_dataloader(dataset_path, batch_size)
+        loader.collate_fn = YOLOProDataset.collate_fn
+        return loader
 
     def preprocess(self, batch):
         """Preprocesses batch of images for YOLO training."""

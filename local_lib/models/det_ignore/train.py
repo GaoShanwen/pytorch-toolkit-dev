@@ -16,9 +16,6 @@ from .tasks import WithIgnoreModel
 from .val import WithIgnoreValidator
 
 class WithIgnoreTrainer(DetectionTrainer):
-    def __init__(self, ioav=0.25, **kwargs):
-        super(WithIgnoreTrainer, self).__init__(**kwargs)
-
     def build_dataset(self, img_path, mode="train", batch=None):
         """
         Build YOLO Dataset.
