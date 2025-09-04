@@ -5,16 +5,20 @@ building a multitask training platform based on Pytorch
 
 yolo-dev branch for object detection tasks.
 
-[![](https://img.shields.io/badge/Python-3.8.18-3776AB?style=flat-square&logo=python&logoColor=FFFFFF)](https://www.python.org)
-[![](https://img.shields.io/badge/PyTorch-2.3.1+cu12-EE4C2C?style=flat-square&logo=pytorch&logoColor=FFFFFF)](https://pytorch.org)
+[![](https://img.shields.io/badge/Python-3.9.12-3776AB?style=flat-square&logo=python&logoColor=FFFFFF)](https://www.python.org)
+[![](https://img.shields.io/badge/PyTorch-2.7.1+cu12-EE4C2C?style=flat-square&logo=pytorch&logoColor=FFFFFF)](https://pytorch.org)
 [![](https://img.shields.io/badge/Ultralytics-8.1.47-yellow.svg)](https://docs.ultralytics.com/zh/)
 [![](https://img.shields.io/badge/ONNX-1.14.0-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)](https://onnx.ai)
+
+![image](docs/demo.jpg)
 
 ### Supported Functions
 
 - [x] Detect/Segment/Track object by YOLOv[8-11].
 - [x] Convert model to ONNX/Tensorrt.
 - [x] Support videos and images' inference.
+- [x] Support ignore regions for detect task.
+- [x] Support visualized badcase.
 
 ### Major Motivation
 
