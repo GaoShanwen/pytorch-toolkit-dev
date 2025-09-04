@@ -10,7 +10,9 @@ yolo-dev branch for object detection tasks.
 [![](https://img.shields.io/badge/Ultralytics-8.1.47-yellow.svg)](https://docs.ultralytics.com/zh/)
 [![](https://img.shields.io/badge/ONNX-1.14.0-005CED?style=flat-square&logo=ONNX&logoColor=FFFFFF)](https://onnx.ai)
 
-![image](docs/demo.jpg)
+<div align="center";style="display: none;">
+    <img src="docs/demo4yolo.jpg" width="70%" alt="" />
+</div>
 
 ### Supported Functions
 
