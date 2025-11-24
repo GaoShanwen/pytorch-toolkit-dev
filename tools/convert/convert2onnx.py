@@ -1,4 +1,7 @@
 from ultralytics import YOLO
+import sys
+sys.path.append('.')
+from local_lib.models import YOLOPro
 import os
 import shutil
 import argparse
@@ -14,11 +17,13 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     src_root = f"ckpts/{args.task}"
-    model_dirs = os.listdir(src_root)
+    model_dirs = [name for name in os.listdir(src_root) if not name.startswith("V5")]
     assert len(model_dirs), "Couldn't find model directory in %s" % src_root
     model_version = sorted(model_dirs)[-1]
     src_dir = os.path.join(src_root, model_version)
-    model = YOLO(os.path.join(src_dir, 'weights/last.pt'), task="detect")
+    print(f"load model from {src_dir}")
+    model_name = YOLOPro if args.task == "vehicle" else YOLO
+    model = model_name(os.path.join(src_dir, 'weights/last.pt'), task="detect")
 
     obj_path = f"tools/convert/model/{args.task}_{model_version}.onnx"
     path = model.export(format="onnx", simplify=True, device=0, opset=12, dynamic=False, imgsz=640)
