@@ -12,7 +12,7 @@ def make_parser():
     parser = argparse.ArgumentParser("visualize boxes parameters")
     parser.add_argument("-s", "--src-files", type=str, required=True, default=None)
     parser.add_argument("-t", "--task", type=str, required=True, default=None)
-    parser.add_argument("-f", "--format", type=str, default="det")
+    parser.add_argument("-f", "--format", type=str, default="seg")
     parser.add_argument("-o", "--obj-root", type=str, default="vis_imgs")
     parser.add_argument("--k", type=int, default=1)
     return parser.parse_args()

@@ -21,7 +21,7 @@ def generate_colors(n, saturation=0.8, lightness=0.6, seed=None):
     if seed is not None:
         random.seed(seed)
     
-    golden_ratio = 0.618033988749895 # 黄金角分割法生成色相
+    golden_ratio = 0.618034 # 黄金角分割法生成色相
     hues = []
     for i in range(n):
         hues.append((random.random() + i * golden_ratio) % 1.0)
@@ -55,16 +55,16 @@ if __name__ == '__main__':
         except:
             print(f"Error in parsing {anno_path}")
             continue
-        # boxes = [b for b in boxes if b[0] == 0]
+        # boxes = [b for b in boxes if b[0] == 11]
         if not boxes:
             continue
         img = cv2.imread(img_path)
         height, width, _ = img.shape
         for box in boxes:
-            l, x, y, w, h = box
+            l, x, y, w, h, *_ = box
             if l > len(categories):
                 continue
-            name = categories[l]
+            name = categories[l] + str(*_)
             color = colors[l]
             w, h = round(width * w), round(height * h)
             x, y = round(width * x - w / 2), round(height * y - h / 2)

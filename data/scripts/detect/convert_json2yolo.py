@@ -16,7 +16,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     assert args.format in ["box", "seg"], f"only support box or seg, you set is {args.format}"
-    with open(os.path.join("data/dst-dataset", args.task, "dataset.yaml"), 'r', encoding='utf-8') as file:
+    with open(os.path.join("data/det-dataset", args.task, "dataset.yaml"), 'r', encoding='utf-8') as file:
         data = yaml.safe_load(file)
         cats = [v for _, v in data["names"].items()]
     print("categories are: ", cats)
