@@ -72,20 +72,27 @@ class WithIgnoreLoss(v8DetectionLoss):
         )
 
         # Filter iscrowd predictions
-        if fg_mask.sum():
+        fg_mask_sum = fg_mask.sum()
+        if fg_mask_sum:
             target_bboxes /= stride_tensor
             target_iscrowds = target_iscrowds[fg_mask].bool()
             if target_iscrowds.sum():
-                ig_ioas = box_ioa(pred_bboxes[fg_mask].T, target_bboxes[fg_mask], istrain=True)
-                save_idx = ((ig_ioas <= self.ioav) | ~target_iscrowds | \
+                _ioas = box_ioa(pred_bboxes[fg_mask].T, target_bboxes[fg_mask], istrain=True)
+                save_idx = ((_ioas <= self.ioav) | ~target_iscrowds | \
                             target_labels[fg_mask] != torch.argmax(pred_scores[fg_mask], dim=1))
                 device = fg_mask.device
-                keeps = torch.zeros(fg_mask.sum(), dtype=torch.float32).to(device)
-                keeps[save_idx] = torch.ones((save_idx.sum()), dtype=torch.float32).to(device)
+                keeps = torch.where(
+                    save_idx, 
+                    torch.ones(fg_mask_sum, dtype=torch.float32, device=device),
+                    torch.zeros(fg_mask_sum, dtype=torch.float32, device=device)
+                )
+
                 target_scores[fg_mask].mul_(keeps[:, None])
                 with torch.no_grad():
                     pred_scores[fg_mask].mul_(keeps[:, None])
                 fg_mask[fg_mask.clone()] = keeps.bool()
+                del keeps, save_idx, _ioas
+                torch.cuda.empty_cache()
 
         target_scores_sum = max(target_scores.sum(), 1)
 

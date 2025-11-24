@@ -12,5 +12,9 @@
 ```
 
 ```bash
-<pytorch-toolkit-dev> ~$ python tools/val.py --data data/det-dataset/vehicle/ultralytics.yaml --model ckpts/vehicle/202508201651/weights/last.pt --task detect --option save_txt=true save_conf=true with_ignore=true
+<pytorch-toolkit-dev> ~$ python tools/val.py --data data/det-dataset/vehicle/ultralytics.yaml --task detect --option save_txt=true save_conf=true with_ignore=true --device 0,1,2,3,4,5,6,7 --batch 256 --model <last.pt>
+```
+
+```bash
+<pytorch-toolkit-dev> ~$ python data/scripts/detect/vis_badcase.py -t vehicle -s data/det-dataset/vehicle/v_val.txt
 ```

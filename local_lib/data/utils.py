@@ -24,8 +24,7 @@ def box_ioa(box1, box2, x1y1x2y2=True, istrain=False, eps=1e-7):
     else:
         inter = (torch.min(b1_x2, b2_x2[:, None]) - torch.max(b1_x1, b2_x1[:, None])).clamp(0) * \
             (torch.min(b1_y2, b2_y2[:, None]) - torch.max(b1_y1, b2_y1[:, None])).clamp(0)
-    area1 = (b1_x2 - b1_x1) * (b1_y2 - b1_y1)  # [N]
-    return inter / (area1 + eps)
+    return inter / ((b1_x2 - b1_x1 + eps) * (b1_y2 - b1_y1 + eps))
 
 def verify_pro_image_label(args):
     """Verify one image-label pair."""

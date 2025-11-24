@@ -33,9 +33,9 @@ def parse_args():
     parser.add_argument("--epochs", help="train epochs", default=100, type=int)
     parser.add_argument("--patience", help="early stop when metric without improve", default=0, type=int)
     parser.add_argument("--imgsz", help="input image size", default=640, type=int)
-    parser.add_argument("--batch", help="input data batch", default=128, type=int)
-    parser.add_argument("--device", help="GPU IDs", type=str, default='0,1,2,3')
-    parser.add_argument("--resume", default="", help="resume from checkpoint path directory.")
+    parser.add_argument("--batch", help="input data batch", default=256, type=int)
+    parser.add_argument("--device", help="GPU IDs", type=str, default='0,1,2,3,4,5,6,7')
+    parser.add_argument("--resume", action='store_true', help="resume from checkpoint path directory.")
     parser.add_argument(
         "--options",
         nargs="+",

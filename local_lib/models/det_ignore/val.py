@@ -9,7 +9,6 @@ import torch
 from pathlib import Path
 
 from ultralytics.models.yolo.detect import DetectionValidator
-from ultralytics.data import build_dataloader
 from ultralytics.utils import ops
 
 from ...data import YOLOProDataset, build_yolopro_dataset, box_ioa
@@ -79,10 +78,18 @@ class WithIgnoreValidator(DetectionValidator):
             cls, bbox = pbatch.pop("cls"), pbatch.pop("bbox")
             
             iscrowds = pbatch.pop("iscrowds").bool() # iscrowd
-            bbox_masks, cls, bbox = bbox[iscrowds], cls[~iscrowds], bbox[~iscrowds]
+            bbox_masks, cls_masks = bbox[iscrowds], cls[iscrowds]
+            bbox, cls = bbox[~iscrowds], cls[~iscrowds]
             if len(bbox_masks) != 0:
-                pred_keeps = (box_ioa(pred[:, :4].T, bbox_masks) <= self.ioav).all(dim=0)
-                pred = pred[pred_keeps]
+                size_tensor = torch.tensor(pbatch["imgsz"], dtype=torch.float32)  # Size→Tensor
+                scale_tensor = torch.tensor(pbatch["ori_shape"], dtype=torch.float32)     # list→Tensor
+                ratio = torch.ones([4], dtype=torch.float32, device=self.device)
+                ratio[:2] = ratio[:2] = size_tensor / scale_tensor
+                pred_keeps = (box_ioa(pred[:, :4].T, bbox_masks * ratio) <= self.ioav)
+                # print(pred_keeps.shape, ks_masks.shape)
+                pred_keeps[cls_masks.unsqueeze(1) != pred[:, 5]] = True
+                # maks for cls
+                pred = pred[pred_keeps.all(dim=0)]
             
             npr = len(pred)
             stat = dict(
