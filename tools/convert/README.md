@@ -1,8 +1,13 @@
 ## convert2onnx
 
 ```bash
-    ~$ for yolov8-det
-    ~$ python tools/convert/convert2onnx.py -t vehicle
+    ~$ for yolov8-detect
+    ~$ # add library
+    ~$ ln -s /root/anaconda3/envs/py39/lib/python3.9/site-packages/nvidia/cublas/lib/libcublas*.so.11 /usr/lib/
+    ~$ # convert2onnx
+    ~$ python tools/convert/export.py -t vehicle -f onnx
+    ~$ # convert2engine
+    ~$ python tools/convert/export.py -t vehicle -f engine
 ```
 
 ## convert2trt

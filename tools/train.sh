@@ -11,7 +11,7 @@ date=$(date +%Y%m%d%H%M)
 data_root=data/$(echo "$task" | cut -c1-3)-dataset
 # export OMP_NUM_THREADS=1
 
-device='0,1,2,3,4,5,6,7'
+device='0,1'
 num_devices=$(echo $device | grep -o '[0-9]' | wc -l)
 if [ -z $resume ]; then
     rm $data_root/$data_name/*.cache

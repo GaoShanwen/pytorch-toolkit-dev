@@ -1,7 +1,7 @@
 '''
 2024.11.08
 '''
-
+import yaml
 import os
 os.environ["YOLO_VERBOSE"] = "false"
 import argparse
@@ -33,9 +33,15 @@ def parse_args():
     return parser.parse_args()
 
 
-def detect(add_line, lines, color, width):
+def detect(add_line, lines, color, width, out_width, out_height):
     model = YOLO(opt.weights)
     names = model.names
+    print("names: ", names)
+    try:
+        with open("obj.yaml", errors='ignore') as f:
+            names = yaml.safe_load(f)['names']
+    except:
+        pass
 
     img = torch.zeros((1, 3, opt.img_size, opt.img_size))
     model(img)
@@ -44,9 +50,11 @@ def detect(add_line, lines, color, width):
     start(data_deque, opt.json_port, opt.rtsp_port, opt.mjpeg_port, out_size=(out_width, out_height), max_length=100)
 
     cap = cv2.VideoCapture(opt.video)
+    img_w, img_h = int(cap.get(3)), int(cap.get(4))
     frame_id = 0
     reconnected = False
     objects = []
+    results = []
 
     start_time = time.time()
     while True:
@@ -74,9 +82,9 @@ def detect(add_line, lines, color, width):
                 cls = boxes.cls.int().tolist()
                 conf = boxes.conf.tolist()
                 xywhn = boxes.xywhn.tolist()
-                # 获取掩码信息
-                masks = results.masks
-                masks_xy = masks.xy
+                # # 获取掩码信息
+                # masks = results.masks
+                # masks_xy = masks.xy
 
                 # 打包发送的信息  ============================ 
                 for i in range(len(boxes)):
@@ -88,17 +96,20 @@ def detect(add_line, lines, color, width):
                                 "center_y": xywhn[i][1], 
                                 "width": xywhn[i][2],
                                 "height": xywhn[i][3]},
-                            "masks_xy": masks_xy[i].tolist(),
+                            # "masks_xy": masks_xy[i].tolist(),
                     }
                     objects.append(obj)
-                frame = results.plot()
                 # 打包信息结束 ============================== 
 
 
         json = {"frame_id": frame_id,
                 "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "src_w": img_w, "src_h": img_h,
                 "objects": objects
         }
+        if not isinstance(results, list):
+            frame = results.plot(img=frame)
+        frame = cv2.resize(frame, (out_width, out_height))
         # 绘制候选区域
         if add_line is not None:
             for line, c, w in zip(lines, color, width):
@@ -110,14 +121,12 @@ def detect(add_line, lines, color, width):
 
 if __name__ == '__main__':
     opt = parse_args()
-    print(opt)
 
     # 从配置文件中获取out_size
     import json
     cwd = os.getcwd()[7:]
     business_json_list = ["business.json", "/root/MBAB/AI/{}/etc/business.json".format(cwd)]
-    out_width = 1280
-    out_height = 720
+    out_width, out_height = 640,360 #1280, 720
     add_line = lines = color = width = None
     for business_json in business_json_list:
         if os.path.isfile(business_json):
@@ -133,8 +142,14 @@ if __name__ == '__main__':
                 lines = add_line.get("lines")
                 width = add_line.get("width")
                 color = add_line.get("color")
+            
+            model_info = params.get("model_info", {})
+            opt.conf_thres = model_info.get("confidence", 50) * 0.01
+            opt.interval = model_info.get("skip_number", 1)
             break
+    
+    print(opt)
     # 读取配置文件 end
-    detect(add_line, lines, color, width)
+    detect(add_line, lines, color, width, out_width, out_height)
 
 
