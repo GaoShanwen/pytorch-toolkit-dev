@@ -1,14 +1,14 @@
 
-## command for yolov8-seg-train
+## command for yolov8-pose-train
 
 ```bash
-<pytorch-toolkit-dev> ~$ sh tools/train.sh overflow yolov8n-seg.pt '' 20 64 640 seg
+<pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set '' 100 16 640 pose
 ```
 
-## command for yolov8-seg-infer
+## command for yolov8-pose-infer
 
 ```bash
-<pytorch-toolkit-dev> ~$ task=overflow;python3 tools/inference.py --weights=ckpts/$task.pt --interval=5 --json_port=12081 --rtsp_port=12082 --video=data/test_videos/$task.mp4 --conf-thres=0.6
+<pytorch-toolkit-dev> ~$ python3 tools/predict.py --weights=runs/pode/ckpts/---best.pt --img_path=data/test_videos/ --options symmetry_match=True
 ```
 
 ```bash

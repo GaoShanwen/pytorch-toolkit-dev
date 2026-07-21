@@ -6,7 +6,11 @@
 # function: use custom yolo.
 ######################################################
 from ultralytics import YOLO
-from .det_ignore import WithIgnoreModel, WithIgnoreTrainer, WithIgnoreValidator, DetectionPredictor
+from ultralytics.models import yolo
+
+from .symmetry_match.tasks import SymmetryMatchPoseModel
+from .symmetry_match.val import SymmetryMatchPoseValidator
+from .symmetry_match.train import SymmetryMatchPoseTrainer
 
 
 class YOLOPro(YOLO):
@@ -14,11 +18,11 @@ class YOLOPro(YOLO):
     def task_map(self):
         """Map head to model, trainer, validator, and predictor classes."""
         return {
-            "detect": {
-                "model": WithIgnoreModel,
-                "trainer": WithIgnoreTrainer,
-                "validator": WithIgnoreValidator,
-                "predictor": DetectionPredictor,
+            "pose": {
+                "model": SymmetryMatchPoseModel,
+                "trainer": SymmetryMatchPoseTrainer,
+                "validator": SymmetryMatchPoseValidator,
+                "predictor": yolo.pose.PosePredictor,
             }
         }
-
+        

@@ -26,7 +26,7 @@ def merge_from_dict(args, merge_key="options"):
 def parse_args():
     parser = argparse.ArgumentParser(description="Train/Validate a model")
     parser.add_argument("--data", type=str, help="train config file path")
-    parser.add_argument("--model", help="yolov(8,9,11)(n,s,m,l,x).pt", default="yolov8s.pt", type=str)
+    parser.add_argument("--model", help="yolo(v8,v9,v11,26)(n,s,m,l,x).pt", default="yolov8s.pt", type=str)
     parser.add_argument("--task", help="task, eg:detect,segment,pose", type=str, default="detect")
     parser.add_argument("--project", help="the project name when save result", type=str, default="runs/")
     parser.add_argument("--name", help="the config directory name when save result", type=str, default="")
@@ -35,6 +35,7 @@ def parse_args():
     parser.add_argument("--imgsz", help="input image size", default=640, type=int)
     parser.add_argument("--batch", help="input data batch", default=256, type=int)
     parser.add_argument("--device", help="GPU IDs", type=str, default='0,1,2,3,4,5,6,7')
+    parser.add_argument("--workers", help="workers num", default=4, type=int)
     parser.add_argument("--resume", action='store_true', help="resume from checkpoint path directory.")
     parser.add_argument(
         "--options",

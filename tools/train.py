@@ -1,7 +1,7 @@
 ######################################################
 # author: gaowenjie
 # email: gaoshanwen@bupt.cn
-# date: 2025.08.27
+# date: 2026.07.21
 # filenaem: train.py
 # function: train dataset use yolo.
 ######################################################
@@ -10,12 +10,17 @@ import sys
 sys.path.append('.')
 from local_lib.utils import parse_args
 from local_lib.models import YOLOPro
+import torch.distributed as dist
+
 
 def train(args):
     print(args)
     args.options = {} if args.options is None else args.options
-    model_name = YOLOPro if args.options.pop("with_ignore", False) else YOLO
+    model_name = YOLOPro if args.options.pop("symmetry_match", False) else YOLO
     model = model_name(model=args.model, task=args.task)
+
+    # 通过环境变量自动配置
+    dist.init_process_group(backend='nccl', init_method='env://')
     model.train(
         project=args.project,  # 保存训练结果的项目目录名称。允许有组织地存储不同的实验。
         name=args.name,  # 训练运行的名称。用于在项目文件夹内创建一个子目录，用于存储训练日志和输出结果。
@@ -29,10 +34,10 @@ def train(args):
         save=True,  # 可保存训练检查点和最终模型权重。这对恢复训练或模型部署非常有用。
         save_period=-1,  # 保存模型检查点的频率，以 epochs 为单位。值为-1 时将禁用此功能。该功能适用于在长时间训练过程中保存临时模型。
         device=args.device,  # 指定用于训练的计算设备：单个 GPU (device=0）、多个 GPU (device=0,1)、CPU (device=cpu)，或苹果芯片的 MPS (device=mps).
+        workers=args.workers,  # 加载数据的工作线程数（每 RANK 多 GPU 训练）。影响数据预处理和输入模型的速度，尤其适用于多 GPU 设置。
         resume=args.resume,  # 从上次保存的检查点恢复训练。自动加载模型权重、优化器状态和历时计数，无缝继续训练。
         **args.options if args.options else {},
         # cache=False,  # 在内存中缓存数据集图像 (True/ram）、磁盘 (disk），或禁用它 (False).通过减少磁盘 I/O 提高训练速度，但代价是增加内存使用量。
-        # workers=8,  # 加载数据的工作线程数（每 RANK 多 GPU 训练）。影响数据预处理和输入模型的速度，尤其适用于多 GPU 设置。
         # exist_ok=False,  # 如果为 True，则允许覆盖现有的项目/名称目录。这对迭代实验非常有用，无需手动清除之前的输出。
         # pretrained=True,  # 决定是否从预处理模型开始训练。可以是布尔值，也可以是加载权重的特定模型的字符串路径。提高训练效率和模型性能。
         # optimizer='auto',  # 为培训选择优化器。选项包括 SGD, Adam, AdamW, NAdam, RAdam, RMSProp 等，或 auto 用于根据模型配置进行自动选择。影响收敛速度和稳定性
