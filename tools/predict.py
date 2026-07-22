@@ -1,7 +1,6 @@
 import argparse
 import sys
 import cv2
-import numpy as np
 import os
 import shutil
 from ultralytics import YOLO
@@ -26,8 +25,8 @@ def predict(args):
     model_name = YOLOPro if args.symmetry_match else YOLO
     model = model_name(args.weights)
     
-    # print("=== 原始图像推理 ===")
-    # model(args.img_path, save=args.save)
+    print("=== 原始图像推理 ===")
+    model(args.img_path, save=args.save)
     
     if args.flip:
         print("\n=== 水平翻转图像推理 ===")
