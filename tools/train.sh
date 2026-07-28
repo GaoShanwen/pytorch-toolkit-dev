@@ -11,6 +11,7 @@ task=$6
 date=$(date +%Y%m%d%H%M)
 data_root=data/$(echo "$task" | cut -c1-3)-dataset
 # export OMP_NUM_THREADS=1
+export CUDA_DISABLE_NVML=1 # disable nvml to avoid memory leak
 
 device='0'
 num_devices=$(echo $device | grep -o '[0-9]' | wc -l)
@@ -34,11 +35,13 @@ if [ -z $resume ]; then
     elif [ "$task" = "pose" ]; then
         data_root=data/$(echo "$task" | cut -c1-4)-dataset
         rm $data_root/$data_name/*.cache $data_root/$data_name/*/*.cache
-        pretrain=weights/yolo26n-pose.pt
+        pretrain=weights/yolo26s-pose.pt
         torchrun --nnodes=$num_devices --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
             --data $data_root/$data_name/dataset.yaml --model $pretrain --task $task --project ckpts \
             --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
-            --device $device --workers $num_devices --options symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]] #amp=false # close_mosaic=20 cos_lr=true 
+            --device $device --workers $num_devices --options mixed_data=True mixed_alpha=0.06 class_mapping={8:9,10:11} \
+            symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]] 
+            # amp=false close_mosaic=20 cos_lr=true 
     else
         echo task=$task error, only support 'detect', 'segment' or 'pose'
     fi
@@ -57,4 +60,3 @@ else
         echo task=$task error, only support 'detect', or 'pose'
     fi
 fi
-

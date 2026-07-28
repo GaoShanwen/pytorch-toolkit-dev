@@ -16,7 +16,7 @@ import torch.distributed as dist
 def train(args):
     print(args)
     args.options = {} if args.options is None else args.options
-    model_name = YOLOPro if args.options.pop("symmetry_match", False) else YOLO
+    model_name = YOLOPro if args.options.get("symmetry_match", False) or args.options.get("mixed_data", None) else YOLO
     model = model_name(model=args.model, task=args.task)
 
     # 通过环境变量自动配置
