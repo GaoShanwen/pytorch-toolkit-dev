@@ -12,6 +12,7 @@ def parse_args():
     parser.add_argument('--weight-path', type=str, required=True, help='weight path')
     parser.add_argument('--image-path', type=str, default="data/pose-dataset/Person/demo.jpeg", help='weight path')
     parser.add_argument('--symmetry-match', action='store_true', default=False, help='Whether to use symmetry match')
+    parser.add_argument('--mixed-data', action='store_true', default=False, help='Whether to use mixed data')
 
     return parser.parse_args()
 

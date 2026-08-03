@@ -75,7 +75,4 @@ class CustomPoseTrainer(PoseTrainer):
             rank=RANK,
             mode="train"
         )
-
-        # with open(self.save_dir / f"train_loader_{self.epoch}.txt", "w", encoding="utf-8") as f:
-        #     for file in self.train_loader.dataset.files:
-        #         f.writelines(f"{file}\n")
+    

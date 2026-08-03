@@ -26,24 +26,17 @@ if [ -z $resume ]; then
         #     --device $device --options amp=false # close_mosaic=20 cos_lr=true 
         yolo train detect data=$data_root/$data_name/dataset.yaml batch=$batch_size epochs=$set_epochs \
             device=$device task=$task project=ckpts name=$data_name/$date model=$pretrain
-    elif [ "$task" = "segment" ]; then
-        pretrain=weights/yolo26n-seg.pt
-        torchrun --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
-            --data $data_root/$data_name/dataset.yaml --model $pretrain --task $task --project ckpts \
-            --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
-            --device $device --options amp=false # close_mosaic=20 cos_lr=true 
     elif [ "$task" = "pose" ]; then
         data_root=data/$(echo "$task" | cut -c1-4)-dataset
         rm $data_root/$data_name/*.cache $data_root/$data_name/*/*.cache
         pretrain=weights/yolo26s-pose.pt
         torchrun --nnodes=$num_devices --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
-            --data $data_root/$data_name/dataset.yaml --model $pretrain --task $task --project ckpts \
+            --data $data_root/$data_name/dataset.yaml --model $pretrain --task $task --project lingxin \
             --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
-            --device $device --workers $num_devices --options mixed_data=True mixed_alpha=0.06 class_mapping={8:9,10:11} \
-            symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]] 
-            # amp=false close_mosaic=20 cos_lr=true 
+            --device $device --workers $num_devices --options mixed_data=True mixed_alpha=0.06 \
+            symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]] #func=tune space="{lr0:(5e-4,0.01,'uniform')}" #,mixed_alpha:(0.06,0.15,'uniform')
     else
-        echo task=$task error, only support 'detect', 'segment' or 'pose'
+        echo task=$task error, only support 'detect' or 'pose'
     fi
 else
     if [ "$task" = "detect" ]; then
@@ -57,6 +50,6 @@ else
             --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
             --device $device --resume --workers $num_devices --options symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]]
     else
-        echo task=$task error, only support 'detect', or 'pose'
+        echo task=$task error, only support 'detect' or 'pose'
     fi
 fi

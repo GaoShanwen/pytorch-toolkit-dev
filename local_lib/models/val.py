@@ -1,6 +1,7 @@
 # local_lib/models/combo/val.py
 from copy import copy
 import torch
+import yaml
 
 from ultralytics.models.yolo.pose import PoseValidator
 from ultralytics.utils.metrics import box_iou
@@ -11,8 +12,36 @@ from ..data import build_mixed_dataset
 class CustomPoseValidator(PoseValidator):
     def __init__(self, *args, symmetry_categories=None, symmetry_pairs=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.symmetry_categories = symmetry_categories
-        self.symmetry_pairs = symmetry_pairs
+        if isinstance(kwargs.get("args").get("data"), str):
+            with open(kwargs.get("args").get("data"), 'r') as f:
+                data = yaml.safe_load(f)
+                _symmetry_categories = data.get("symmetry_categories", None)
+                _symmetry_pairs = data.get("symmetry_pairs", None)
+        else:
+            _symmetry_categories = data.get("symmetry_categories", None)
+            _symmetry_pairs = data.get("symmetry_pairs", None)
+        self.symmetry_categories = symmetry_categories or _symmetry_categories
+        self.symmetry_pairs = symmetry_pairs or _symmetry_pairs
+        assert self.symmetry_categories is not None and self.symmetry_pairs is not None, \
+            "symmetry_categories and symmetry_pairs must be provided"
+
+    def init_metrics(self, model: torch.nn.Module) -> None:
+        super().init_metrics(model)
+        orig_plot_matches = self.confusion_matrix.plot_matches
+        self.confusion_matrix.plot_matches = lambda img, im_file, save_dir, \
+            show_labels=True, show_conf=True: \
+            self._categorized_plot_matches(
+                orig_plot_matches, img, im_file, save_dir, show_labels, show_conf)
+
+    def _categorized_plot_matches(self, orig_fn, img, im_file, save_dir,
+                                  show_labels=True, show_conf=True):
+        fp = sum(len(v) for v in self.confusion_matrix.matches["FP"].values())
+        fn = sum(len(v) for v in self.confusion_matrix.matches["FN"].values())
+        if fp == 0 and fn == 0:
+            return
+        folder_name = "err" if fp != 0 and fn != 0 else \
+            ("fp" if fn == 0 and fp != 0 else "fn")
+        orig_fn(img, im_file, save_dir / folder_name, show_labels, show_conf)
 
     def build_dataset(self, img_path, mode="val", batch=None):
         return build_mixed_dataset(self.args, img_path, batch, self.data, mode=mode, rect=True, stride=self.stride)

@@ -62,3 +62,9 @@ class YOLOPro(YOLO):
         self.use_symmetry_match = kwargs.pop("symmetry_match", False)
         assert self.use_mixed_data or self.use_symmetry_match, "At least one of mixed_data or symmetry_match must be setted!"
         super().train(**kwargs)
+
+    def tune(self, **kwargs):
+        self.use_mixed_data = kwargs.pop("mixed_data", False)
+        self.use_symmetry_match = kwargs.pop("symmetry_match", False)
+        assert self.use_mixed_data or self.use_symmetry_match, "At least one of mixed_data or symmetry_match must be setted!"
+        super().tune(**kwargs)

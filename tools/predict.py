@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument('--weights', type=str, required=True, help='Path to the model weights file')
     parser.add_argument('--img_path', type=str, required=True, help='Path to the image or video file')
     parser.add_argument('--symmetry-match', action='store_true', default=False, help='Whether to use symmetry match')
+    parser.add_argument('--mix-data', action='store_true', default=False, help='Whether to use mixed data')
     parser.add_argument('--save', action='store_true', default=True, help='Save results')
     parser.add_argument('--flip', action='store_true', default=False, help='Enable horizontal flip inference')
     return parser.parse_args()
@@ -22,7 +23,7 @@ def parse_args():
 def predict(args):
     args = parse_args()
     print(args)
-    model_name = YOLOPro if args.symmetry_match else YOLO
+    model_name = YOLOPro if args.symmetry_match or args.mix_data else YOLO
     model = model_name(args.weights)
     
     print("=== 原始图像推理 ===")
@@ -35,7 +36,7 @@ def predict(args):
             flipped_img = cv2.flip(img, 1)
             
             model(flipped_img, save=args.save)
-            shutil.move(os.path.join("runs/pose/predict-2", "image0.jpg"), os.path.join("runs/pose/predict2", img_name))
+            shutil.move(os.path.join("runs/pose/predict", "image0.jpg"), os.path.join("runs/pose/predict2", img_name))
 
 
 if __name__ == '__main__':

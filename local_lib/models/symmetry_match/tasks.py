@@ -6,6 +6,8 @@ class SymmetryMatchPoseModel(PoseModel):
     def __init__(self, *args, **kwargs):
         self.symmetry_categories = kwargs.pop("symmetry_categories", None)
         self.symmetry_pairs = kwargs.pop("symmetry_pairs", None)
+        assert self.symmetry_categories is not None, "symmetry_categories must be provided"
+        assert self.symmetry_pairs is not None, "symmetry_pairs must be provided"
         super().__init__(*args, **kwargs)
 
     def init_criterion(self):

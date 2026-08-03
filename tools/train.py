@@ -16,12 +16,14 @@ import torch.distributed as dist
 def train(args):
     print(args)
     args.options = {} if args.options is None else args.options
-    model_name = YOLOPro if args.options.get("symmetry_match", False) or args.options.get("mixed_data", None) else YOLO
+    model_name = YOLOPro if args.options.get("symmetry_match", False) or args.options.get("mixed_data", False) else YOLO
     model = model_name(model=args.model, task=args.task)
+    train_func = getattr(model, args.options.pop("func", "train"))
+    # import pdb; pdb.set_trace()
 
     # 通过环境变量自动配置
     dist.init_process_group(backend='nccl', init_method='env://')
-    model.train(
+    train_func(
         project=args.project,  # 保存训练结果的项目目录名称。允许有组织地存储不同的实验。
         name=args.name,  # 训练运行的名称。用于在项目文件夹内创建一个子目录，用于存储训练日志和输出结果。
         model=args.model,  # 指定用于训练的模型文件。接受指向 .pt 预训练模型或 .yaml 配置文件。对于定义模型结构或初始化权重至关重要。

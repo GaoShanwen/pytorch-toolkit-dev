@@ -55,6 +55,12 @@ data/pose-dataset/
 <pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set runs/pose/ckpts/trainval_set/202607211944/weights/best.pt 50 16 640 pose
 ```
 
+### Validation Commands
+
+```bash
+<pytorch-toolkit-dev> ~$ python3 tools/val.py --weights <runs/.../best.pt> --data <dataset_name> [--symmetry_match] [--mixed_data]
+```
+
 ### Inference Commands
 
 ```bash
