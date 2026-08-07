@@ -10,11 +10,14 @@ from ultralytics.models import yolo
 
 from .train import CustomPoseTrainer
 from .val import CustomPoseValidator
+from .tasks import CustomPoseModel
 from .symmetry_match.tasks import SymmetryMatchPoseModel
 from .symmetry_match.val import SymmetryMatchPoseValidator
 from .symmetry_match.train import SymmetryMatchPoseTrainer
 from .mixed_data.train import MixedDataTrainer
 from .mixed_data.val import MixedDataValidator
+from .quad_eiou.tasks import QuadPoseModel
+from .quad_eiou.train import QuadPoseTrainer
 from ultralytics.nn.tasks import PoseModel
 
 
@@ -30,7 +33,7 @@ class YOLOPro(YOLO):
         if self.use_symmetry_match and self.use_mixed_data:
             base_map = {
                 "pose": {
-                    "model": SymmetryMatchPoseModel,
+                    "model": CustomPoseModel,
                     "trainer": CustomPoseTrainer,
                     "validator": CustomPoseValidator,
                     "predictor": yolo.pose.PosePredictor,
@@ -45,12 +48,21 @@ class YOLOPro(YOLO):
                     "predictor": yolo.pose.PosePredictor,
                 }
             }
-        else:
+        elif self.use_mixed_data:
             base_map = {
                 "pose": {
                     "model": PoseModel,
                     "trainer": MixedDataTrainer,
                     "validator": MixedDataValidator,
+                    "predictor": yolo.pose.PosePredictor,
+                }
+            }
+        elif self.use_quad_eiou:
+            base_map = {
+                "pose": {
+                    "model": QuadPoseModel,
+                    "trainer": QuadPoseTrainer,
+                    "validator": yolo.pose.PoseValidator,
                     "predictor": yolo.pose.PosePredictor,
                 }
             }
@@ -60,11 +72,13 @@ class YOLOPro(YOLO):
     def train(self, **kwargs):
         self.use_mixed_data = kwargs.pop("mixed_data", False)
         self.use_symmetry_match = kwargs.pop("symmetry_match", False)
-        assert self.use_mixed_data or self.use_symmetry_match, "At least one of mixed_data or symmetry_match must be setted!"
+        self.use_quad_eiou = kwargs.pop("quad_eiou", False)
+        assert self.use_mixed_data or self.use_symmetry_match or self.use_quad_eiou, "At least one of mixed_data or symmetry_match or quad_eiou must be setted!"
         super().train(**kwargs)
 
     def tune(self, **kwargs):
         self.use_mixed_data = kwargs.pop("mixed_data", False)
         self.use_symmetry_match = kwargs.pop("symmetry_match", False)
-        assert self.use_mixed_data or self.use_symmetry_match, "At least one of mixed_data or symmetry_match must be setted!"
+        self.use_quad_eiou = kwargs.pop("quad_eiou", False)
+        assert self.use_mixed_data or self.use_symmetry_match or self.use_quad_eiou, "At least one of mixed_data or symmetry_match or quad_eiou must be setted!"
         super().tune(**kwargs)

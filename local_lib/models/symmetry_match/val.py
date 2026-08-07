@@ -24,9 +24,7 @@ class SymmetryMatchPoseValidator(PoseValidator):
         if gt_kpts is None:
             return preds
         
-        # import pdb; pdb.set_trace()
         # 记录是否有任何修改
-        any_modified = False
         for si, pred in enumerate(preds):
             if len(pred) == 0:
                 continue

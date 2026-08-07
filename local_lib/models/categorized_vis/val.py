@@ -1,7 +1,7 @@
 import torch
-from ultralytics.models.yolo.detect import DetectionValidator
+from ultralytics.models.yolo.pose import PoseValidator
 
-class CategorizedVisValidator(DetectionValidator):
+class CategorizedVisValidator(PoseValidator):
     def init_metrics(self, model: torch.nn.Module) -> None:
         super().init_metrics(model)
         orig_plot_matches = self.confusion_matrix.plot_matches

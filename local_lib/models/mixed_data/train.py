@@ -2,15 +2,15 @@ from copy import copy
 import random
 import yaml
 
-from ultralytics.models.yolo.detect import DetectionTrainer
+from ultralytics.models.yolo.pose import PoseTrainer
 from ultralytics.utils import RANK
 from ultralytics.utils.torch_utils import unwrap_model
 
-from ...data import MixedDataset, build_mixed_dataset
+from ...data import build_mixed_dataset
 from .val import MixedDataValidator
 
 
-class MixedDataTrainer(DetectionTrainer):
+class MixedDataTrainer(PoseTrainer):
     def __init__(self, *args, **kwargs):
         overrides = kwargs.get("overrides", {})
         self.class_mapping = overrides.pop("class_mapping", None)

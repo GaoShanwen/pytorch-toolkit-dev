@@ -1,11 +1,11 @@
 from copy import copy
 
-from ultralytics.models.yolo.detect import DetectionValidator
+from ultralytics.models.yolo.pose import PoseValidator
 
 from ...data import build_mixed_dataset
 
 
-class MixedDataValidator(DetectionValidator):
+class MixedDataValidator(PoseValidator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

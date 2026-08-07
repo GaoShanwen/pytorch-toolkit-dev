@@ -33,12 +33,17 @@ if [ -z $resume ]; then
         torchrun --nnodes=$num_devices --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
             --data $data_root/$data_name/dataset.yaml --model $pretrain --task $task --project lingxin \
             --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
-            --device $device --workers $num_devices --options mixed_data=True mixed_alpha=0.06 \
-            symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]] #func=tune space="{lr0:(5e-4,0.01,'uniform')}" #,mixed_alpha:(0.06,0.15,'uniform')
+            --device $device --workers $num_devices --options \
+            mixed_data=True mixed_alpha=0.06 class_mapping={8:9,10:11} \
+            symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]] \
+            quad_eiou=True quad_categories=[5,6,7,8,9,10,11,12,13,14] quad_indices=[3,4,5,6] 
+            #func=tune space="{lr0:(5e-4,0.01)}" #,mixed_alpha:(0.06,0.15,'uniform')
     else
         echo task=$task error, only support 'detect' or 'pose'
     fi
 else
+    date=$(echo $resume | cut -d'/' -f5 | cut -d'.' -f4)
+    echo "resume from $resume, date=$date"
     if [ "$task" = "detect" ]; then
         torchrun --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
             --data $data_root/$data_name/dataset.yaml --model $resume --task $task --project ckpts \
@@ -48,7 +53,8 @@ else
         torchrun --nnodes=$num_devices --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
             --data $data_root/$data_name/dataset.yaml --model $resume --task $task --project ckpts \
             --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
-            --device $device --resume --workers $num_devices --options symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]]
+            --device $device --resume --workers $num_devices --options mixed_data=True mixed_alpha=0.06 \
+            symmetry_match=True symmetry_categories=[4,5,6,7] symmetry_pairs=[[1,2],[3,5],[4,6]]
     else
         echo task=$task error, only support 'detect' or 'pose'
     fi
