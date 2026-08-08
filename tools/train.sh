@@ -19,13 +19,13 @@ echo num_devices=$num_devices
 if [ -z $resume ]; then
     rm $data_root/$data_name/*.cache
     if [ "$task" = "detect" ]; then
-        pretrain=weights/yolo26n.pt
-        # torchrun --nnodes=$num_devices --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
-        #     --data $data_root/$data_name/dataset.yaml --model $pretrain --task $task --project ckpts \
-        #     --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
-        #     --device $device --options amp=false # close_mosaic=20 cos_lr=true 
-        yolo train detect data=$data_root/$data_name/dataset.yaml batch=$batch_size epochs=$set_epochs \
-            device=$device task=$task project=ckpts name=$data_name/$date model=$pretrain
+        pretrain=weights/yolo26s.pt
+        torchrun --nnodes=$num_devices --nproc_per_node=$num_devices --master_port=40401 tools/train.py \
+            --data $data_root/$data_name/dataset.yaml --model $pretrain --task $task --project ckpts \
+            --name $data_name/$date --epochs $set_epochs --patience 0 --imgsz $img_size --batch $batch_size \
+            --device $device #--options amp=false # close_mosaic=20 cos_lr=true 
+        # yolo train detect data=$data_root/$data_name/dataset.yaml batch=$batch_size epochs=$set_epochs \
+        #     device=$device task=$task project=ckpts name=$data_name/$date model=$pretrain
     elif [ "$task" = "pose" ]; then
         data_root=data/$(echo "$task" | cut -c1-4)-dataset
         rm $data_root/$data_name/*.cache $data_root/$data_name/*/*.cache

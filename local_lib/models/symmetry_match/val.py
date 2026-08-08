@@ -67,8 +67,6 @@ class SymmetryMatchPoseValidator(PoseValidator):
             if len(imgsz) == 2:
                 gt_boxes_pixel[..., [0, 2]] *= imgsz[1]  # x 坐标乘以宽度
                 gt_boxes_pixel[..., [1, 3]] *= imgsz[0]  # y 坐标乘以高度
-                # gt_boxes_pixel[..., [0, 1]] -= gt_boxes_pixel[..., [2, 3]] / 2.  # 将中心坐标转换为左上角坐标
-                # gt_boxes_pixel[..., [2, 3]] += gt_boxes_pixel[..., [0, 1]]  # 将左上角坐标转换为右下角坐标
                 # 先把宽高拷贝出来，防止后续被覆盖
                 w = gt_boxes_pixel[..., 2].clone()
                 h = gt_boxes_pixel[..., 3].clone()

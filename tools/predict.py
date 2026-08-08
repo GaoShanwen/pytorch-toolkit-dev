@@ -24,20 +24,27 @@ def parse_args():
 def predict(args):
     args = parse_args()
     print(args)
-    model_name = YOLOPro if args.symmetry_match or args.mix_data or args.quad_eiou else YOLO
-    model = model_name(args.weights)
+    # model_name = YOLOPro if args.symmetry_match or args.mix_data or args.quad_eiou else YOLO
+    Predictor = PosePredictor if args.symmetry_match or args.mix_data or args.quad_eiou else None
+    model = YOLO(args.weights)
     
     print("=== 原始图像推理 ===")
-    model.predict(args.img_path, save=args.save, predictor=PosePredictor)
+    model.predict(args.img_path, save=args.save, predictor=Predictor)
     
     if args.flip:
+        task = args.weights.split("/")[1]
+        os.makedirs(f"runs/{task}/predict2", exist_ok=True)
+
+        for img_file in os.listdir(f"runs/{task}/predict2"):
+            os.remove(os.path.join(f"runs/{task}/predict2", img_file))
+
         print("\n=== 水平翻转图像推理 ===")
         for img_name in os.listdir(args.img_path):
             img = cv2.imread(os.path.join(args.img_path, img_name))
             flipped_img = cv2.flip(img, 1)
             
-            model.predict(flipped_img, save=args.save, predictor=PosePredictor)
-            shutil.move(os.path.join("runs/pose/predict", "image0.jpg"), os.path.join("runs/pose/predict2", img_name))
+            model.predict(flipped_img, save=args.save, predictor=Predictor)
+            shutil.move(os.path.join(f"runs/{task}/predict", "image0.jpg"), os.path.join(f"runs/{task}/predict2", img_name))
 
 
 if __name__ == '__main__':

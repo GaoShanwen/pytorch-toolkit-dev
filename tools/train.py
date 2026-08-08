@@ -17,7 +17,7 @@ def train(args):
     print(args)
     args.options = {} if args.options is None else args.options
     model_name = YOLOPro if args.options.get("symmetry_match", False) or args.options.get("mixed_data", False) \
-        or args.options.get("quad_eiou", False) else YOLOPro
+        or args.options.get("quad_eiou", False) else YOLO
     model = model_name(model=args.model, task=args.task)
     train_func = getattr(model, args.options.pop("func", "train"))
     # import pdb; pdb.set_trace()

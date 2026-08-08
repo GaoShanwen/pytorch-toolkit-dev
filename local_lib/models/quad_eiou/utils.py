@@ -78,53 +78,6 @@ def quad_center_dist(gt_quads: torch.Tensor, pred_quads: torch.Tensor):
     return dist
 
 
-def polygon_iou(p1: np.ndarray, p2: np.ndarray):
-    """单样本凸四边形IoU"""
-    p1 = p1.astype(np.int32).reshape(-1, 1, 2)
-    p2 = p2.astype(np.int32).reshape(-1, 1, 2)
-    inter_area, _ = cv2.intersectConvexConvex(p1, p2)
-    area1 = cv2.contourArea(p1)
-    area2 = cv2.contourArea(p2)
-    union = area1 + area2 - inter_area
-    if union < 1e-8:
-        return 0.0
-    return inter_area / union
-
-
-def batch_polygon_iou(gt_quads: torch.Tensor, pred_quads: torch.Tensor) -> torch.Tensor:
-    """Batch convex quadrilateral IoU.
-
-    Args:
-        gt_quads: [B, 4, 2] ground truth quad vertices.
-        pred_quads: [B, 4, 2] predicted quad vertices.
-
-    Returns:
-        ious: [B] IoU values.
-    """
-    B = gt_quads.shape[0]
-    gt_np = gt_quads.detach().cpu().numpy()
-    pred_np = pred_quads.detach().cpu().numpy()
-    ious = np.zeros(B, dtype=np.float32)
-    for b in range(B):
-        ious[b] = polygon_iou(gt_np[b], pred_np[b])
-    return torch.from_numpy(ious).to(gt_quads.device)
-
-
 def quad_center(quad: np.ndarray):
     """四边形质心（四点平均）"""
     return quad.mean(axis=0)
-
-
-def iou_center_dist(gt_quads: np.ndarray, pred_quads: np.ndarray,
-                    gt_centers: np.ndarray, pred_centers: np.ndarray):
-    B = gt_quads.shape[0]
-    ious = np.zeros(B, dtype=np.float32)
-    center_dist = np.zeros(B, dtype=np.float32)
-
-    for b in range(B):
-        g = gt_quads[b]
-        p = pred_quads[b]
-        ious[b] = polygon_iou(g, p)
-        center_dist[b] = np.linalg.norm(gt_centers[b] - pred_centers[b])
-
-    return ious, center_dist
