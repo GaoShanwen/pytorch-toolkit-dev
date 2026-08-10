@@ -13,6 +13,7 @@ def parse_args():
     parser.add_argument('--image-path', type=str, default="data/pose-dataset/Person/demo.jpeg", help='weight path')
     parser.add_argument('--symmetry-match', action='store_true', default=False, help='Whether to use symmetry match')
     parser.add_argument('--mixed-data', action='store_true', default=False, help='Whether to use mixed data')
+    parser.add_argument('--task', type=str, default="pose", help='task')
 
     return parser.parse_args()
 
@@ -21,7 +22,7 @@ if __name__=="__main__":
     args = parse_args()
     # Load a pretrained YOLO26n model 
     model_name = YOLOPro if args.symmetry_match else YOLO
-    model = model_name(args.weight_path, task="pose")   
+    model = model_name(args.weight_path, task=args.task)   
 
     # # Evaluate the model's performance on the validation set
     # metrics = model.val()
