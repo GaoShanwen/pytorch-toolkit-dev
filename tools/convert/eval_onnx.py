@@ -145,13 +145,6 @@ def main():
         vis = img_orig.copy()
         draw_keypoints(vis, kpts_orig, scores[0], args.conf_thr)
 
-        gt_kpts = ann['keypoints']
-        for k in range(4):
-            kx, ky, kv = gt_kpts[k * 3], gt_kpts[k * 3 + 1], gt_kpts[k * 3 + 2]
-            if kv > 0:
-                cv2.drawMarker(vis, (int(kx), int(ky)), (0, 255, 255),
-                               cv2.MARKER_CROSS, 10, 2)
-
         save_path = os.path.join(args.out_dir, img_info['file_name'])
         cv2.imwrite(save_path, vis)
         print(f'Visualized: {save_path}')

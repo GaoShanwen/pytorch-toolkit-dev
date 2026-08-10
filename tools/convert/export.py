@@ -167,7 +167,6 @@ if __name__ == '__main__':
     args = parse_args()
 
     import local_lib.models.symmetry_match.rtmpose_head  # noqa: F401
-    import mmpose.models.data_preprocessors  # noqa: F401  register PoseDataPreprocessor
     from mmengine.registry import DefaultScope
     DefaultScope.get_instance('mmpose', scope_name='mmpose')
     cfg = Config.fromfile(args.config)
