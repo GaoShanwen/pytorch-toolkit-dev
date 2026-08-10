@@ -10,14 +10,17 @@ tools/
 ├── val.py              # Validation script
 ├── stream.py           # Stream inference script
 ├── inference.py        # Batch inference script
-├── convert/
-│   └── export.py       # Model export script
-└── yolov5/             # YOLOv5 related tools
+└── convert/
+    └── export.py       # Model export script
 ```
 
 ### Dataset Structure Requirements
 
 Training datasets must be placed under `data/pose-dataset/` directory:
+
+```bash
+ $<pytorch-toolkit-dev> ~$ python3 data/scripts/pose/preprocess_coco.py --mode yolo2coco --dataset_dir data/pose-dataset/BakingRecognize --train_file train260807.txt --out_file data/pose-dataset/BakingRefine/annotations/train260807.json
+```
 
 ```
 data/pose-dataset/
@@ -49,7 +52,7 @@ data/pose-dataset/
 **Examples**:
 ```bash
 # Train pose estimation model
-<pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set '' 100 16 640 pose
+<pytorch-toolkit-dev> ~$ sh tools/train.sh BakingRefine '' 100 64 192 pretrain
 
 # Resume training from checkpoint
 <pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set runs/pose/ckpts/trainval_set/202607211944/weights/best.pt 50 16 640 pose
@@ -58,13 +61,23 @@ data/pose-dataset/
 ### Validation Commands
 
 ```bash
-<pytorch-toolkit-dev> ~$ python3 tools/val.py --weights <runs/.../best.pt> --data <dataset_name> [--symmetry_match] [--mixed_data]
+<pytorch-toolkit-dev> ~$ python3 tools/val.py cfgs/rtmpose/pretrain_cspnext_udp/rtmpose-m_udp.py \
+  ckpts/rtmpose/BakingRefine/202608081607/epoch_80.pth --show-dir vis \
+  --cfg-options default_hooks.visualization.enable=True \
+    val_dataloader.dataset.data_root=data/pose-dataset/BakingRefine \
+    val_dataloader.dataset.ann_file=annotations/val260807.json \
+    test_dataloader.dataset.data_root=data/pose-dataset/BakingRefine \
+    test_dataloader.dataset.ann_file=annotations/val260807.json \
+    val_evaluator.ann_file=data/pose-dataset/BakingRefine/annotations/val260807.json \
+    test_evaluator.ann_file=data/pose-dataset/BakingRefine/annotations/val260807.json \
+    test_dataloader.dataset.pipeline.2.input_size=192,192
 ```
 
 ### Inference Commands
 
 ```bash
-<pytorch-toolkit-dev> ~$ python3 tools/predict.py --weights <runs/.../best.pt> --img_path <img_path> [--flip] [--save]
+<pytorch-toolkit-dev> ~$ python3 tools/predict.py cfgs/rtmpose/pretrain_cspnext_udp/rtmpose-m_udp.py \
+                            ckpts/rtmpose/BakingRefine/202608081607/epoch_40.pth <图片路径> --out-file <输出路径>
 ```
 
 **Parameter Description**:
@@ -77,3 +90,14 @@ data/pose-dataset/
 ```bash
 <pytorch-toolkit-dev> ~$ python3 tools/predict.py --weights runs/pose/ckpts/trainval_set/202607211944/weights/best.pt --img_path data/pose-dataset/demo.jpeg --flip --save
 ```
+
+### Model Export Commands
+
+```bash
+<pytorch-toolkit-dev> ~$ # Export model to ONNX format
+<pytorch-toolkit-dev> ~$ python3 tools/convert/export.py cfgs/rtmpose/pretrain_cspnext_udp/rtmpose-m_udp.py \
+                            ckpts/rtmpose/BakingRefine/202608081607/epoch_40.pth
+<pytorch-toolkit-dev> ~$ # Evaluate ONNX model
+<pytorch-toolkit-dev> ~$ python tools/convert/eval_onnx.py --ann data/pose-dataset/BakingRefine/annotations/val260807.json --onnx ckpts/rtmpose/BakingRefine/202608091326/best_coco_AP_epoch_90.onnx --input-size 256 192
+```
+

@@ -3,53 +3,40 @@
 # email: gaoshanwen@bupt.cn
 # date: 2026.07.29
 # filenaem: val.py
-# function: validate dataset use yolo.
+# function: validate dataset use yolo or mmpose.
+#   - mmpose mode: first arg is a .py config file, delegates to mmpose tools/test.py
+#   - yolo mode:   uses ultralytics YOLO validator
 ######################################################
-from ultralytics import YOLO
-
 import sys
-sys.path.append('.')
-from local_lib.utils import parse_args
-from local_lib.models.val import CustomPoseValidator
-from local_lib.models.symmetry_match.val import SymmetryMatchPoseValidator
-from local_lib.models.mixed_data.val import MixedDataValidator
-from local_lib.models.categorized_vis.val import CategorizedVisValidator
+import os
+import runpy
+import torch
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
+def _run_mmpose(config_path):
+    """Delegate to mmpose's test.py."""
+    mmpose_test = os.path.join(
+        os.path.dirname(__file__), '..', '..', 'mmpose', 'tools', 'test.py')
+    mmpose_test = os.path.abspath(mmpose_test)
+    if not os.path.exists(mmpose_test):
+        raise FileNotFoundError(f"mmpose test.py not found at {mmpose_test}")
 
-def get_validator(options):
-    use_symmetry_match = options.pop("symmetry_match", False)
-    use_mixed_data = options.pop("mixed_data", False)
-    use_categorized_vis = options.pop("categorized_vis", False)
+    # Register custom local_lib modules (metric) before loading config
+    import local_lib.models.symmetry_match.rtmpose_head  # noqa: F401
+    import local_lib.models.symmetry_match.rtmpose_metric  # noqa: F401
+    import local_lib.visualization.custom_visualizer  # noqa: F401
+    import local_lib.data.mix_dataset.coco_merge  # noqa: F401
 
-    if use_symmetry_match and use_mixed_data:
-        return CustomPoseValidator
-    if use_symmetry_match:
-        return SymmetryMatchPoseValidator
-    if use_mixed_data:
-        return MixedDataValidator
-    if use_categorized_vis:
-        return CategorizedVisValidator
-    return None
-
-
-def validate(args):
-    print(args)
-    args.options = {} if args.options is None else args.options
-
-    model = YOLO(model=args.model, task=args.task)
-
-    model.val(
-        validator=get_validator(args.options),
-        data=args.data,
-        split='val',
-        imgsz=args.imgsz,
-        batch=args.batch,
-        device=args.device,
-        workers=args.workers,
-        **args.options if args.options else {},
-    )
+    _torch_load_orig = torch.load
+    def _torch_load_patched(*args, **kwargs):
+        kwargs.setdefault('weights_only', False)
+        return _torch_load_orig(*args, **kwargs)
+    torch.load = _torch_load_patched
+    sys.path.insert(0, os.path.dirname(mmpose_test))
+    runpy.run_path(mmpose_test, run_name='__main__')
 
 
 if __name__ == "__main__":
-    validate(parse_args())
+    args = sys.argv[1:]
+    _run_mmpose(args[0])

@@ -1,51 +1,34 @@
-import argparse
+######################################################
+# author: gaowenjie
+# email: gaoshanwen@bupt.cn
+# date: 2026.07.29
+# filenaem: predict.py
+# function: predict dataset use yolo or mmpose.
+#   - mmpose mode: first arg is a .py config file, delegates to mmpose demo/image_demo.py
+#   - yolo mode:   uses ultralytics YOLO predictor
+######################################################
 import sys
-import cv2
 import os
-import shutil
-from ultralytics import YOLO
-from ultralytics.models.yolo.pose import PosePredictor
-
-sys.path.append('.')
-from local_lib.models import YOLOPro
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='YolLOv8 Pose Inference')
-    parser.add_argument('--weights', type=str, required=True, help='Path to the model weights file')
-    parser.add_argument('--img_path', type=str, required=True, help='Path to the image or video file')
-    parser.add_argument('--symmetry-match', action='store_true', default=False, help='Whether to use symmetry match')
-    parser.add_argument('--mix-data', action='store_true', default=False, help='Whether to use mixed data')
-    parser.add_argument('--quad-eiou', action='store_true', default=False, help='Whether to use quad EIoU')
-    parser.add_argument('--save', action='store_true', default=True, help='Save results')
-    parser.add_argument('--flip', action='store_true', default=False, help='Enable horizontal flip inference')
-    return parser.parse_args()
 
 
-def predict(args):
-    args = parse_args()
-    print(args)
-    # model_name = YOLOPro if args.symmetry_match or args.mix_data or args.quad_eiou else YOLO
-    Predictor = PosePredictor if args.symmetry_match or args.mix_data or args.quad_eiou else None
-    model = YOLO(args.weights)
-    
-    print("=== 原始图像推理 ===")
-    model.predict(args.img_path, save=args.save, predictor=Predictor)
-    
-    if args.flip:
-        task = args.weights.split("/")[1]
-        os.makedirs(f"runs/{task}/predict2", exist_ok=True)
-
-        for img_file in os.listdir(f"runs/{task}/predict2"):
-            os.remove(os.path.join(f"runs/{task}/predict2", img_file))
-
-        print("\n=== 水平翻转图像推理 ===")
-        for img_name in os.listdir(args.img_path):
-            img = cv2.imread(os.path.join(args.img_path, img_name))
-            flipped_img = cv2.flip(img, 1)
-            
-            model.predict(flipped_img, save=args.save, predictor=Predictor)
-            shutil.move(os.path.join(f"runs/{task}/predict", "image0.jpg"), os.path.join(f"runs/{task}/predict2", img_name))
+def _run_mmpose(config_path):
+    """Delegate to mmpose's demo/image_demo.py."""
+    mmpose_demo = os.path.join(
+        os.path.dirname(__file__), '..', '..', 'mmpose', 'demo', 'image_demo.py')
+    mmpose_demo = os.path.abspath(mmpose_demo)
+    if not os.path.exists(mmpose_demo):
+        raise FileNotFoundError(f"mmpose image_demo.py not found at {mmpose_demo}")
+    import runpy
+    import torch
+    _torch_load_orig = torch.load
+    def _torch_load_patched(*args, **kwargs):
+        kwargs.setdefault('weights_only', False)
+        return _torch_load_orig(*args, **kwargs)
+    torch.load = _torch_load_patched
+    sys.path.insert(0, os.path.dirname(mmpose_demo))
+    runpy.run_path(mmpose_demo, run_name='__main__')
 
 
-if __name__ == '__main__':
-    predict(parse_args())
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    _run_mmpose(args[0])
