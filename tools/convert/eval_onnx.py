@@ -68,8 +68,8 @@ def keypoints_to_original(kpts, input_size, center, scale):
 
 def draw_keypoints(img, kpts, scores, thr=0.3):
     for k in range(len(kpts)):
-        if scores[k] < thr:
-            continue
+        # if scores[k] < thr:
+        #     continue
         x, y = int(round(kpts[k, 0])), int(round(kpts[k, 1]))
         color = KEYPOINT_COLORS[k]
         cv2.circle(img, (x, y), 3, color, -1)
@@ -77,8 +77,8 @@ def draw_keypoints(img, kpts, scores, thr=0.3):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
 
     for a, b in SKELETON:
-        if scores[a] < thr or scores[b] < thr:
-            continue
+        # if scores[a] < thr or scores[b] < thr:
+        #     continue
         x1, y1 = int(round(kpts[a, 0])), int(round(kpts[a, 1]))
         x2, y2 = int(round(kpts[b, 0])), int(round(kpts[b, 1]))
         cv2.line(img, (x1, y1), (x2, y2), SKELETON_COLOR, 2)
@@ -94,7 +94,7 @@ def parse_args():
     parser.add_argument('--input-size', type=int, nargs=2, default=[192, 192],
                         help='Model input size (H W)')
     parser.add_argument('--simcc-split-ratio', type=float, default=2.0)
-    parser.add_argument('--conf-thr', type=float, default=0.3,
+    parser.add_argument('--conf-thr', type=float, default=0.0,
                         help='Confidence threshold for visualization')
     return parser.parse_args()
 
