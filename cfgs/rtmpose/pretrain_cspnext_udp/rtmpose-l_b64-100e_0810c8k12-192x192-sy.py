@@ -143,8 +143,8 @@ dataset_info = dict(
         10: {'link': ('rightbottom3', 'righttop3'), 'id': 10, 'color': [51, 153, 255]},
         11: {'link': ('righttop3', 'lefttop3'), 'id': 11, 'color': [51, 153, 255]},
     },
-    joint_weights=[1.] * 4,
-    sigmas=[0.05, 0.05, 0.05, 0.05],
+    joint_weights=[1.] * num_keypoints,
+    sigmas=[0.05] * num_keypoints,
 )
 
 # pipelines
