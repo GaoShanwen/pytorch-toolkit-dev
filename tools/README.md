@@ -61,16 +61,10 @@ data/pose-dataset/
 ### Validation Commands
 
 ```bash
-<pytorch-toolkit-dev> ~$ python3 tools/val.py cfgs/rtmpose/pretrain_cspnext_udp/rtmpose-m_udp.py \
-  ckpts/rtmpose/BakingRefine/202608081607/epoch_80.pth --show-dir vis \
-  --cfg-options default_hooks.visualization.enable=True \
-    val_dataloader.dataset.data_root=data/pose-dataset/BakingRefine \
-    val_dataloader.dataset.ann_file=annotations/val260807.json \
-    test_dataloader.dataset.data_root=data/pose-dataset/BakingRefine \
-    test_dataloader.dataset.ann_file=annotations/val260807.json \
-    val_evaluator.ann_file=data/pose-dataset/BakingRefine/annotations/val260807.json \
-    test_evaluator.ann_file=data/pose-dataset/BakingRefine/annotations/val260807.json \
-    test_dataloader.dataset.pipeline.2.input_size=192,192
+<pytorch-toolkit-dev> ~$ file=annotations/val260811.json;data_root=data/pose-dataset/BakingRefine;python3 tools/val.py ckpts/rtmpose/BakingRefine/202608111035/rtmpose-l_8xb64-100e_260811-192x192-sy.py ckpts/rtmpose/BakingRefine/202608111035/best_coco_AP_epoch_60.pth --show-dir vis --cfg-options default_hooks.visualization.enable=True visualizer.type=DynamicPoseVisualizer val_dataloader.dataset.data_root=$data_root val_dataloader.dataset.ann_file=$file \
+    test_dataloader.dataset.data_root=$data_root test_dataloader.dataset.ann_file=$file \
+    val_evaluator.ann_file=$data_root/$file test_evaluator.ann_file=$data_root/$file \
+    test_dataloader.dataset.pipeline.2.input_size=192,192 visualizer.save_by_category=True
 ```
 
 ### Inference Commands

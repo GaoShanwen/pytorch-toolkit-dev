@@ -276,7 +276,7 @@ class SymmetryMatchCocoMetric(CocoMetric):
                         best_thr = float(sc_cat[r_idx]) if sc_cat is not None else 0.0
 
                 rows.append({
-                    'Category': cat_name, 'Instances': num_instances,
+                    'Category': cat_name, 'CategoryID': str(cat_id), 'Instances': num_instances,
                     'AP': ap, 'AP50': ap50, 'AP75': ap75,
                     'F1': best_f1, 'BestP': best_p, 'BestR': best_r, 'BestThr': best_thr
                 })
@@ -285,7 +285,7 @@ class SymmetryMatchCocoMetric(CocoMetric):
                 info_str.append((f'{cat_name}_AP75', ap75))
 
             df = pd.DataFrame(rows)
-            df = df.sort_values('Category')
+            df = df.sort_values('CategoryID')
 
             # Overall AP over all instances (from coco_eval)
             overall_ap = float(coco_eval.stats[0])

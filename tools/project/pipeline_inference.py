@@ -193,16 +193,16 @@ def keypoints_to_original(kpts, input_size, center, scale):
 
 def draw_keypoints(img, kpts, scores, thr=0.3, cls_id=0):
     for k in range(len(kpts)):
-        # if scores[k] < thr:
-        #     continue
+        if scores[k] < thr:
+            continue
         x, y = int(round(kpts[k, 0])), int(round(kpts[k, 1]))
         cv2.circle(img, (x, y), 3, KEYPOINT_COLORS[k], -1)
         cv2.putText(img, f'{k}:{scores[k]:.2f}', (x + 5, y - 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, KEYPOINT_COLORS[k], 1)
     skeleton_color = CLASS_COLORS[cls_id % len(CLASS_COLORS)]
     for a, b in SKELETON:
-        # if scores[a] < thr or scores[b] < thr:
-        #     continue
+        if scores[a] < thr or scores[b] < thr:
+            continue
         x1, y1 = int(round(kpts[a, 0])), int(round(kpts[a, 1]))
         x2, y2 = int(round(kpts[b, 0])), int(round(kpts[b, 1]))
         cv2.line(img, (x1, y1), (x2, y2), skeleton_color, 2)
@@ -252,7 +252,7 @@ def main():
                         help='Detection model input size (W H)')
     parser.add_argument('--kpt-input-size', type=int, nargs=2, default=[192, 192])
     parser.add_argument('--simcc-split-ratio', type=float, default=2.0)
-    parser.add_argument('--det-conf', type=float, default=0.6,
+    parser.add_argument('--det-conf', type=float, default=0.3,
                         help='Confidence threshold for pose filtering')
     parser.add_argument('--det-nms-conf', type=float, default=0.25,
                         help='Confidence threshold for detection NMS')
@@ -264,6 +264,7 @@ def main():
     parser.add_argument('--ar-max', type=float, default=3.0)
     parser.add_argument('--expand-ratio', type=float, default=0.03125)
     parser.add_argument('--kpt-conf', type=float, default=0.3)
+    parser.add_argument('--flip', action='store_true', help='horizontal flip augmentation')
     args = parser.parse_args()
 
     print(f'Loading detection model: {args.det_onnx}')
@@ -295,72 +296,74 @@ def main():
         if img_orig is None:
             print(f'  Skipping, cannot read image')
             continue
-        img_h, img_w = img_orig.shape[:2]
 
-        # --- Detection inference (ONNX) ---
-        det_input, scale, pad_w, pad_h = det_preprocess(
-            img_orig, det_input_w, det_input_h)
-        det_output = det_session.run(None, {det_input_name: det_input})
-
-        detections = det_postprocess(
-            det_output[0], scale, pad_w, pad_h, (img_h, img_w),
-            conf_thres=args.det_nms_conf #, iou_thres=args.det_nms_iou,
-        )
-
-        print(f'  Detections: {len(detections)}')
-
-        vis = img_orig.copy()
-
-        # --- Draw ALL detection boxes (15 classes) ---
-        pose_targets = []
-        for x1, y1, x2, y2, conf, cls_id in detections:
-            ix1, iy1, ix2, iy2 = int(x1), int(y1), int(x2), int(y2)
-            draw_detection(vis, ix1, iy1, ix2, iy2, cls_id, conf)
-
-            w, h = x2 - x1, y2 - y1
-            ar = w / h if h > 0 else float('inf')
-            if (cls_id > args.det_cls_min and conf >= args.det_conf
-                    and args.ar_min <= ar <= args.ar_max):
-                pose_targets.append((x1, y1, x2, y2, cls_id, conf))
-
-        print(f'  Pose targets: {len(pose_targets)}')
-
-        # --- Keypoint inference only on filtered targets ---
-        for i, (x1, y1, x2, y2, cls_id, conf) in enumerate(pose_targets):
-            ex1, ey1, ex2, ey2 = expand_bbox(
-                x1, y1, x2, y2, args.expand_ratio, img_w, img_h)
-
-            # cv2.rectangle(vis, (ex1, ey1), (ex2, ey2), (128, 128, 128), 1)
-
-            bbox_xyxy = np.array([ex1, ey1, ex2, ey2], dtype=np.float32)
-            center, scale = bbox_xyxy2cs(bbox_xyxy, padding=1.0)
-
-            input_tensor, _, scale_fixed, img_warped = kpt_preprocess(
-                img_orig, center, scale, kpt_input_size)
-
-            ort_out = kpt_session.run(
-                None, {'input': input_tensor.astype(np.float32)})
-            simcc_x, simcc_y = ort_out[0], ort_out[1]
-            x_coords, y_coords, scores = decode_simcc(
-                simcc_x[0], simcc_y[0], args.simcc_split_ratio)
-            kpts_model = np.stack([x_coords[0], y_coords[0]], axis=-1)
-            # # 在 warped 图像上绘制关键点并保存
-            # warp_vis = img_warped.copy()
-            # draw_keypoints(warp_vis, kpts_model, scores[0], args.kpt_conf)
-            # warp_save_path = output_dir / f'{img_path.stem}_{i}_warped.jpg'
-            # cv2.imwrite(str(warp_save_path), warp_vis)
-            
-            kpts_orig = keypoints_to_original(
-                kpts_model, kpt_input_size, center, scale_fixed)
-
-            draw_keypoints(vis, kpts_orig, scores[0], args.kpt_conf, cls_id)
-
-        save_path = output_dir / img_path.name
-        cv2.imwrite(str(save_path), vis)
-        print(f'  Saved: {save_path}')
-        # break
-
+        process_img(img_orig, img_path, det_session, det_input_name,
+                    det_input_w, det_input_h, kpt_session, kpt_input_size,
+                    args, output_dir, False)
+        if args.flip:
+            img_flip = cv2.flip(img_orig, 1)
+            process_img(img_flip, img_path, det_session, det_input_name,
+                        det_input_w, det_input_h, kpt_session, kpt_input_size,
+                        args, output_dir, True)
     print(f'\nDone. {len(img_paths)} images -> {output_dir}/')
+
+
+def process_img(img, img_path, det_session, det_input_name,
+                det_input_w, det_input_h, kpt_session, kpt_input_size,
+                args, output_dir, is_flip):
+    img_h, img_w = img.shape[:2]
+    suffix = '_flip' if is_flip else ''
+
+    det_input, scale, pad_w, pad_h = det_preprocess(
+        img, det_input_w, det_input_h)
+    det_output = det_session.run(None, {det_input_name: det_input})
+
+    detections = det_postprocess(
+        det_output[0], scale, pad_w, pad_h, (img_h, img_w),
+        conf_thres=args.det_nms_conf)
+
+    print(f'  Detections: {len(detections)}')
+
+    vis = img.copy()
+
+    pose_targets = []
+    for x1, y1, x2, y2, conf, cls_id in detections:
+        ix1, iy1, ix2, iy2 = int(x1), int(y1), int(x2), int(y2)
+        draw_detection(vis, ix1, iy1, ix2, iy2, cls_id, conf)
+
+        w, h = x2 - x1, y2 - y1
+        ar = w / h if h > 0 else float('inf')
+        if (cls_id > args.det_cls_min and conf >= args.det_conf
+                and args.ar_min <= ar <= args.ar_max):
+            pose_targets.append((x1, y1, x2, y2, cls_id, conf))
+
+    print(f'  Pose targets: {len(pose_targets)}')
+
+    for i, (x1, y1, x2, y2, cls_id, conf) in enumerate(pose_targets):
+        ex1, ey1, ex2, ey2 = expand_bbox(
+            x1, y1, x2, y2, args.expand_ratio, img_w, img_h)
+
+        bbox_xyxy = np.array([ex1, ey1, ex2, ey2], dtype=np.float32)
+        center, scale = bbox_xyxy2cs(bbox_xyxy, padding=1.0)
+
+        input_tensor, _, scale_fixed, img_warped = kpt_preprocess(
+            img, center, scale, kpt_input_size)
+
+        ort_out = kpt_session.run(
+            None, {'input': input_tensor.astype(np.float32)})
+        simcc_x, simcc_y = ort_out[0], ort_out[1]
+        x_coords, y_coords, scores = decode_simcc(
+            simcc_x[0], simcc_y[0], args.simcc_split_ratio)
+        kpts_model = np.stack([x_coords[0], y_coords[0]], axis=-1)
+
+        kpts_orig = keypoints_to_original(
+            kpts_model, kpt_input_size, center, scale_fixed)
+
+        draw_keypoints(vis, kpts_orig, scores[0], args.kpt_conf, cls_id)
+
+    save_path = output_dir / f'{img_path.stem}{suffix}{img_path.suffix}'
+    cv2.imwrite(str(save_path), vis)
+    print(f'  Saved: {save_path}')
 
 
 if __name__ == '__main__':
