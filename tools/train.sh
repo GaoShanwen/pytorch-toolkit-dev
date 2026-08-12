@@ -56,8 +56,10 @@ elif [ "$task" = "pretrain_l" ]; then
     # train_ann=annotations/train260810.json
     # val_ann=annotations/val260810.json
     config=cfgs/rtmpose/pretrain_cspnext_udp/rtmpose-l_8xb64-100e_260811-192x192-sy.py
-    train_ann=annotations/train260811.json
-    val_ann=annotations/val260811.json
+    # train_ann=annotations/train260811.json
+    # val_ann=annotations/val260811.json
+    train_ann=annotations/train260812.json
+    val_ann=annotations/val260812e.json
 else
     echo "task=$task error, only support: pretrain, pretrain_4kp, pretrain_s, finetune"
     exit 1

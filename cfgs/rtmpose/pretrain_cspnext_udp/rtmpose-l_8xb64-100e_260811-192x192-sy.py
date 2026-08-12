@@ -162,7 +162,7 @@ train_pipeline = [
         ]),
     dict(type='GenerateTarget', encoder=codec),
     dict(type='MergeCategory', merge_groups=[['Oven_TopHandle', 'Oven_BottomHandle'],['Oven_TopInner', 'Oven_BottomInner']],
-         ann_file='data/pose-dataset/BakingRefine/annotations/train260811.json'),
+         ann_file='data/pose-dataset/BakingRefine/annotations/train260812.json'),
     dict(type='PackPoseInputs'),
 ]
 val_pipeline = [
@@ -170,7 +170,7 @@ val_pipeline = [
     dict(type='GetBBoxCenterScale'),
     dict(type='TopdownAffine', input_size=codec['input_size']),
     dict(type='MergeCategory', merge_groups=[['Oven_TopHandle', 'Oven_BottomHandle'],['Oven_TopInner', 'Oven_BottomInner']],
-         ann_file='data/pose-dataset/BakingRefine/annotations/val260811.json'),
+         ann_file='data/pose-dataset/BakingRefine/annotations/val260812e.json'),
     dict(type='PackPoseInputs'),
 ]
 
