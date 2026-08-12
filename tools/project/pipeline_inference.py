@@ -165,17 +165,44 @@ def _get_warp_matrix(center, scale, rot, output_size):
 
 def kpt_preprocess(img, center, scale, input_size):
     w, h = input_size[1], input_size[0]
-    scale_fixed = _fix_aspect_ratio(scale, aspect_ratio=w / h)
-    warp_mat = _get_warp_matrix(center, scale_fixed, 0.0, output_size=(w, h))
-    img_warped = cv2.warpAffine(img, warp_mat, (w, h), flags=cv2.INTER_LINEAR)
+    crop_w, crop_h = scale[0], scale[1]
+    x1 = int(center[0] - crop_w / 2)
+    y1 = int(center[1] - crop_h / 2)
+    x2 = int(center[0] + crop_w / 2)
+    y2 = int(center[1] + crop_h / 2)
+    x1_clip = max(0, x1)
+    y1_clip = max(0, y1)
+    x2_clip = min(img.shape[1], x2)
+    y2_clip = min(img.shape[0], y2)
+    crop = img[y1_clip:y2_clip, x1_clip:x2_clip]
+    actual_h, actual_w = crop.shape[:2]
+    longer = max(actual_w, actual_h)
+    shorter = min(actual_w, actual_h)
+    scale_ratio = longer / shorter
+    if actual_w >= actual_h:
+        new_w, new_h = longer, int(longer / scale_ratio)
+    else:
+        new_w, new_h = int(longer / scale_ratio), longer
+    crop_resized = cv2.resize(crop, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    img_warped = np.zeros((longer, longer, 3), dtype=np.uint8)
+    pad_x = (longer - new_w) // 2
+    pad_y = (longer - new_h) // 2
+    img_warped[pad_y:pad_y + new_h, pad_x:pad_x + new_w] = crop_resized
+    img_warped = cv2.resize(img_warped, (w, h), interpolation=cv2.INTER_LINEAR)
+    scale_fixed = np.array([longer, longer], dtype=np.float32)
+    warp_mat = np.eye(2, 3, dtype=np.float32)
     img_chw = img_warped.transpose(2, 0, 1)
     return np.expand_dims(img_chw, axis=0), warp_mat, scale_fixed, img_warped
 
 
 def decode_simcc(simcc_x, simcc_y, simcc_split_ratio=2.0):
-    if simcc_x.ndim == 2:
-        simcc_x = simcc_x[np.newaxis, ...]
-    if simcc_y.ndim == 2:
+    if simcc_x.ndim == 3:
+        simcc_x = simcc_x  # already has batch dimension
+    elif simcc_x.ndim == 2:
+        simcc_x = simcc_x[np.newaxis, ...]  # add batch dimension
+    if simcc_y.ndim == 3:
+        simcc_y = simcc_y
+    elif simcc_y.ndim == 2:
         simcc_y = simcc_y[np.newaxis, ...]
     x_locs = simcc_x.argmax(axis=-1)
     y_locs = simcc_y.argmax(axis=-1)
@@ -184,7 +211,7 @@ def decode_simcc(simcc_x, simcc_y, simcc_split_ratio=2.0):
     x_conf = simcc_x.max(axis=-1)
     y_conf = simcc_y.max(axis=-1)
     scores = np.stack([x_conf, y_conf], axis=-1).mean(axis=-1)
-    return x_coords, y_coords, scores
+    return x_coords[0], y_coords[0], scores[0]
 
 
 def keypoints_to_original(kpts, input_size, center, scale):
@@ -192,20 +219,20 @@ def keypoints_to_original(kpts, input_size, center, scale):
 
 
 def draw_keypoints(img, kpts, scores, thr=0.3, cls_id=0):
+    skeleton_color = CLASS_COLORS[cls_id % len(CLASS_COLORS)]
+    for a, b in SKELETON:
+        # if scores[a] < thr or scores[b] < thr:
+        #     continue
+        x1, y1 = int(round(kpts[a, 0])), int(round(kpts[a, 1]))
+        x2, y2 = int(round(kpts[b, 0])), int(round(kpts[b, 1]))
+        cv2.line(img, (x1, y1), (x2, y2), skeleton_color, 2)
     for k in range(len(kpts)):
-        if scores[k] < thr:
-            continue
+        # if scores[k] < thr:
+        #     continue
         x, y = int(round(kpts[k, 0])), int(round(kpts[k, 1]))
         cv2.circle(img, (x, y), 3, KEYPOINT_COLORS[k], -1)
         cv2.putText(img, f'{k}:{scores[k]:.2f}', (x + 5, y - 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, KEYPOINT_COLORS[k], 1)
-    skeleton_color = CLASS_COLORS[cls_id % len(CLASS_COLORS)]
-    for a, b in SKELETON:
-        if scores[a] < thr or scores[b] < thr:
-            continue
-        x1, y1 = int(round(kpts[a, 0])), int(round(kpts[a, 1]))
-        x2, y2 = int(round(kpts[b, 0])), int(round(kpts[b, 1]))
-        cv2.line(img, (x1, y1), (x2, y2), skeleton_color, 2)
 
 
 def bbox_xyxy2cs(bbox_xyxy, padding=1.0):
@@ -260,8 +287,8 @@ def main():
                         help='IoU threshold for detection NMS')
     parser.add_argument('--det-cls-min', type=int, default=4,
                         help='Minimum class id for pose estimation')
-    parser.add_argument('--ar-min', type=float, default=0.3)
-    parser.add_argument('--ar-max', type=float, default=3.0)
+    parser.add_argument('--ar-min', type=float, default=0.1)
+    parser.add_argument('--ar-max', type=float, default=10.0)
     parser.add_argument('--expand-ratio', type=float, default=0.03125)
     parser.add_argument('--kpt-conf', type=float, default=0.3)
     parser.add_argument('--flip', action='store_true', help='horizontal flip augmentation')
@@ -330,7 +357,8 @@ def process_img(img, img_path, det_session, det_input_name,
     for x1, y1, x2, y2, conf, cls_id in detections:
         ix1, iy1, ix2, iy2 = int(x1), int(y1), int(x2), int(y2)
         draw_detection(vis, ix1, iy1, ix2, iy2, cls_id, conf)
-
+        if cls_id not in [5]:
+            continue
         w, h = x2 - x1, y2 - y1
         ar = w / h if h > 0 else float('inf')
         if (cls_id > args.det_cls_min and conf >= args.det_conf
@@ -343,23 +371,29 @@ def process_img(img, img_path, det_session, det_input_name,
         ex1, ey1, ex2, ey2 = expand_bbox(
             x1, y1, x2, y2, args.expand_ratio, img_w, img_h)
 
+        # iex1, iey1, iex2, iey2 = int(round(ex1)), int(round(ey1)), int(round(ex2)), int(round(ey2))
+        # draw_detection(vis, iex1, iey1, iex2, iey2, cls_id, conf)
+
         bbox_xyxy = np.array([ex1, ey1, ex2, ey2], dtype=np.float32)
         center, scale = bbox_xyxy2cs(bbox_xyxy, padding=1.0)
 
         input_tensor, _, scale_fixed, img_warped = kpt_preprocess(
             img, center, scale, kpt_input_size)
 
+        warp_save_path = output_dir / f'{img_path.stem}_warp{i}{img_path.suffix}'
+        cv2.imwrite(str(warp_save_path), img_warped)
+
         ort_out = kpt_session.run(
             None, {'input': input_tensor.astype(np.float32)})
         simcc_x, simcc_y = ort_out[0], ort_out[1]
         x_coords, y_coords, scores = decode_simcc(
             simcc_x[0], simcc_y[0], args.simcc_split_ratio)
-        kpts_model = np.stack([x_coords[0], y_coords[0]], axis=-1)
+        kpts_model = np.stack([x_coords, y_coords], axis=-1)
 
         kpts_orig = keypoints_to_original(
             kpts_model, kpt_input_size, center, scale_fixed)
 
-        draw_keypoints(vis, kpts_orig, scores[0], args.kpt_conf, cls_id)
+        draw_keypoints(vis, kpts_orig, scores, args.kpt_conf, cls_id)
 
     save_path = output_dir / f'{img_path.stem}{suffix}{img_path.suffix}'
     cv2.imwrite(str(save_path), vis)

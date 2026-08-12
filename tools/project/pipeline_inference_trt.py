@@ -136,7 +136,9 @@ class TRTEngine:
         current_shape = self.host_inputs[0].shape
         new_shape = input_tensor.shape
 
-        if current_shape != new_shape:
+        need_realloc = current_shape != new_shape
+
+        if -1 in self.input_shape or need_realloc:
             nbytes = int(np.prod(new_shape)) * 4
             self.host_inputs[0] = np.zeros(new_shape, dtype=np.float32)
             self.cuda_inputs[0] = cuda.mem_alloc(nbytes)
@@ -319,9 +321,32 @@ def _get_warp_matrix(center, scale, rot, output_size):
 
 def kpt_preprocess(img, center, scale, input_size):
     w, h = input_size[1], input_size[0]
-    scale_fixed = _fix_aspect_ratio(scale, aspect_ratio=w / h)
-    warp_mat = _get_warp_matrix(center, scale_fixed, 0.0, output_size=(w, h))
-    img_warped = cv2.warpAffine(img, warp_mat, (w, h), flags=cv2.INTER_LINEAR)
+    crop_w, crop_h = scale[0], scale[1]
+    x1 = int(center[0] - crop_w / 2)
+    y1 = int(center[1] - crop_h / 2)
+    x2 = int(center[0] + crop_w / 2)
+    y2 = int(center[1] + crop_h / 2)
+    x1_clip = max(0, x1)
+    y1_clip = max(0, y1)
+    x2_clip = min(img.shape[1], x2)
+    y2_clip = min(img.shape[0], y2)
+    crop = img[y1_clip:y2_clip, x1_clip:x2_clip]
+    actual_h, actual_w = crop.shape[:2]
+    longer = max(actual_w, actual_h)
+    shorter = min(actual_w, actual_h)
+    scale_ratio = longer / shorter
+    if actual_w >= actual_h:
+        new_w, new_h = longer, int(longer / scale_ratio)
+    else:
+        new_w, new_h = int(longer / scale_ratio), longer
+    crop_resized = cv2.resize(crop, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    img_warped = np.zeros((longer, longer, 3), dtype=np.uint8)
+    pad_x = (longer - new_w) // 2
+    pad_y = (longer - new_h) // 2
+    img_warped[pad_y:pad_y + new_h, pad_x:pad_x + new_w] = crop_resized
+    img_warped = cv2.resize(img_warped, (w, h), interpolation=cv2.INTER_LINEAR)
+    scale_fixed = np.array([longer, longer], dtype=np.float32)
+    warp_mat = np.eye(2, 3, dtype=np.float32)
     img_chw = img_warped.transpose(2, 0, 1)
     return np.expand_dims(img_chw, axis=0), warp_mat, scale_fixed
 
@@ -344,33 +369,54 @@ def decode_simcc(simcc_x, simcc_y, simcc_split_ratio=2.0):
 def batch_kpt_preprocess(img, roi_list, input_size):
     """
     Batch preprocess ROIs for keypoint model.
-    
+
     Args:
         img: Original image (H, W, 3) BGR
         roi_list: List of (x1, y1, x2, y2) bounding boxes
         input_size: (W, H) tuple
-    
+
     Returns:
         batch_tensor: (N, 3, H, W) float32 batch input
         meta_list: List of (center, scale_fixed) for each ROI
     """
     if not roi_list:
         return None, []
-    
+
     w, h = input_size
     batch_tensors = []
     meta_list = []
-    
+
     for x1, y1, x2, y2 in roi_list:
         center = np.array([(x1 + x2) * 0.5, (y1 + y2) * 0.5], dtype=np.float32)
         scale = np.array([x2 - x1, y2 - y1], dtype=np.float32)
-        scale_fixed = _fix_aspect_ratio(scale, aspect_ratio=w / h)
-        warp_mat = _get_warp_matrix(center, scale_fixed, 0.0, output_size=(w, h))
-        img_warped = cv2.warpAffine(img, warp_mat, (w, h), flags=cv2.INTER_LINEAR)
+        crop_w, crop_h = scale[0], scale[1]
+        cx1 = int(center[0] - crop_w / 2)
+        cy1 = int(center[1] - crop_h / 2)
+        cx2 = int(center[0] + crop_w / 2)
+        cy2 = int(center[1] + crop_h / 2)
+        x1_clip = max(0, cx1)
+        y1_clip = max(0, cy1)
+        x2_clip = min(img.shape[1], cx2)
+        y2_clip = min(img.shape[0], cy2)
+        crop = img[y1_clip:y2_clip, x1_clip:x2_clip]
+        actual_h, actual_w = crop.shape[:2]
+        longer = max(actual_w, actual_h)
+        shorter = min(actual_w, actual_h)
+        scale_ratio = longer / shorter
+        if actual_w >= actual_h:
+            new_w, new_h = longer, int(longer / scale_ratio)
+        else:
+            new_w, new_h = int(longer / scale_ratio), longer
+        crop_resized = cv2.resize(crop, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+        img_warped = np.zeros((longer, longer, 3), dtype=np.uint8)
+        pad_x = (longer - new_w) // 2
+        pad_y = (longer - new_h) // 2
+        img_warped[pad_y:pad_y + new_h, pad_x:pad_x + new_w] = crop_resized
+        img_warped = cv2.resize(img_warped, (w, h), interpolation=cv2.INTER_LINEAR)
         img_chw = img_warped.transpose(2, 0, 1)
         batch_tensors.append(img_chw)
-        meta_list.append((center.copy(), scale_fixed.copy()))
-    
+        meta_list.append((center.copy(), np.array([longer, longer], dtype=np.float32)))
+
     batch_tensor = np.stack(batch_tensors, axis=0)
     return batch_tensor, meta_list
 
@@ -378,21 +424,21 @@ def batch_kpt_preprocess(img, roi_list, input_size):
 def batch_kpt_postprocess(simcc_x, simcc_y, meta_list, input_size, simcc_split_ratio):
     """
     Batch decode keypoints from SIMCC output.
-    
+
     Args:
         simcc_x: (N, K, S) cumulative distribution for x
         simcc_y: (N, K, S) cumulative distribution for y
         meta_list: List of (center, scale_fixed) for each ROI
         input_size: (W, H) tuple
         simcc_split_ratio: SIMCC split ratio
-    
+
     Returns:
         results: List of (keypoints, scores) tuples
     """
     N = simcc_x.shape[0]
     K = simcc_x.shape[1]
     results = []
-    
+
     for i in range(N):
         center, scale_fixed = meta_list[i]
         x_coords = simcc_x[i].argmax(axis=-1) / simcc_split_ratio
@@ -400,11 +446,11 @@ def batch_kpt_postprocess(simcc_x, simcc_y, meta_list, input_size, simcc_split_r
         x_conf = simcc_x[i].max(axis=-1)
         y_conf = simcc_y[i].max(axis=-1)
         scores = (x_conf + y_conf) * 0.5
-        
+
         kpts = np.stack([x_coords, y_coords], axis=-1)
         kpts_orig = kpts / np.array(input_size[::-1]) * scale_fixed + center - 0.5 * scale_fixed
         results.append((kpts_orig, scores))
-    
+
     return results
 
 
@@ -415,15 +461,15 @@ def keypoints_to_original(kpts, input_size, center, scale):
 def draw_keypoints(img, kpts, scores, thr=0.3, cls_id=0):
     skeleton_color = CLASS_COLORS[cls_id % len(CLASS_COLORS)]
     for a, b in SKELETON:
-        if scores[a] < thr or scores[b] < thr:
-            continue
+        # if scores[a] < thr or scores[b] < thr:
+        #     continue
         x1, y1 = int(round(kpts[a, 0])), int(round(kpts[a, 1]))
         x2, y2 = int(round(kpts[b, 0])), int(round(kpts[b, 1]))
         cv2.line(img, (x1, y1), (x2, y2), skeleton_color, 2)
 
     for k in range(len(kpts)):
-        if scores[k] < thr:
-            continue
+        # if scores[k] < thr:
+        #     continue
         x, y = int(round(kpts[k, 0])), int(round(kpts[k, 1]))
         cv2.circle(img, (x, y), 3, KEYPOINT_COLORS[k], -1)
         cv2.putText(img, f'{k}:{scores[k]:.2f}', (x + 5, y - 5),
@@ -482,9 +528,9 @@ def main():
                         help='IoU threshold for detection NMS')
     parser.add_argument('--det-cls-min', type=int, default=4,
                         help='Minimum class id for pose estimation')
-    parser.add_argument('--ar-min', type=float, default=0.3)
-    parser.add_argument('--ar-max', type=float, default=3.0)
-    parser.add_argument('--expand-ratio', type=float, default=0.03125)
+    parser.add_argument('--ar-min', type=float, default=0.1)
+    parser.add_argument('--ar-max', type=float, default=10.0)
+    parser.add_argument('--expand-ratio', type=float, default=0.0125)
     parser.add_argument('--kpt-conf', type=float, default=0.3)
     parser.add_argument('--flip', action='store_true', help='horizontal flip augmentation')
     args = parser.parse_args()
@@ -552,8 +598,9 @@ def process_img(img, img_path, det_engine, det_input_w, det_input_h,
     pose_targets = []
     for x1, y1, x2, y2, conf, cls_id in detections:
         ix1, iy1, ix2, iy2 = int(x1), int(y1), int(x2), int(y2)
+        # if cls_id not in [5]:#[5,7,8,9,10,11,12]:
+        #     continue
         draw_detection(vis, ix1, iy1, ix2, iy2, cls_id, conf)
-
         w, h = x2 - x1, y2 - y1
         ar = w / h if h > 0 else float('inf')
         if (cls_id > args.det_cls_min and conf >= args.det_conf
@@ -568,12 +615,27 @@ def process_img(img, img_path, det_engine, det_input_w, det_input_h,
         roi_list = [(p[0], p[1], p[2], p[3]) for p in pose_targets]
         batch_input, meta_list = batch_kpt_preprocess(img, roi_list, kpt_input_size)
 
+        # for i, (vis_img, meta) in enumerate(zip(batch_input, meta_list)):
+        #     vis_debug = vis_img.transpose(1, 2, 0).astype(np.uint8)
+        #     debug_path = output_dir / f'{img_path.stem}_batch{i}{img_path.suffix}'
+        #     cv2.imwrite(str(debug_path), vis_debug)
+        #     print(f'  Debug batch {i}: shape={vis_img.shape}, meta={meta}')
+
+        # print(f'  batch_input shape: {batch_input.shape}, dtype: {batch_input.dtype}')
+        # print(f'  batch_input range: [{batch_input.min()}, {batch_input.max()}]')
+        # print(f'  kpt_engine input_shape: {kpt_engine.input_shape}')
+        # print(f'  kpt_engine context tensor shapes:')
+        # for name in kpt_engine.input_names + kpt_engine.output_names:
+        #     print(f'    {name}: {kpt_engine.context.get_tensor_shape(name)}')
+
         trt_out = kpt_engine.run(batch_input.astype(np.float32))
         simcc_x, simcc_y = trt_out[0], trt_out[1]
+        # print(f'  TRT simcc_x shape: {simcc_x.shape}, simcc_y shape: {simcc_y.shape}')
         kpt_results = batch_kpt_postprocess(
             simcc_x, simcc_y, meta_list, kpt_input_size, args.simcc_split_ratio)
 
         for (kpts_orig, scores), (_, _, _, _, cls_id, conf) in zip(kpt_results, pose_targets):
+            print(f'  ROI: kpts_orig={kpts_orig[:2]}, scores={scores[:2]}')
             draw_keypoints(vis, kpts_orig, scores, args.kpt_conf, cls_id)
 
     save_path = output_dir / f'{img_path.stem}{suffix}{img_path.suffix}'
