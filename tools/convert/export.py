@@ -22,14 +22,7 @@ if __name__=="__main__":
     args = parse_args()
     # Load a pretrained YOLO26n model 
     model_name = YOLOPro if args.symmetry_match else YOLO
-    model = model_name(args.weight_path, task=args.task)   
-
-    # # Evaluate the model's performance on the validation set
-    # metrics = model.val()
-
-    # # Perform object detection on an image
-    # results = model(args.image_path)  # Predict on an image
-    # results[0].show()  # Display results
+    model = model_name(args.weight_path, task=args.task)
 
     # Export the model to ONNX format for deployment
     model.eval()
