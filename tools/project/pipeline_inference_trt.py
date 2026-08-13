@@ -92,6 +92,7 @@ class TRTEngine:
                 self.output_names.append(name)
 
         self.input_shape = self.engine.get_tensor_shape(self.input_names[0])
+        self.max_batch_size = self._get_max_batch_size()
 
         self.host_inputs = []
         self.cuda_inputs = []
@@ -122,6 +123,15 @@ class TRTEngine:
         for i in range(len(self.host_outputs)):
             self.cuda_outputs[i] = cuda.mem_alloc(self.host_outputs[i].nbytes)
         _pop_cuda_context()
+
+    def _get_max_batch_size(self):
+        try:
+            profile_shape = self.engine.get_tensor_profile_shape(
+                self.input_names[0], 0
+            )
+            return profile_shape[2][0]
+        except Exception:
+            return self.input_shape[0] if self.input_shape[0] > 0 else 1
 
     def run(self, input_tensor):
         if self.use_cuda:
@@ -454,6 +464,43 @@ def batch_kpt_postprocess(simcc_x, simcc_y, meta_list, input_size, simcc_split_r
     return results
 
 
+def run_batched_inference(engine, batch_input, max_batch_size):
+    """
+    Run batched inference, splitting large batches into smaller chunks.
+
+    Args:
+        engine: TRTEngine instance
+        batch_input: (N, C, H, W) input tensor
+        max_batch_size: Maximum batch size supported by the engine
+
+    Returns:
+        Combined outputs from all batches
+    """
+    n_samples = batch_input.shape[0]
+    if n_samples <= max_batch_size:
+        return engine.run(batch_input.astype(np.float32))
+
+    print(f'  Splitting batch of {n_samples} into chunks of {max_batch_size}')
+    all_outputs = []
+    for start_idx in range(0, n_samples, max_batch_size):
+        end_idx = min(start_idx + max_batch_size, n_samples)
+        batch_chunk = batch_input[start_idx:end_idx]
+        chunk_outputs = engine.run(batch_chunk.astype(np.float32))
+        all_outputs.append(chunk_outputs)
+
+    combined_outputs = []
+    num_outputs = len(all_outputs[0])
+    for out_idx in range(num_outputs):
+        if isinstance(all_outputs[0][out_idx], np.ndarray):
+            combined_outputs.append(np.concatenate(
+                [out[out_idx] for out in all_outputs], axis=0
+            ))
+        else:
+            combined_outputs.append(all_outputs[0][out_idx])
+
+    return combined_outputs
+
+
 def keypoints_to_original(kpts, input_size, center, scale):
     return kpts / np.array(input_size[::-1]) * scale + center - 0.5 * scale
 
@@ -511,7 +558,7 @@ def draw_detection(img, x1, y1, x2, y2, cls_id, conf):
 def main():
     parser = argparse.ArgumentParser(description='Pipeline: detection + keypoint inference with TensorRT')
     parser.add_argument('--det-engine', type=str,
-                        default='runs/detect/ckpts/BakingRecognize/202608072206/weights/best.engine')
+                        default='runs/detect/ckpts/BakingRecognize/202608130125/weights/best.engine')
     parser.add_argument('--kpt-engine', type=str,
                         default='ckpts/rtmpose/BakingRefine/202608112313/best_coco_AP_epoch_40.engine')
     parser.add_argument('--input-dir', type=str, default='/home/wenjie/Downloads/test')
@@ -530,7 +577,7 @@ def main():
                         help='Minimum class id for pose estimation')
     parser.add_argument('--ar-min', type=float, default=0.1)
     parser.add_argument('--ar-max', type=float, default=10.0)
-    parser.add_argument('--expand-ratio', type=float, default=0.0125)
+    parser.add_argument('--expand-ratio', type=float, default=0.25)
     parser.add_argument('--kpt-conf', type=float, default=0.3)
     parser.add_argument('--flip', action='store_true', help='horizontal flip augmentation')
     args = parser.parse_args()
@@ -598,8 +645,6 @@ def process_img(img, img_path, det_engine, det_input_w, det_input_h,
     pose_targets = []
     for x1, y1, x2, y2, conf, cls_id in detections:
         ix1, iy1, ix2, iy2 = int(x1), int(y1), int(x2), int(y2)
-        # if cls_id not in [5]:#[5,7,8,9,10,11,12]:
-        #     continue
         draw_detection(vis, ix1, iy1, ix2, iy2, cls_id, conf)
         w, h = x2 - x1, y2 - y1
         ar = w / h if h > 0 else float('inf')
@@ -628,14 +673,14 @@ def process_img(img, img_path, det_engine, det_input_w, det_input_h,
         # for name in kpt_engine.input_names + kpt_engine.output_names:
         #     print(f'    {name}: {kpt_engine.context.get_tensor_shape(name)}')
 
-        trt_out = kpt_engine.run(batch_input.astype(np.float32))
+        trt_out = run_batched_inference(kpt_engine, batch_input, kpt_engine.max_batch_size)
         simcc_x, simcc_y = trt_out[0], trt_out[1]
         # print(f'  TRT simcc_x shape: {simcc_x.shape}, simcc_y shape: {simcc_y.shape}')
         kpt_results = batch_kpt_postprocess(
             simcc_x, simcc_y, meta_list, kpt_input_size, args.simcc_split_ratio)
 
         for (kpts_orig, scores), (_, _, _, _, cls_id, conf) in zip(kpt_results, pose_targets):
-            print(f'  ROI: kpts_orig={kpts_orig[:2]}, scores={scores[:2]}')
+            # print(f'  ROI: kpts_orig={kpts_orig[:2]}, scores={scores[:2]}')
             draw_keypoints(vis, kpts_orig, scores, args.kpt_conf, cls_id)
 
     save_path = output_dir / f'{img_path.stem}{suffix}{img_path.suffix}'

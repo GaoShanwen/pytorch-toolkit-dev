@@ -17,10 +17,8 @@ def build_engine(onnx_file_path, engine_file_path, fp16_mode=True, max_workspace
     # 创建 builder
     builder = trt.Builder(logger)
     
-    # 创建网络定义（显式 batch）
-    network = builder.create_network(
-        1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
-    )
+    # 创建网络定义（TensorRT 8+ 默认使用显式 batch，不需要 EXPLICIT_BATCH 标志）
+    network = builder.create_network()
     
     # 创建 ONNX 解析器
     parser = trt.OnnxParser(network, logger)
@@ -45,10 +43,13 @@ def build_engine(onnx_file_path, engine_file_path, fp16_mode=True, max_workspace
         max_workspace_size * (1 << 30)  # 转换为字节
     )
     
-    # 启用 FP16 模式（Orin Nano 支持）
-    if fp16_mode and builder.platform_has_fast_fp16:
-        config.set_flag(trt.BuilderFlag. FP16)
-        print("FP16 mode enabled")
+    # 启用 FP16 模式（TensorRT 8+ 会自动根据模型权重选择最优精度）
+    # 如果模型是 FP16 导出的，TensorRT 会自动使用 FP16 计算
+    # 通过禁用 TF32 来确保更好的 FP16 性能（Ampere+ GPU）
+    if fp16_mode:
+        if hasattr(builder, 'platform_has_tf32') and builder.platform_has_tf32:
+            config.clear_flag(trt.BuilderFlag.TF32)
+        print("FP16 mode enabled (TF32 disabled for better FP16 performance)")
     
     # 构建 engine
     print("Building engine...  This may take a few minutes.")
@@ -69,7 +70,7 @@ def build_engine(onnx_file_path, engine_file_path, fp16_mode=True, max_workspace
 
 # 使用示例
 if __name__ == "__main__": 
-    onnx_path = "models/onnx/yolo26s-pose-c15k7v260728p.onnx"
+    onnx_path = "runs/detect/ckpts/BakingRecognize/202608130125/weights/best.onnx"
     engine_path = onnx_path.replace("onnx", "engine")
 
     build_engine(

@@ -295,12 +295,18 @@ def main():
     args = parser.parse_args()
 
     print(f'Loading detection model: {args.det_onnx}')
-    det_session = ort.InferenceSession(args.det_onnx)
+    det_session = ort.InferenceSession(
+        args.det_onnx,
+        providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
+    )
     det_input_name = det_session.get_inputs()[0].name
     det_input_w, det_input_h = args.det_imgsz[0], args.det_imgsz[1]
 
     print(f'Loading keypoint model: {args.kpt_onnx}')
-    kpt_session = ort.InferenceSession(args.kpt_onnx)
+    kpt_session = ort.InferenceSession(
+        args.kpt_onnx,
+        providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
+    )
     kpt_input_size = tuple(args.kpt_input_size)
 
     input_dir = Path(args.input_dir)
