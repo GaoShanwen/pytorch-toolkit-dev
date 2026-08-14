@@ -50,7 +50,13 @@ def train(args):
     if model_class is None:
         raise ValueError(f"Model size '{args.model}' is not supported for task '{task}'")
 
-    model = model_class()
+    model_kwargs = {}
+    if args.pretrained:
+        model_kwargs['pretrain_weights'] = args.pretrained
+    if args.resume:
+        model_kwargs['resume'] = args.resume
+
+    model = model_class(**model_kwargs)
 
     train_kwargs = {
         'dataset_dir': args.data,
@@ -61,11 +67,6 @@ def train(args):
         'grad_accum_steps': args.grad_accum_steps,
         'num_workers': args.workers,
     }
-
-    if args.resume:
-        train_kwargs['resume'] = args.resume
-    elif args.pretrained:
-        train_kwargs['pretrained'] = args.pretrained
 
     model.train(**train_kwargs)
 

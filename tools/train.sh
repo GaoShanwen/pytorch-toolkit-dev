@@ -25,11 +25,12 @@ export CUDA_DISABLE_NVML=1
 device='0'
 num_devices=$(echo $device | grep -o '[0-9]' | wc -l)
 
-common_args="--data $data_root --epochs $set_epochs --batch $batch_size --imgsz $img_size --project ckpts --name $task/$data_name/$date --workers $num_devices --model $model_size"
+common_args="--data $data_root --epochs $set_epochs --batch $batch_size --imgsz $img_size \
+--project ckpts --name $task/$data_name/$date --workers 4 --model $model_size"
 
 if [ -z $resume ]; then
     rm -rf $output_dir
-    pretrained=weights/rf-detr-$model_size.pth
+    pretrained=$(pwd)/weights/rf-detr-$model_size.pth
     common_args="$common_args --pretrained $pretrained"
 else
     echo "resume from $resume"

@@ -129,10 +129,10 @@ def convert_yolo_to_coco(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert YOLO format to COCO format')
     parser.add_argument('--val_list', type=str,
-                        default='/home/wenjie/workspace/pytorch-toolkit-dev/data/det-dataset/BakingRecognize/val-det0811.txt',
+                        default='data/det-dataset/BakingRecognize/val-det0811.txt',
                         help='Path to validation image list file')
     parser.add_argument('--output', type=str,
-                        default='/home/wenjie/workspace/pytorch-toolkit-dev/data/det-dataset/BakingRecognize/val/_annotations.coco.json',
+                        default='data/det-dataset/BakingRecognizeCOCO/valid/_annotations.coco.json',
                         help='Output COCO JSON path')
     parser.add_argument('--classes', type=str, nargs='+',
                         default=['other', 'donut', 'pineapplebun', 'multigrain', 'chia',
