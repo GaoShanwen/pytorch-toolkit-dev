@@ -158,10 +158,10 @@ def prepare_coco_dataset(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Prepare COCO format dataset from YOLO format')
     parser.add_argument('--dataset_yaml', type=str,
-                        default='/home/wenjie/workspace/pytorch-toolkit-dev/data/det-dataset/BakingRecognize/dataset.yaml',
+                        default='data/det-dataset/BakingRecognize/dataset.yaml',
                         help='Path to dataset.yaml file')
     parser.add_argument('--output', type=str,
-                        default='/home/wenjie/workspace/pytorch-toolkit-dev/data/det-dataset/BakingRecognizeCOCO',
+                        default='data/det-dataset/BakingRecognizeCOCO',
                         help='Output COCO dataset directory')
     parser.add_argument('--classes', type=str, nargs='+',
                         default=['other', 'donut', 'pineapplebun', 'multigrain', 'chia',
