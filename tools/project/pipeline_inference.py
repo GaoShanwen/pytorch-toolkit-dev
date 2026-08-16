@@ -289,7 +289,7 @@ def main():
                         help='Minimum class id for pose estimation')
     parser.add_argument('--ar-min', type=float, default=0.1)
     parser.add_argument('--ar-max', type=float, default=10.0)
-    parser.add_argument('--expand-ratio', type=float, default=0.03125)
+    parser.add_argument('--expand-ratio', type=float, default=0.25)
     parser.add_argument('--kpt-conf', type=float, default=0.3)
     parser.add_argument('--flip', action='store_true', help='horizontal flip augmentation')
     args = parser.parse_args()
