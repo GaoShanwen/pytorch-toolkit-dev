@@ -97,7 +97,7 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
 
     Returns: [(x1, y1, x2, y2, conf, cls_id), ...] in original image coords.
     """
-    if isinstance(output, tuple) and len(output) == 2:
+    if len(output) == 2:
         dets, labels = output
         dets = dets.reshape(-1, 4)
         labels = labels.reshape(-1, labels.shape[-1])
@@ -149,7 +149,7 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
                             float(confs[i]), int(cls_ids[i])))
         return results
     else:
-        output = output.reshape(-1, 6)  # [N, 6]
+        output = output[0].reshape(-1, 6)  # [N, 6]
 
         if len(output) == 0:
             return []
@@ -332,7 +332,7 @@ def main():
                         default='ckpts/rtmpose/BakingRefine/202608101114/best_coco_AP_epoch_100.onnx')
     parser.add_argument('--input-dir', type=str, default='/home/wenjie/Downloads/test')
     parser.add_argument('--output-dir', type=str, default='runs/test')
-    parser.add_argument('--det-imgsz', type=int, nargs=2, default=[640, 384],
+    parser.add_argument('--det-imgsz', type=int, nargs=2, default=[384, 640],
                         help='Detection model input size (W H)')
     parser.add_argument('--kpt-input-size', type=int, nargs=2, default=[192, 192])
     parser.add_argument('--simcc-split-ratio', type=float, default=2.0)
@@ -357,7 +357,7 @@ def main():
         providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
     )
     det_input_name = det_session.get_inputs()[0].name
-    det_input_w, det_input_h = args.det_imgsz[0], args.det_imgsz[1]
+    det_input_h, det_input_w = args.det_imgsz[0], args.det_imgsz[1]
 
     print(f'Loading keypoint model: {args.kpt_onnx}')
     kpt_session = ort.InferenceSession(
@@ -409,7 +409,7 @@ def process_img(img, img_path, det_session, det_input_name,
     det_output = det_session.run(None, {det_input_name: det_input})
 
     detections = det_postprocess(
-        det_output[0], scale, pad_w, pad_h, (img_h, img_w),
+        det_output, scale, pad_w, pad_h, (img_h, img_w),
         conf_thres=args.det_nms_conf)
 
     print(f'  Detections: {len(detections)}')
@@ -420,7 +420,7 @@ def process_img(img, img_path, det_session, det_input_name,
     for x1, y1, x2, y2, conf, cls_id in detections:
         ix1, iy1, ix2, iy2 = int(x1), int(y1), int(x2), int(y2)
         draw_detection(vis, ix1, iy1, ix2, iy2, cls_id, conf)
-        if cls_id not in [5]:
+        if cls_id not in [5,6,7]:
             continue
         w, h = x2 - x1, y2 - y1
         ar = w / h if h > 0 else float('inf')
@@ -443,8 +443,8 @@ def process_img(img, img_path, det_session, det_input_name,
         input_tensor, _, scale_fixed, img_warped = kpt_preprocess(
             img, center, scale, kpt_input_size)
 
-        warp_save_path = output_dir / f'{img_path.stem}_warp{i}{img_path.suffix}'
-        cv2.imwrite(str(warp_save_path), img_warped)
+        # warp_save_path = output_dir / f'{img_path.stem}_warp{i}{img_path.suffix}'
+        # cv2.imwrite(str(warp_save_path), img_warped)
 
         ort_out = kpt_session.run(
             None, {'input': input_tensor.astype(np.float32)})
