@@ -90,7 +90,7 @@ def nms(boxes, scores, iou_threshold):
     return keep
 
 
-def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
+def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_h=0, conf_thres=0.25):
     """
     Decode detection ONNX output (model already has NMS built-in).
 
@@ -123,25 +123,20 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
         w = dets[:, 2]
         h = dets[:, 3]
 
-        x1 = cx - w * 0.5
-        y1 = cy - h * 0.5
-        x2 = cx + w * 0.5
-        y2 = cy + h * 0.5
+        x1_norm = cx - w * 0.5
+        y1_norm = cy - h * 0.5
+        x2_norm = cx + w * 0.5
+        y2_norm = cy + h * 0.5
 
-        x1 = x1 * orig_shape[1]
-        y1 = y1 * orig_shape[0]
-        x2 = x2 * orig_shape[1]
-        y2 = y2 * orig_shape[0]
+        x1 = x1_norm * orig_shape[1]
+        y1 = y1_norm * orig_shape[0]
+        x2 = x2_norm * orig_shape[1]
+        y2 = y2_norm * orig_shape[0]
 
-        x1 = (x1 - pad_w) / scale
-        y1 = (y1 - pad_h) / scale
-        x2 = (x2 - pad_w) / scale
-        y2 = (y2 - pad_h) / scale
-
-        x1 = x1.clip(0, orig_shape[1]-1)
-        y1 = y1.clip(0, orig_shape[0]-1)
-        x2 = x2.clip(0, orig_shape[1]-1)
-        y2 = y2.clip(0, orig_shape[0]-1)
+        x1 = x1.clip(0, orig_shape[1] - 1)
+        y1 = y1.clip(0, orig_shape[0] - 1)
+        x2 = x2.clip(0, orig_shape[1] - 1)
+        y2 = y2.clip(0, orig_shape[0] - 1)
 
         results = []
         for i in range(len(x1)):
@@ -411,6 +406,7 @@ def process_img(img, img_path, det_session, det_input_name,
 
     detections = det_postprocess(
         det_output, scale, pad_w, pad_h, (img_h, img_w),
+        det_input_w, det_input_h,
         conf_thres=args.det_nms_conf)
 
     print(f'  Detections: {len(detections)}')
