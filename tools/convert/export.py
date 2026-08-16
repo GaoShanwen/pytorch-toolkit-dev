@@ -30,10 +30,13 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def draw_detections(image, dets, labels, conf_thres=0.3, scale=1.0, pad_w=0, pad_h=0):
+def draw_detections(image, dets, labels, conf_thres=0.3, scale=1.0, pad_w=0, pad_h=0,
+                    target_h=None, target_w=None):
     orig_h, orig_w = image.shape[:2]
-    target_w = orig_w
-    target_h = orig_h
+    if target_h is None:
+        target_h = orig_h
+    if target_w is None:
+        target_w = orig_w
 
     dets = dets.reshape(-1, 4)
     labels = labels.reshape(-1, labels.shape[-1])
@@ -161,10 +164,16 @@ def run_inference(onnx_path, image_path, conf_thres=0.3):
     num_outputs = len(outputs)
     if num_outputs == 2:
         dets, labels = outputs
-        vis_image = draw_detections(image.copy(), dets, labels, conf_thres, scale, pad_w, pad_h)
+        vis_image = draw_detections(
+            image.copy(), dets, labels,
+            conf_thres, scale, pad_w, pad_h,
+            target_h=target_h, target_w=target_w,
+        )
     elif num_outputs == 1:
         output = outputs[0]
-        vis_image = draw_detections_yolo(image.copy(), output, conf_thres, scale, pad_w, pad_h)
+        vis_image = draw_detections_yolo(
+            image.copy(), output, conf_thres, scale, pad_w, pad_h
+        )
     else:
         raise ValueError(f"Unexpected number of ONNX outputs: {num_outputs}")
 
@@ -266,6 +275,6 @@ if __name__ == "__main__":
         test_output_dir.mkdir(parents=True, exist_ok=True)
 
         image_name = Path(args.test_image).stem
-        output_path = test_output_dir / f"{image_name}_result.jpg"
+        output_path = test_output_dir / f"{image_name}.jpg"
         cv2.imwrite(str(output_path), vis_image)
         print(f"Visualization saved to: {output_path}")

@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument("--project", type=str, default="runs", help="project directory for validation outputs")
     parser.add_argument("--name", type=str, default="val", help="run name under project directory")
     parser.add_argument("--split", type=str, default="val", choices=["val", "test"], help="dataset split to evaluate")
-    parser.add_argument("--threshold", type=float, default=0.5, help="confidence threshold for saved visualizations")
+    parser.add_argument("--threshold", type=float, default=0.3, help="confidence threshold for saved visualizations")
     parser.add_argument("--no-save-vis", action="store_true", help="disable prediction visualizations")
     parser.add_argument("--trust-checkpoint", action="store_true", help="allow unsafe checkpoint deserialization")
     return parser.parse_args()
