@@ -17,6 +17,11 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
+
+def sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
 # --- Keypoint visualization config ---
 KEYPOINT_COLORS = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0)]
 SKELETON = [(0, 1), (1, 2), (2, 3), (3, 0)]
@@ -102,6 +107,14 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
         dets = dets.reshape(-1, 4)
         labels = labels.reshape(-1, labels.shape[-1])
 
+        confs = sigmoid(labels.max(axis=-1))
+        cls_ids = labels.argmax(axis=-1).astype(int)
+
+        mask = confs > conf_thres
+        dets = dets[mask]
+        confs = confs[mask]
+        cls_ids = cls_ids[mask]
+
         if len(dets) == 0:
             return []
 
@@ -115,18 +128,6 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
         x2 = cx + w * 0.5
         y2 = cy + h * 0.5
 
-        probs = np.exp(labels - labels.max(axis=-1, keepdims=True))
-        probs = probs / probs.sum(axis=-1, keepdims=True)
-        confs = probs.max(axis=-1)
-        cls_ids = probs.argmax(axis=-1).astype(int)
-
-        mask = confs > conf_thres
-        x1, y1, x2, y2 = x1[mask], y1[mask], x2[mask], y2[mask]
-        confs, cls_ids = confs[mask], cls_ids[mask]
-
-        if len(x1) == 0:
-            return []
-
         x1 = x1 * orig_shape[1]
         y1 = y1 * orig_shape[0]
         x2 = x2 * orig_shape[1]
@@ -137,10 +138,10 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
         x2 = (x2 - pad_w) / scale
         y2 = (y2 - pad_h) / scale
 
-        x1 = x1.clip(0, orig_shape[1])
-        y1 = y1.clip(0, orig_shape[0])
-        x2 = x2.clip(0, orig_shape[1])
-        y2 = y2.clip(0, orig_shape[0])
+        x1 = x1.clip(0, orig_shape[1]-1)
+        y1 = y1.clip(0, orig_shape[0]-1)
+        x2 = x2.clip(0, orig_shape[1]-1)
+        y2 = y2.clip(0, orig_shape[0]-1)
 
         results = []
         for i in range(len(x1)):
@@ -176,10 +177,10 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
         x2 = (x2 - pad_w) / scale
         y2 = (y2 - pad_h) / scale
 
-        x1 = x1.clip(0, orig_shape[1])
-        y1 = y1.clip(0, orig_shape[0])
-        x2 = x2.clip(0, orig_shape[1])
-        y2 = y2.clip(0, orig_shape[0])
+        x1 = x1.clip(0, orig_shape[1]-1)
+        y1 = y1.clip(0, orig_shape[0]-1)
+        x2 = x2.clip(0, orig_shape[1]-1)
+        y2 = y2.clip(0, orig_shape[0]-1)
 
         results = []
         for i in range(len(x1)):
@@ -420,8 +421,8 @@ def process_img(img, img_path, det_session, det_input_name,
     for x1, y1, x2, y2, conf, cls_id in detections:
         ix1, iy1, ix2, iy2 = int(x1), int(y1), int(x2), int(y2)
         draw_detection(vis, ix1, iy1, ix2, iy2, cls_id, conf)
-        if cls_id not in [5,6,7]:
-            continue
+        # if cls_id not in [5,6,7]:
+        #     continue
         w, h = x2 - x1, y2 - y1
         ar = w / h if h > 0 else float('inf')
         if (cls_id > args.det_cls_min and conf >= args.det_conf
