@@ -140,9 +140,9 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_
 
         results = []
         for i in range(len(x1)):
-            results.append((float(x1[i]), float(y1[i]),
-                            float(x2[i]), float(y2[i]),
-                            float(confs[i]), int(cls_ids[i])))
+            results.append((
+                float(x1[i]), float(y1[i]), float(x2[i]), float(y2[i]), float(confs[i]), int(cls_ids[i])
+            ))
         return results
     else:
         output = output[0].reshape(-1, 6)  # [N, 6]
