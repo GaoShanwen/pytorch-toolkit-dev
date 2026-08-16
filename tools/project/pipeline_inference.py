@@ -89,47 +89,104 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25):
     """
     Decode detection ONNX output (model already has NMS built-in).
 
-    output: [1, N, 6] or [N, 6] where columns are [x1, y1, x2, y2, conf, cls_id]
+    Supports two formats:
+    1. Old format: output is [1, N, 6] or [N, 6] where columns are [x1, y1, x2, y2, conf, cls_id]
+    2. RF-DETR format: output is tuple (dets, labels) where:
+       - dets: [1, 300, 4] in normalized [cx, cy, w, h] format
+       - labels: [1, 300, num_classes] raw logits
+
     Returns: [(x1, y1, x2, y2, conf, cls_id), ...] in original image coords.
     """
-    output = output.reshape(-1, 6)  # [N, 6]
+    if isinstance(output, tuple) and len(output) == 2:
+        dets, labels = output
+        dets = dets.reshape(-1, 4)
+        labels = labels.reshape(-1, labels.shape[-1])
 
-    if len(output) == 0:
-        return []
+        if len(dets) == 0:
+            return []
 
-    x1 = output[:, 0]
-    y1 = output[:, 1]
-    x2 = output[:, 2]
-    y2 = output[:, 3]
-    confs = output[:, 4]
-    cls_ids = output[:, 5].astype(int)
+        cx = dets[:, 0]
+        cy = dets[:, 1]
+        w = dets[:, 2]
+        h = dets[:, 3]
 
-    mask = confs > conf_thres
-    x1, y1, x2, y2 = x1[mask], y1[mask], x2[mask], y2[mask]
-    confs = confs[mask]
-    cls_ids = cls_ids[mask]
+        x1 = cx - w * 0.5
+        y1 = cy - h * 0.5
+        x2 = cx + w * 0.5
+        y2 = cy + h * 0.5
 
-    if len(x1) == 0:
-        return []
+        probs = np.exp(labels - labels.max(axis=-1, keepdims=True))
+        probs = probs / probs.sum(axis=-1, keepdims=True)
+        confs = probs.max(axis=-1)
+        cls_ids = probs.argmax(axis=-1).astype(int)
 
-    # Map back to original image coords (same as test_onnx.py):
-    # orig_coord = (coord - pad) / scale
-    x1 = (x1 - pad_w) / scale
-    y1 = (y1 - pad_h) / scale
-    x2 = (x2 - pad_w) / scale
-    y2 = (y2 - pad_h) / scale
+        mask = confs > conf_thres
+        x1, y1, x2, y2 = x1[mask], y1[mask], x2[mask], y2[mask]
+        confs, cls_ids = confs[mask], cls_ids[mask]
 
-    x1 = x1.clip(0, orig_shape[1])
-    y1 = y1.clip(0, orig_shape[0])
-    x2 = x2.clip(0, orig_shape[1])
-    y2 = y2.clip(0, orig_shape[0])
+        if len(x1) == 0:
+            return []
 
-    results = []
-    for i in range(len(x1)):
-        results.append((float(x1[i]), float(y1[i]),
-                        float(x2[i]), float(y2[i]),
-                        float(confs[i]), int(cls_ids[i])))
-    return results
+        x1 = x1 * orig_shape[1]
+        y1 = y1 * orig_shape[0]
+        x2 = x2 * orig_shape[1]
+        y2 = y2 * orig_shape[0]
+
+        x1 = (x1 - pad_w) / scale
+        y1 = (y1 - pad_h) / scale
+        x2 = (x2 - pad_w) / scale
+        y2 = (y2 - pad_h) / scale
+
+        x1 = x1.clip(0, orig_shape[1])
+        y1 = y1.clip(0, orig_shape[0])
+        x2 = x2.clip(0, orig_shape[1])
+        y2 = y2.clip(0, orig_shape[0])
+
+        results = []
+        for i in range(len(x1)):
+            results.append((float(x1[i]), float(y1[i]),
+                            float(x2[i]), float(y2[i]),
+                            float(confs[i]), int(cls_ids[i])))
+        return results
+    else:
+        output = output.reshape(-1, 6)  # [N, 6]
+
+        if len(output) == 0:
+            return []
+
+        x1 = output[:, 0]
+        y1 = output[:, 1]
+        x2 = output[:, 2]
+        y2 = output[:, 3]
+        confs = output[:, 4]
+        cls_ids = output[:, 5].astype(int)
+
+        mask = confs > conf_thres
+        x1, y1, x2, y2 = x1[mask], y1[mask], x2[mask], y2[mask]
+        confs = confs[mask]
+        cls_ids = cls_ids[mask]
+
+        if len(x1) == 0:
+            return []
+
+        # Map back to original image coords (same as test_onnx.py):
+        # orig_coord = (coord - pad) / scale
+        x1 = (x1 - pad_w) / scale
+        y1 = (y1 - pad_h) / scale
+        x2 = (x2 - pad_w) / scale
+        y2 = (y2 - pad_h) / scale
+
+        x1 = x1.clip(0, orig_shape[1])
+        y1 = y1.clip(0, orig_shape[0])
+        x2 = x2.clip(0, orig_shape[1])
+        y2 = y2.clip(0, orig_shape[0])
+
+        results = []
+        for i in range(len(x1)):
+            results.append((float(x1[i]), float(y1[i]),
+                            float(x2[i]), float(y2[i]),
+                            float(confs[i]), int(cls_ids[i])))
+        return results
 
 # ---------------------------------------------------------------------------
 # Keypoint helpers (no mmpose dependency)
