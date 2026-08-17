@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument("--weight-path", type=str, required=True, help="path to checkpoint")
     parser.add_argument("--output-dir", type=str, default=None, help="output directory for exported model")
     parser.add_argument("--output-name", type=str, default=None, help="output filename (without extension)")
-    parser.add_argument("--imgsz", type=int, default=384, help="input image size (square, height=width)")
+    parser.add_argument("--imgsz", type=int, default=[384, 640], help="input image size (height, width)")
     parser.add_argument("--batch-size", type=int, default=1, help="batch size for export")
     parser.add_argument("--dynamic-batch", action="store_true", default=False, help="export with dynamic batch dimension")
     parser.add_argument("--fp16", action="store_true", default=False, help="export with FP16 precision")
@@ -45,7 +45,7 @@ def run_inference(onnx_path, image_path, conf_thres=0.3, target_size=None):
       3. Logit stripping: RF-DETR ONNX outputs [num_classes+1] columns (last is no-object slot);
          only [:, :-1] is used, matching rfdetr's _run_inference.
     """
-    session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
+    session = ort.InferenceSession(onnx_path, providers=["GPUExecutionProvider", "CPUExecutionProvider"])
     input_name = session.get_inputs()[0].name
     input_shape = session.get_inputs()[0].shape
     # ONNX NCHW: [batch, channels, height, width]
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         model.export(
             output_dir=str(output_dir),
             format="onnx",
-            shape=[args.imgsz, args.imgsz],
+            shape=args.imgsz if isinstance(args.imgsz, list) else [args.imgsz, args.imgsz],
             batch_size=args.batch_size,
             dynamic_batch=args.dynamic_batch,
             fp16=args.fp16,
@@ -190,15 +190,20 @@ if __name__ == "__main__":
         print(f"Using ONNX model: {onnx_path}")
 
     if args.test_image and os.path.exists(args.test_image):
-        print(f"\nRunning inference on {args.test_image}...")
-        vis_image = run_inference(str(onnx_path), args.test_image, args.conf_thres)
+        if os.path.isfile(args.test_image):
+            args.test_image = [args.test_image]
+        else:
+            args.test_image = list(Path(os.path.abspath(args.test_image)).glob("*.jpg"))
+        for image_path in args.test_image:
+            print(f"\nRunning inference on {image_path}...")
+            vis_image = run_inference(str(onnx_path), image_path, args.conf_thres)
 
-        test_output_dir = Path("runs/test")
-        test_output_dir.mkdir(parents=True, exist_ok=True)
+            test_output_dir = Path("runs/test")
+            test_output_dir.mkdir(parents=True, exist_ok=True)
 
-        from datetime import datetime
-        ts = datetime.now().strftime("%Y%m%d%H%M%S")
-        image_name = Path(args.test_image).stem
-        output_path = test_output_dir / f"{ts}_{image_name}_onnx.jpg"
-        cv2.imwrite(str(output_path), vis_image)
-        print(f"Visualization saved to: {output_path}")
+            from datetime import datetime
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            image_name = Path(image_path).stem
+            output_path = test_output_dir / f"{ts}_{image_name}.jpg"
+            cv2.imwrite(str(output_path), vis_image)
+            print(f"Visualization saved to: {output_path}")
