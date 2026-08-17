@@ -1,4 +1,6 @@
 import argparse
+import io
+import logging
 import os
 import sys
 from pathlib import Path
@@ -16,7 +18,7 @@ def parse_args():
     parser.add_argument("--weight-path", type=str, required=True, help="path to checkpoint")
     parser.add_argument("--output-dir", type=str, default=None, help="output directory for exported model")
     parser.add_argument("--output-name", type=str, default=None, help="output filename (without extension)")
-    parser.add_argument("--imgsz", type=int, default=[384, 640], help="input image size")
+    parser.add_argument("--imgsz", type=int, default=384, help="input image size (square, height=width)")
     parser.add_argument("--batch-size", type=int, default=1, help="batch size for export")
     parser.add_argument("--dynamic-batch", action="store_true", default=False, help="export with dynamic batch dimension")
     parser.add_argument("--fp16", action="store_true", default=False, help="export with FP16 precision")
@@ -27,189 +29,118 @@ def parse_args():
 
 
 def sigmoid(x):
-    return 1.0 / (1.0 + np.exp(-x))
+    return 1.0 / (1.0 + np.exp(-np.clip(x, -88, 88)))
 
 
-def draw_detections(image, dets, labels, conf_thres=0.3, scale=1.0, pad_w=0, pad_h=0,
-                    target_h=None, target_w=None):
-    orig_h, orig_w = image.shape[:2]
-    if target_h is None:
-        target_h = orig_h
-    if target_w is None:
-        target_w = orig_w
+def run_inference(onnx_path, image_path, conf_thres=0.3, target_size=None):
+    """
+    Run ONNX inference with preprocessing/postprocessing that exactly matches RFDETR.predict().
 
-    dets = dets.reshape(-1, 4)
-    labels = labels.reshape(-1, labels.shape[-1])
-
-    confs = sigmoid(labels.max(axis=-1))
-    cls_ids = labels.argmax(axis=-1).astype(int)
-
-    mask = confs > conf_thres
-    dets = dets[mask]
-    confs = confs[mask]
-    cls_ids = cls_ids[mask]
-
-    if len(confs) == 0:
-        return image
-
-    colors = [
-        (220, 20, 60), (0, 139, 139), (255, 140, 0),
-        (148, 0, 211), (0, 100, 0), (70, 130, 180),
-        (220, 20, 60), (178, 34, 34), (34, 139, 34),
-    ]
-
-    for i, (det, conf, cls_id) in enumerate(zip(dets, confs, cls_ids)):
-        cx, cy, bw, bh = det
-
-        x1_norm = cx - bw * 0.5
-        y1_norm = cy - bh * 0.5
-        x2_norm = cx + bw * 0.5
-        y2_norm = cy + bh * 0.5
-
-        x1 = (x1_norm * target_w - pad_w) / scale
-        y1 = (y1_norm * target_h - pad_h) / scale
-        x2 = (x2_norm * target_w - pad_w) / scale
-        y2 = (y2_norm * target_h - pad_h) / scale
-
-        x1 = max(0, min(x1, orig_w - 1))
-        y1 = max(0, min(y1, orig_h - 1))
-        x2 = max(0, min(x2, orig_w - 1))
-        y2 = max(0, min(y2, orig_h - 1))
-
-        color = colors[cls_id % len(colors)]
-        cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), color, 3)
-
-        label = f"cls{cls_id}: {conf:.2f}"
-        (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
-        cv2.rectangle(image, (int(x1), int(y1) - label_h - 8), (int(x1) + label_w, int(y1)), color, -1)
-        cv2.putText(image, label, (int(x1), int(y1) - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-
-    return image
-
-
-def draw_detections_yolo(image, output, conf_thres=0.3, scale=1.0, pad_w=0, pad_h=0):
-    orig_h, orig_w = image.shape[:2]
-
-    output = output.reshape(-1, 6)
-    if len(output) == 0:
-        return image
-
-    x1 = output[:, 0]
-    y1 = output[:, 1]
-    x2 = output[:, 2]
-    y2 = output[:, 3]
-    confs = output[:, 4]
-    cls_ids = output[:, 5].astype(int)
-
-    mask = confs > conf_thres
-    x1, y1, x2, y2 = x1[mask], y1[mask], x2[mask], y2[mask]
-    confs, cls_ids = confs[mask], cls_ids[mask]
-
-    if len(x1) == 0:
-        return image
-
-    x1 = (x1 - pad_w) / scale
-    y1 = (y1 - pad_h) / scale
-    x2 = (x2 - pad_w) / scale
-    y2 = (y2 - pad_h) / scale
-
-    x1 = x1.clip(0, orig_w - 1)
-    y1 = y1.clip(0, orig_h - 1)
-    x2 = x2.clip(0, orig_w - 1)
-    y2 = y2.clip(0, orig_h - 1)
-
-    colors = [
-        (220, 20, 60), (0, 139, 139), (255, 140, 0),
-        (148, 0, 211), (0, 100, 0), (70, 130, 180),
-        (220, 20, 60), (178, 34, 34), (34, 139, 34),
-    ]
-
-    for i, (x1_i, y1_i, x2_i, y2_i, conf, cls_id) in enumerate(zip(x1, y1, x2, y2, confs, cls_ids)):
-        color = colors[cls_id % len(colors)]
-        cv2.rectangle(image, (int(x1_i), int(y1_i)), (int(x2_i), int(y2_i)), color, 3)
-
-        label = f"cls{cls_id}: {conf:.2f}"
-        (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
-        cv2.rectangle(image, (int(x1_i), int(y1_i) - label_h - 8), (int(x1_i) + label_w, int(y1_i)), color, -1)
-        cv2.putText(image, label, (int(x1_i), int(y1_i) - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-
-    return image
-
-
-def run_inference(onnx_path, image_path, conf_thres=0.3):
+    Differences from original implementation:
+      1. Preprocessing: direct bilinear resize (no letterbox padding) + ImageNet normalization
+         (mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]), matching rfdetr's
+         torchvision F.resize(antialias=False) + F.normalize.
+      2. Postprocessing: boxes scaled directly to original image size (no padding compensation),
+         matching rfdetr's PostProcess._gather_and_scale_boxes.
+      3. Logit stripping: RF-DETR ONNX outputs [num_classes+1] columns (last is no-object slot);
+         only [:, :-1] is used, matching rfdetr's _run_inference.
+    """
     session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
     input_name = session.get_inputs()[0].name
     input_shape = session.get_inputs()[0].shape
+    # ONNX NCHW: [batch, channels, height, width]
+    _, channels, target_h, target_w = input_shape
 
-    image = cv2.imread(image_path)
-    if image is None:
+    image_bgr = cv2.imread(image_path)
+    if image_bgr is None:
         raise FileNotFoundError(f"Image not found: {image_path}")
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    orig_h, orig_w = image_bgr.shape[:2]
 
-    orig_h, orig_w = image.shape[:2]
-    target_h, target_w = input_shape[2], input_shape[3]
+    # ── Preprocessing (matches RFDETR.predict): ──────────────────────────────
+    # Direct bilinear resize to target size (no letterbox/padding).
+    # antialias=False convention matched by cv2.INTER_LINEAR.
+    resized = cv2.resize(image_rgb, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
 
-    scale = min(target_w / orig_w, target_h / orig_h)
-    new_w = int(orig_w * scale)
-    new_h = int(orig_h * scale)
+    # HWC → CHW, [0,255] → [0,1]
+    chw = resized.transpose(2, 0, 1).astype(np.float32) * (1.0 / 255.0)
 
-    resized = cv2.resize(image, (new_w, new_h))
-    pad_w = (target_w - new_w) // 2
-    pad_h = (target_h - new_h) // 2
+    # ImageNet normalization (matches RFDETR.predict: F.normalize with mean/std)
+    _mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)[:, None, None]
+    _std  = np.array([0.229, 0.224, 0.225], dtype=np.float32)[:, None, None]
+    chw = (chw - _mean) / _std
 
-    input_data = np.zeros((1, 3, target_h, target_w), dtype=np.float32)
-    input_data[:, :, pad_h:pad_h + new_h, pad_w:pad_w + new_w] = resized.transpose(2, 0, 1) / 255.0
+    input_data = chw[np.newaxis]  # (1, 3, H, W)
+    # ───────────────────────────────────────────────────────────────────────
 
     outputs = session.run(None, {input_name: input_data})
 
-    num_outputs = len(outputs)
-    if num_outputs == 2:
-        dets, labels = outputs
-        vis_image = draw_detections(
-            image.copy(), dets, labels,
-            conf_thres, scale, pad_w, pad_h,
-            target_h=target_h, target_w=target_w,
-        )
-    elif num_outputs == 1:
-        output = outputs[0]
-        vis_image = draw_detections_yolo(
-            image.copy(), output, conf_thres, scale, pad_w, pad_h
-        )
-    else:
-        raise ValueError(f"Unexpected number of ONNX outputs: {num_outputs}")
+    # ── Postprocessing (matches rfdetr export/_onnx/inference.py _run_inference) ──
+    # RF-DETR ONNX output: dets=(Q,4) cxcywh norm, labels=(Q, C+1) with no-object slot
+    dets, labels = outputs[0][0], outputs[1][0]   # (Q,4), (Q, C+1)
 
-    return vis_image
+    # Strip background/no-object column (matches rfdetr: logits[:, :-1])
+    num_classes = labels.shape[-1] - 1
+    labels = labels[:, :-1]   # (Q, C)
+
+    # Per-class sigmoid confidence (matches rfdetr PostProcess._select_topk)
+    scores_all = 1.0 / (1.0 + np.exp(-labels))
+    scores = scores_all.max(axis=-1)
+    cls_ids = scores_all.argmax(axis=-1).astype(int)
+
+    mask = scores > conf_thres
+    dets = dets[mask]
+    scores = scores[mask]
+    cls_ids = cls_ids[mask]
+
+    # Convert cxcywh → xyxy (norm) → pixel coords, scaled to original image size
+    # (matches rfdetr PostProcess._gather_and_scale_boxes: boxes * [orig_w, orig_h, orig_w, orig_h])
+    cx, cy, bw, bh = dets[:, 0], dets[:, 1], dets[:, 2], dets[:, 3]
+    xyxy = np.stack([cx - bw * 0.5, cy - bh * 0.5, cx + bw * 0.5, cy + bh * 0.5], axis=1)
+    xyxy = xyxy * np.array([orig_w, orig_h, orig_w, orig_h], dtype=np.float32)
+
+    x1 = np.clip(xyxy[:, 0], 0, orig_w - 1)
+    y1 = np.clip(xyxy[:, 1], 0, orig_h - 1)
+    x2 = np.clip(xyxy[:, 2], 0, orig_w - 1)
+    y2 = np.clip(xyxy[:, 3], 0, orig_h - 1)
+    xyxy_clipped = np.stack([x1, y1, x2, y2], axis=1)
+    # ───────────────────────────────────────────────────────────────────────────────
+
+    # ── Visualization ─────────────────────────────────────────────────────────
+    vis = image_bgr.copy()
+    colors = [
+        (220, 20, 60), (0, 139, 139), (255, 140, 0),
+        (148, 0, 211), (0, 100, 0), (70, 130, 180),
+        (220, 20, 60), (178, 34, 34), (34, 139, 34),
+    ]
+    for det, conf, cls_id in zip(xyxy_clipped, scores, cls_ids):
+        x1_i, y1_i, x2_i, y2_i = det
+        color = colors[cls_id % len(colors)]
+        cv2.rectangle(vis, (int(x1_i), int(y1_i)), (int(x2_i), int(y2_i)), color, 3)
+        label_text = f"cls{cls_id}: {conf:.2f}"
+        (lw, lh), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+        cv2.rectangle(vis, (int(x1_i), int(y1_i) - lh - 8), (int(x1_i) + lw, int(y1_i)), color, -1)
+        cv2.putText(vis, label_text, (int(x1_i), int(y1_i) - 3),
+                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    return vis
 
 
 def load_model_from_checkpoint(weight_path, trust_checkpoint=False):
-    import io
     import logging
+    old_handlers = logging.root.handlers[:]
+    logging.root.handlers = []
+    null_handler = logging.NullHandler()
+    logging.root.addHandler(null_handler)
+    logging.root.setLevel(logging.CRITICAL)
 
-    ckpt = torch.load(weight_path, map_location='cpu', weights_only=False)
-
-    if 'model' in ckpt and 'args' in ckpt:
-        wrapper = {
-            'args': ckpt.get('args'),
-            'model': ckpt.get('model'),
-            'model_name': ckpt.get('model_name'),
-            'rfdetr_version': ckpt.get('rfdetr_version'),
-            'state_dict': ckpt.get('state_dict'),
-        }
-        old_handlers = logging.root.handlers[:]
-        logging.root.handlers = []
-        null_handler = logging.NullHandler()
-        logging.root.addHandler(null_handler)
-        logging.root.setLevel(logging.CRITICAL)
-
-        old_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-        try:
-            model = RFDETR.from_checkpoint(wrapper, trust_checkpoint=True)
-        finally:
-            sys.stdout = old_stdout
-            logging.root.handlers = old_handlers
-        return model
-    else:
-        return RFDETR.from_checkpoint(weight_path, trust_checkpoint=trust_checkpoint)
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    try:
+        model = RFDETR.from_checkpoint(weight_path, trust_checkpoint=trust_checkpoint)
+    finally:
+        sys.stdout = old_stdout
+        logging.root.handlers = old_handlers
+    return model
 
 
 if __name__ == "__main__":
@@ -233,36 +164,27 @@ if __name__ == "__main__":
     if onnx_path.exists():
         print(f"Found existing ONNX model: {onnx_path}")
     else:
+        print(f"Loading model from {args.weight_path}...")
+        model = load_model_from_checkpoint(args.weight_path, args.trust_checkpoint)
+
+        print(f"Exporting to ONNX with imgsz={args.imgsz}, batch_size={args.batch_size}...")
+
+        model.export(
+            output_dir=str(output_dir),
+            format="onnx",
+            shape=[args.imgsz, args.imgsz],
+            batch_size=args.batch_size,
+            dynamic_batch=args.dynamic_batch,
+            fp16=args.fp16,
+        )
         existing_onnx = None
         for f in output_dir.glob("*.onnx"):
             existing_onnx = f
             break
-
         if existing_onnx:
             print(f"Found existing ONNX model: {existing_onnx}")
             existing_onnx.rename(onnx_path)
             print(f"Renamed {existing_onnx.name} to {onnx_path}")
-        else:
-            print(f"Loading model from {args.weight_path}...")
-            model = load_model_from_checkpoint(args.weight_path, args.trust_checkpoint)
-
-            if isinstance(args.imgsz, int):
-                args.imgsz = [args.imgsz, args.imgsz]
-            print(f"Exporting to ONNX with imgsz={args.imgsz}, batch_size={args.batch_size}...")
-
-            model.export(
-                output_dir=str(output_dir),
-                format="onnx",
-                shape=args.imgsz,
-                batch_size=args.batch_size,
-                dynamic_batch=args.dynamic_batch,
-                fp16=args.fp16,
-            )
-
-            rfdetr_onnx = output_dir / "rfdetr-nano.onnx"
-            if rfdetr_onnx.exists() and not onnx_path.exists():
-                rfdetr_onnx.rename(onnx_path)
-                print(f"Renamed rfdetr-nano.onnx to {onnx_path}")
 
     if onnx_path.exists():
         print(f"Using ONNX model: {onnx_path}")
@@ -274,7 +196,9 @@ if __name__ == "__main__":
         test_output_dir = Path("runs/test")
         test_output_dir.mkdir(parents=True, exist_ok=True)
 
+        from datetime import datetime
+        ts = datetime.now().strftime("%Y%m%d%H%M%S")
         image_name = Path(args.test_image).stem
-        output_path = test_output_dir / f"{image_name}.jpg"
+        output_path = test_output_dir / f"{ts}_{image_name}_onnx.jpg"
         cv2.imwrite(str(output_path), vis_image)
         print(f"Visualization saved to: {output_path}")
