@@ -240,7 +240,8 @@ def rfdetr_preprocess(img, target_height, target_width):
     Matches rfdetr's torchvision F.resize(antialias=False) + F.normalize.
     Returns: input_tensor (1, 3, H, W) float32, orig_h, orig_w.
     """
-    pil_img = Image.fromarray(img)
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    pil_img = Image.fromarray(img_rgb)
     resized_pil = pil_img.resize((target_width, target_height), Image.BILINEAR)
     resized = np.array(resized_pil)
 

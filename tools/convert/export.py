@@ -7,6 +7,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image
 import onnxruntime as ort
 import torch
 
@@ -58,19 +59,20 @@ def run_inference(onnx_path, image_path, conf_thres=0.3, target_size=None):
     orig_h, orig_w = image_bgr.shape[:2]
 
     # ── Preprocessing (matches RFDETR.predict): ──────────────────────────────
-    # Direct bilinear resize to target size (no letterbox/padding).
-    # antialias=False convention matched by cv2.INTER_LINEAR.
-    resized = cv2.resize(image_rgb, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
+    # Direct PIL bilinear resize to target size (no letterbox/padding).
+    pil_img = Image.fromarray(image_rgb)
+    resized_pil = pil_img.resize((target_w, target_h), Image.BILINEAR)
+    resized = np.array(resized_pil)
 
-    # HWC → CHW, [0,255] → [0,1]
-    chw = resized.transpose(2, 0, 1).astype(np.float32) * (1.0 / 255.0)
+    # [0,255] → [0,1], ImageNet normalization
+    image_array = resized.astype(np.float32) / 255.0
+    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+    image_array = (image_array - mean) / std
 
-    # ImageNet normalization (matches RFDETR.predict: F.normalize with mean/std)
-    _mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)[:, None, None]
-    _std  = np.array([0.229, 0.224, 0.225], dtype=np.float32)[:, None, None]
-    chw = (chw - _mean) / _std
-
-    input_data = chw[np.newaxis]  # (1, 3, H, W)
+    # HWC → CHW, add batch dimension
+    image_array = np.transpose(image_array, (2, 0, 1))
+    input_data = np.expand_dims(image_array, axis=0).astype(np.float32)
     # ───────────────────────────────────────────────────────────────────────
 
     outputs = session.run(None, {input_name: input_data})
