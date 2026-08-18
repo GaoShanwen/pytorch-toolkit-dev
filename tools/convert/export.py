@@ -84,9 +84,19 @@ def run_inference(onnx_path, image_path, conf_thres=0.3, target_size=None):
     labels = labels[:, :-1]   # (Q, C)
 
     # Per-class sigmoid confidence (matches rfdetr PostProcess._select_topk)
-    scores_all = 1.0 / (1.0 + np.exp(-labels))
-    scores = scores_all.max(axis=-1)
-    cls_ids = scores_all.argmax(axis=-1).astype(int)
+    prob = 1.0 / (1.0 + np.exp(-labels))
+    scores = prob.max(axis=-1)
+    cls_ids = prob.argmax(axis=-1).astype(int)
+
+    k = min(300, len(scores))
+    topk_idx_unsorted = np.argpartition(scores, -k)[-k:]
+    topk_scores_unsorted = scores[topk_idx_unsorted]
+    topk_order = np.argsort(-topk_scores_unsorted)
+
+    topk_idx = topk_idx_unsorted[topk_order]
+    scores = scores[topk_idx]
+    cls_ids = cls_ids[topk_idx]
+    dets = dets[topk_idx]
 
     mask = scores > conf_thres
     dets = dets[mask]
@@ -166,12 +176,12 @@ if __name__ == "__main__":
     else:
         print(f"Loading model from {args.weight_path}...")
         model = load_model_from_checkpoint(args.weight_path, args.trust_checkpoint)
-
+        
         print(f"Exporting to ONNX with imgsz={args.imgsz}, batch_size={args.batch_size}...")
 
         model.export(
             output_dir=str(output_dir),
-            format="onnx",
+            format="trt",
             shape=args.imgsz if isinstance(args.imgsz, list) else [args.imgsz, args.imgsz],
             batch_size=args.batch_size,
             dynamic_batch=args.dynamic_batch,

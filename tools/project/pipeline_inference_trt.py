@@ -15,6 +15,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+from PIL import Image
 import tensorrt as trt
 
 # --- Keypoint visualization config ---
@@ -36,7 +37,8 @@ CLASS_COLORS = [
 # ---------------------------------------------------------------------------
 
 def sigmoid(x):
-    return 1.0 / (1.0 + np.exp(-np.clip(x, -88, 88)))
+    return 1.0 / (1.0 + np.exp(-x))
+    # return 1.0 / (1.0 + np.exp(-np.clip(x, -88, 88)))
 
 
 _cuda_initialized = False
@@ -238,9 +240,11 @@ def rfdetr_preprocess(img, target_height, target_width):
     Matches rfdetr's torchvision F.resize(antialias=False) + F.normalize.
     Returns: input_tensor (1, 3, H, W) float32, orig_h, orig_w.
     """
-    resized = cv2.resize(img, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
+    pil_img = Image.fromarray(img)
+    resized_pil = pil_img.resize((target_width, target_height), Image.BILINEAR)
+    resized = np.array(resized_pil)
 
-    chw = resized.transpose(2, 0, 1).astype(np.float32) * (1.0 / 255.0)
+    chw = resized.transpose(2, 0, 1).astype(np.float32) / 255.0
 
     _mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)[:, None, None]
     _std = np.array([0.229, 0.224, 0.225], dtype=np.float32)[:, None, None]
@@ -276,7 +280,16 @@ def nms(boxes, scores, iou_threshold):
     return keep
 
 
-def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_h=0, conf_thres=0.25, force_resize=False):
+def box_cxcywh_to_xyxy(boxes):
+    cx, cy, w, h = boxes[..., 0], boxes[..., 1], boxes[..., 2], boxes[..., 3]
+    x1 = cx - w * 0.5
+    y1 = cy - h * 0.5
+    x2 = cx + w * 0.5
+    y2 = cy + h * 0.5
+    return np.stack([x1, y1, x2, y2], axis=-1)
+
+
+def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_h=0, conf_thres=0.25, force_resize=False, num_select=300):
     """
     Decode detection TensorRT output (model already has NMS built-in).
 
@@ -291,56 +304,45 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_
     Returns: [(x1, y1, x2, y2, conf, cls_id), ...] in original image coords.
     """
     if len(output) == 2:
-        dets, labels = output
+        dets, logits = output
         dets = dets.reshape(-1, 4)
-        labels = labels.reshape(-1, labels.shape[-1])
+        logits = logits.reshape(-1, logits.shape[-1])
 
-        confs = sigmoid(labels.max(axis=-1))
-        cls_ids = labels.argmax(axis=-1).astype(int)
+        prob = sigmoid(logits)
+        scores = prob.max(axis=-1)
+        cls_ids = prob.argmax(axis=-1).astype(int)
 
-        mask = confs > conf_thres
+        k = min(num_select, len(scores))
+        topk_idx_unsorted = np.argpartition(scores, -k)[-k:]
+        topk_scores_unsorted = scores[topk_idx_unsorted]
+        topk_order = np.argsort(-topk_scores_unsorted)
+
+        topk_idx = topk_idx_unsorted[topk_order]
+        scores = scores[topk_idx]
+        cls_ids = cls_ids[topk_idx]
+        dets = dets[topk_idx]
+
+        mask = scores > conf_thres
         dets = dets[mask]
-        confs = confs[mask]
+        scores = scores[mask]
         cls_ids = cls_ids[mask]
 
         if len(dets) == 0:
             return []
 
         dets = dets.astype(np.float32)
-        cx = dets[:, 0]
-        cy = dets[:, 1]
-        bw = dets[:, 2]
-        bh = dets[:, 3]
+        xyxy = box_cxcywh_to_xyxy(dets)
+        xyxy = xyxy * np.array([orig_shape[1], orig_shape[0], orig_shape[1], orig_shape[0]], dtype=np.float32)
 
-        xyxy = np.stack([cx - bw * 0.5, cy - bh * 0.5, cx + bw * 0.5, cy + bh * 0.5], axis=1)
-
-        if force_resize:
-            x1 = np.clip(xyxy[:, 0], 0, orig_shape[1] - 1)
-            y1 = np.clip(xyxy[:, 1], 0, orig_shape[0] - 1)
-            x2 = np.clip(xyxy[:, 2], 0, orig_shape[1] - 1)
-            y2 = np.clip(xyxy[:, 3], 0, orig_shape[0] - 1)
-            x1 = x1 * orig_shape[1]
-            y1 = y1 * orig_shape[0]
-            x2 = x2 * orig_shape[1]
-            y2 = y2 * orig_shape[0]
-        else:
-            x1 = np.clip(xyxy[:, 0], 0, orig_shape[1] - 1)
-            y1 = np.clip(xyxy[:, 1], 0, orig_shape[0] - 1)
-            x2 = np.clip(xyxy[:, 2], 0, orig_shape[1] - 1)
-            y2 = np.clip(xyxy[:, 3], 0, orig_shape[0] - 1)
-            x1 = (x1 - pad_w) / scale
-            y1 = (y1 - pad_h) / scale
-            x2 = (x2 - pad_w) / scale
-            y2 = (y2 - pad_h) / scale
-            x1 = x1.clip(0, orig_shape[1]-1)
-            y1 = y1.clip(0, orig_shape[0]-1)
-            x2 = x2.clip(0, orig_shape[1]-1)
-            y2 = y2.clip(0, orig_shape[0]-1)
+        x1 = np.clip(xyxy[:, 0], 0, orig_shape[1] - 1)
+        y1 = np.clip(xyxy[:, 1], 0, orig_shape[0] - 1)
+        x2 = np.clip(xyxy[:, 2], 0, orig_shape[1] - 1)
+        y2 = np.clip(xyxy[:, 3], 0, orig_shape[0] - 1)
 
         results = []
         for i in range(len(x1)):
             results.append((
-                float(x1[i]), float(y1[i]), float(x2[i]), float(y2[i]), float(confs[i]), int(cls_ids[i])
+                float(x1[i]), float(y1[i]), float(x2[i]), float(y2[i]), float(scores[i]), int(cls_ids[i])
             ))
         return results
     else:
