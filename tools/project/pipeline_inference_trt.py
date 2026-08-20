@@ -37,8 +37,7 @@ CLASS_COLORS = [
 # ---------------------------------------------------------------------------
 
 def sigmoid(x):
-    return 1.0 / (1.0 + np.exp(-x))
-    # return 1.0 / (1.0 + np.exp(-np.clip(x, -88, 88)))
+    return 1.0 / (1.0 + np.exp(-np.clip(x, -88, 88)))
 
 
 _cuda_initialized = False
@@ -243,15 +242,17 @@ def rfdetr_preprocess(img, target_height, target_width):
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     pil_img = Image.fromarray(img_rgb)
     resized_pil = pil_img.resize((target_width, target_height), Image.BILINEAR)
-    resized = np.array(resized_pil)
 
-    chw = resized.transpose(2, 0, 1).astype(np.float32) / 255.0
+    # [0,255] → [0,1], ImageNet normalization
+    image_array = np.array(resized_pil).astype(np.float32) / 255.0
+    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+    image_array = (image_array - mean) / std
 
-    _mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)[:, None, None]
-    _std = np.array([0.229, 0.224, 0.225], dtype=np.float32)[:, None, None]
-    chw = (chw - _mean) / _std
-
-    input_data = chw[np.newaxis]
+    # HWC → CHW, add batch dimension
+    image_array = np.transpose(image_array, (2, 0, 1))
+    input_data = np.expand_dims(image_array, axis=0).astype(np.float32)
+    # ───────────────────────────────────────────────────────────────────────
 
     return input_data
 
@@ -290,7 +291,7 @@ def box_cxcywh_to_xyxy(boxes):
     return np.stack([x1, y1, x2, y2], axis=-1)
 
 
-def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_h=0, conf_thres=0.25, force_resize=False, num_select=300):
+def det_postprocess(output, scale, pad_w, pad_h, orig_shape, conf_thres=0.25, num_select=300):
     """
     Decode detection TensorRT output (model already has NMS built-in).
 
@@ -309,7 +310,7 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_
         dets = dets.reshape(-1, 4)
         logits = logits.reshape(-1, logits.shape[-1])
 
-        prob = sigmoid(logits)
+        prob = 1.0 / (1.0 + np.exp(-logits[:, :-1]))
         scores = prob.max(axis=-1)
         cls_ids = prob.argmax(axis=-1).astype(int)
 
@@ -347,7 +348,7 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_
             ))
         return results
     else:
-        output = output.reshape(-1, 6)  # [N, 6]
+        output = output[0].reshape(-1, 6)  # [N, 6]
 
         if len(output) == 0:
             return []
@@ -372,10 +373,10 @@ def det_postprocess(output, scale, pad_w, pad_h, orig_shape, target_w=0, target_
         x2 = (x2 - pad_w) / scale
         y2 = (y2 - pad_h) / scale
 
-        x1 = x1.clip(0, orig_shape[1])
-        y1 = y1.clip(0, orig_shape[0])
-        x2 = x2.clip(0, orig_shape[1])
-        y2 = y2.clip(0, orig_shape[0])
+        x1 = x1.clip(0, orig_shape[1]-1)
+        y1 = y1.clip(0, orig_shape[0]-1)
+        x2 = x2.clip(0, orig_shape[1]-1)
+        y2 = y2.clip(0, orig_shape[0]-1)
 
         results = []
         for i in range(len(x1)):
@@ -655,7 +656,7 @@ def main():
                         help='Detection model input size (W H)')
     parser.add_argument('--kpt-input-size', type=int, nargs=2, default=[192, 192])
     parser.add_argument('--simcc-split-ratio', type=float, default=2.0)
-    parser.add_argument('--det-conf', type=float, default=0.3,
+    parser.add_argument('--det-conf', type=float, default=0.2,
                         help='Confidence threshold for pose filtering')
     parser.add_argument('--det-nms-conf', type=float, default=0.25,
                         help='Confidence threshold for detection NMS')
@@ -731,9 +732,7 @@ def process_img(img, img_path, det_engine, det_input_w, det_input_h,
 
     detections = det_postprocess(
         det_output, scale, pad_w, pad_h, (img_h, img_w),
-        det_input_w, det_input_h,
-        conf_thres=args.det_nms_conf,
-        force_resize=force_resize)
+        conf_thres=args.det_nms_conf)
 
     print(f'  Detections: {len(detections)}')
     vis = img.copy()

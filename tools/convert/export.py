@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument("--weight-path", type=str, required=True, help="path to checkpoint")
     parser.add_argument("--output-dir", type=str, default=None, help="output directory for exported model")
     parser.add_argument("--output-name", type=str, default=None, help="output filename (without extension)")
-    parser.add_argument("--imgsz", type=int, default=[384, 640], help="input image size (height, width)")
+    parser.add_argument("--imgsz", type=int, default=[576, 576], help="input image size (height, width)")
     parser.add_argument("--batch-size", type=int, default=1, help="batch size for export")
     parser.add_argument("--dynamic-batch", action="store_true", default=False, help="export with dynamic batch dimension")
     parser.add_argument("--fp16", action="store_true", default=False, help="export with FP16 precision")
@@ -82,7 +82,6 @@ def run_inference(onnx_path, image_path, conf_thres=0.3, target_size=None):
     dets, labels = outputs[0][0], outputs[1][0]   # (Q,4), (Q, C+1)
 
     # Strip background/no-object column (matches rfdetr: logits[:, :-1])
-    num_classes = labels.shape[-1] - 1
     labels = labels[:, :-1]   # (Q, C)
 
     # Per-class sigmoid confidence (matches rfdetr PostProcess._select_topk)
@@ -183,7 +182,7 @@ if __name__ == "__main__":
 
         model.export(
             output_dir=str(output_dir),
-            format="trt",
+            format="onnx",
             shape=args.imgsz if isinstance(args.imgsz, list) else [args.imgsz, args.imgsz],
             batch_size=args.batch_size,
             dynamic_batch=args.dynamic_batch,
@@ -213,9 +212,7 @@ if __name__ == "__main__":
             test_output_dir = Path("runs/test")
             test_output_dir.mkdir(parents=True, exist_ok=True)
 
-            from datetime import datetime
-            ts = datetime.now().strftime("%Y%m%d%H%M%S")
             image_name = Path(image_path).stem
-            output_path = test_output_dir / f"{ts}_{image_name}.jpg"
+            output_path = test_output_dir / f"{image_name}.jpg"
             cv2.imwrite(str(output_path), vis_image)
             print(f"Visualization saved to: {output_path}")
