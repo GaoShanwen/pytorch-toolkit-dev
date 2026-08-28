@@ -1,4 +1,4 @@
-## YOLOv8 Pose Toolkit
+## RFDETR Toolkit
 
 ### Project Structure
 
@@ -10,17 +10,17 @@ tools/
 ├── val.py              # Validation script
 ├── stream.py           # Stream inference script
 ├── inference.py        # Batch inference script
-├── convert/
-│   └── export.py       # Model export script
-└── yolov5/             # YOLOv5 related tools
+└── convert/
+    └── export.py       # Model export script
+
 ```
 
 ### Dataset Structure Requirements
 
-Training datasets must be placed under `data/pose-dataset/` directory:
+Training datasets must be placed under `data/det-dataset/` directory:
 
 ```
-data/pose-dataset/
+data/det-dataset/
 ├── <dataset_name1>/           # Dataset name (e.g., trainval_set)
 │   ├── dataset.yaml          # Dataset configuration file
 │   ├── images/
@@ -30,7 +30,7 @@ data/pose-dataset/
 └── <dataset_name2>/
 ```
 
-**Note**: The dataset name must match the folder name under `data/pose-dataset/`.
+**Note**: The dataset name must match the folder name under `data/det-dataset/`.
 
 ### Training Commands
 
@@ -39,7 +39,7 @@ data/pose-dataset/
 ```
 
 **Parameter Description**:
-- `dataset_name`: Dataset name (must exist under `data/pose-dataset/`)
+- `dataset_name`: Dataset name (must exist under `data/det-dataset/`)
 - `resume`: Optional, path to checkpoint for resuming training, empty string for training from scratch
 - `epochs`: Optional, number of epochs, default 100
 - `batch_size`: Optional, batch size, default 16
@@ -48,11 +48,11 @@ data/pose-dataset/
 
 **Examples**:
 ```bash
-# Train pose estimation model
-<pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set '' 100 16 640 pose
+# Train detection model
+<pytorch-toolkit-dev> ~$ sh tools/train.sh BakingRecognizeCOCO '' 100 16 384 detect nano
 
 # Resume training from checkpoint
-<pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set runs/pose/ckpts/trainval_set/202607211944/weights/best.pt 50 16 640 pose
+<pytorch-toolkit-dev> ~$ sh tools/train.sh BakingRecognizeCOCO ckpts/detect/BakingRecognizeCOCO/202608180017/checkpoint_best_total.pth 100 8 384 nano detect
 ```
 
 ### Validation Commands
@@ -64,16 +64,10 @@ data/pose-dataset/
 ### Inference Commands
 
 ```bash
-<pytorch-toolkit-dev> ~$ python3 tools/predict.py --weights <runs/.../best.pt> --img_path <img_path> [--flip] [--save]
+<pytorch-toolkit-dev> ~$ python3 tools/predict.py --img-path <img_path> --model <model_path>
 ```
-
-**Parameter Description**:
-- `--weights`: Path to model weights
-- `--img_path`: Path to input image/video
-- `--flip`: Optional, enable horizontal flip inference augmentation
-- `--save`: Optional, save inference results
 
 **Examples**:
 ```bash
-<pytorch-toolkit-dev> ~$ python3 tools/predict.py --weights runs/pose/ckpts/trainval_set/202607211944/weights/best.pt --img_path data/pose-dataset/demo.jpeg --flip --save
+<pytorch-toolkit-dev> ~$ python3 tools/predict.py --img-path /home/wenjie/Downloads/detect --model ckpts/detect/BakingRecognizeCOCO/202608180017/checkpoint_best_total.pth
 ```

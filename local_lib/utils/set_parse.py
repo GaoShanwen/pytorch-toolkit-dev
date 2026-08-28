@@ -2,74 +2,12 @@
 # author: gaowenjie
 # email: gaoshanwen@bupt.cn
 # date: 2025.08.27
-# filename: set_parse.py
-# function: load options parses to args.
+# function: argument parsing for RF-DETR training.
 ######################################################
 import argparse
-import os
 import logging
-import yaml
 
 _logger = logging.getLogger("set_parse")
-
-def merge_from_dict(args, merge_key="options"):
-    args_dict = vars(args)
-    if merge_key not in args:
-        _logger.info(f"{merge_key} not in args")
-        return args_dict
-    merge_value = args_dict.pop(merge_key)
-    for add_key, add_v in merge_value.items():
-        args_dict[add_key] = add_v
-    return args_dict
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Train/Validate a model")
-    parser.add_argument("--data", type=str, help="train config file path")
-    parser.add_argument("--model", help="yolo(v8,v9,v11,26)(n,s,m,l,x).pt", default="yolov8s.pt", type=str)
-    parser.add_argument("--task", help="task, eg:detect,segment,pose", type=str, default="detect")
-    parser.add_argument("--project", help="the project name when save result", type=str, default="runs/")
-    parser.add_argument("--name", help="the config directory name when save result", type=str, default="")
-    parser.add_argument("--epochs", help="train epochs", default=100, type=int)
-    parser.add_argument("--patience", help="early stop when metric without improve", default=0, type=int)
-    parser.add_argument("--imgsz", help="input image size", default=640, type=int)
-    parser.add_argument("--batch", help="input data batch", default=256, type=int)
-    parser.add_argument("--device", help="GPU IDs", type=str, default='0')
-    parser.add_argument("--workers", help="workers num", default=4, type=int)
-    parser.add_argument("--resume", action='store_true', help="resume from checkpoint path directory.")
-    parser.add_argument(
-        "--options",
-        nargs="+",
-        action=DictAction,
-        help="override some settings in the used config, the key-value pair in xxx=yyy format will "
-        "be merged into config file. If the value to be overwritten is a list, it should be like "
-        'key="[a,b]" or key=a,b It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
-        "Note that the quotation marks are necessary and that no white space is allowed.",
-    )
-    parser.add_argument("--local_rank", "--local-rank", type=int, default=0)
-
-    args = parser.parse_args()
-    if "LOCAL_RANK" not in os.environ:
-        os.environ["LOCAL_RANK"] = str(args.local_rank)
-
-    # Do we have a config file to parse?
-    args_config, remaining = parser.parse_known_args()
-    # if args_config.config:
-    #     with open(args_config.config, "r") as f:
-    #         cfg = yaml.safe_load(f)
-    #         parser.set_defaults(**cfg)
-    # use options to overwrite original cfgs!
-    if args_config.options:
-        cfg = merge_from_dict(args, merge_key="options")
-        parser.set_defaults(**cfg)
-
-    # The main arg parser parses the rest of the args, the usual
-    # defaults will have been overridden if config file specified.
-    args = parser.parse_args()#remaining)
-    return args
-    # # Cache the args as a text string to save them in the output dir later
-    # args_text = yaml.safe_dump(args.__dict__, default_flow_style=False)
-    # return args, args_text
 
 
 class DictAction(argparse.Action):
@@ -144,13 +82,20 @@ class DictAction(argparse.Action):
         # Strip ' and " characters and replace whitespace.
         val = val.strip("'\"").replace(" ", "")
         is_tuple = False
+        is_dict = False
         if val.startswith("(") and val.endswith(")"):
             is_tuple = True
             val = val[1:-1]
         elif val.startswith("[") and val.endswith("]"):
             val = val[1:-1]
+        elif val.startswith("{") and val.endswith("}"):
+            is_dict = True
+            val = val[1:-1]
         elif "," not in val:
-            # val is a single value
+            sep = ":" if ":" in val else "=" if "=" in val else None
+            if sep and val.count(sep) == 1:
+                k, v = val.split(sep, 1)
+                return (DictAction._parse_int_float_bool(k), DictAction._parse_int_float_bool(v))
             return DictAction._parse_int_float_bool(val)
 
         values = []
@@ -161,16 +106,148 @@ class DictAction(argparse.Action):
             val = val[comma_idx + 1 :]
         if is_tuple:
             values = tuple(values)
+        elif is_dict:
+            result = {}
+            for item in values:
+                if not isinstance(item, (list, tuple)) or len(item) != 2:
+                    continue
+                k, v = item
+                result[k] = v
+            return result
         return values
 
     def __call__(self, parser, namespace, values, option_string=None):
         options = {}
-        for kv in values:
+        i = 0
+        while i < len(values):
+            kv = values[i]
             key, val = kv.split("=", maxsplit=1)
+            bracket_depth = val.count("{") - val.count("}")
+            j = i + 1
+            while j < len(values):
+                nxt = values[j]
+                nxt_key = nxt.split("=", maxsplit=1)[0]
+                if nxt_key != key:
+                    break
+                nxt_val = nxt.split("=", maxsplit=1)[1]
+                val += "," + nxt_val
+                bracket_depth += nxt_val.count("{") - nxt_val.count("}")
+                if bracket_depth <= 0:
+                    j += 1
+                    break
+                j += 1
+            i = j
+            if bracket_depth > 0 and not val.startswith("{"):
+                val = "{" + val + "}"
+            elif bracket_depth == 0 and not val.startswith("{") and not val.startswith("[") and not val.startswith("(") and ":" in val and "," in val:
+                val = "{" + val + "}"
             options[key] = self._parse_iterable(val)
         setattr(namespace, self.dest, options)
 
 
-if __name__ == "__main__":
-    args, args_text = parse_args()
-    _logger.info(args_text)
+def merge_from_dict(args, merge_key="options"):
+    args_dict = vars(args)
+    if merge_key not in args:
+        _logger.info(f"{merge_key} not in args")
+        return args_dict
+    merge_value = args_dict.pop(merge_key)
+    for add_key, add_v in merge_value.items():
+        args_dict[add_key] = add_v
+    return args_dict
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="RF-DETR training script")
+    parser.add_argument("--data", type=str, required=True, help="path to dataset directory")
+    parser.add_argument("--epochs", type=int, default=100, help="number of training epochs")
+    parser.add_argument("--batch", type=int, default=4, help="batch size")
+    parser.add_argument("--imgsz", type=int, nargs="+", default=[576], help="input image size(HxW)")
+    parser.add_argument("--device", type=str, default="0", help="GPU IDs")
+    parser.add_argument("--project", type=str, default="ckpts", help="project name")
+    parser.add_argument("--name", type=str, default="train", help="run name")
+    parser.add_argument("--resume", type=str, default=None, help="resume from checkpoint")
+    parser.add_argument("--workers", type=int, default=4, help="number of dataloader workers")
+    parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
+    parser.add_argument("--grad_accum_steps", type=int, default=1, help="gradient accumulation steps")
+    parser.add_argument("--model", type=str, default="medium",
+                        choices=["nano", "small", "medium", "large", "xlarge", "2xlarge"],
+                        help="model size")
+    parser.add_argument("--pretrained", type=str, default=None, help="path to pretrained checkpoint")
+    parser.add_argument("--options", nargs="+", action=DictAction, default=None,
+                       help="extra key=value pairs merged into args")
+
+    args = parser.parse_args()
+
+    try:
+        import re
+        dev = getattr(args, 'device', None)
+        if isinstance(dev, str):
+            s = dev.strip()
+            if s == '-1' or s.lower() == 'cpu':
+                args.device = 'cpu'
+            else:
+                if re.fullmatch(r'[0-9,\s]+', s):
+                    ids = [x for x in re.split(r'[,\s]+', s.strip()) if x != '']
+                    if len(ids) == 1:
+                        args.device = f"cuda:{ids[0]}"
+                    else:
+                        args.device = 'cuda'
+    except Exception:
+        pass
+
+    try:
+        if getattr(args, 'options', None):
+            cfg = merge_from_dict(args, merge_key="options")
+            for k, v in cfg.items():
+                setattr(args, k, v)
+    except Exception:
+        pass
+
+    return args
+
+
+def parse_args_val():
+    parser = argparse.ArgumentParser(description="RF-DETR validation script")
+    parser.add_argument(
+        "--model", type=str,
+        default="ckpts/detect/BakingRecognizeCOCO/202608141803/checkpoint_best_total.pth",
+        help="path to checkpoint",
+    )
+    parser.add_argument(
+        "--data", type=str,
+        default="data/det-dataset/BakingRecognizeCOCO",
+        help="path to dataset directory or dataset.yaml",
+    )
+    parser.add_argument("--batch", type=int, default=4, help="batch size")
+    parser.add_argument("--imgsz", type=int, default=640, help="input image size")
+    parser.add_argument("--device", type=str, default="0", help="device, e.g. 0, cpu, cuda:0")
+    parser.add_argument("--workers", type=int, default=4, help="number of dataloader workers")
+    parser.add_argument("--project", type=str, default="runs", help="project directory for validation outputs")
+    parser.add_argument("--name", type=str, default="val", help="run name under project directory")
+    parser.add_argument("--split", type=str, default="val", choices=["val", "test"], help="dataset split to evaluate")
+    parser.add_argument("--threshold", type=float, default=0.3, help="confidence threshold for saved visualizations")
+    parser.add_argument("--no-save-vis", action="store_true", help="disable prediction visualizations")
+    parser.add_argument("--trust-checkpoint", action="store_true", help="allow unsafe checkpoint deserialization")
+    parser.add_argument("--options", nargs="+", action=DictAction, default=None,
+                       help="extra key=value pairs (e.g. class_mapping=5:0,6:1,7:2)")
+
+    args = parser.parse_args()
+
+    try:
+        import re
+        dev = getattr(args, 'device', None)
+        if isinstance(dev, str):
+            s = dev.strip()
+            if s == '-1' or s.lower() == 'cpu':
+                args.device = 'cpu'
+            else:
+                if re.fullmatch(r'[0-9,\s]+', s):
+                    ids = [x for x in re.split(r'[,\s]+', s.strip()) if x != '']
+                    if len(ids) == 1:
+                        args.device = f"cuda:{ids[0]}"
+                    else:
+                        args.device = 'cuda'
+    except Exception:
+        pass
+
+    return args

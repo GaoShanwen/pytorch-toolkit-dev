@@ -1,1 +1,1 @@
-from .yolopro import YOLOPro
+# RF-DETR training module — no YOLO dependencies.
