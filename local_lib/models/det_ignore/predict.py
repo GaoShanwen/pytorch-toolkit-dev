@@ -1,1 +1,0 @@
-from ultralytics.models.yolo.detect import DetectionPredictor

@@ -2,10 +2,8 @@
 # author: gaowenjie
 # email: gaoshanwen@bupt.cn
 # date: 2026.07.29
-# filenaem: val.py
-# function: validate dataset use yolo or mmpose.
-#   - mmpose mode: first arg is a .py config file, delegates to mmpose tools/test.py
-#   - yolo mode:   uses ultralytics YOLO validator
+# filename: val.py
+# function: validate pose estimation models using mmpose.
 ######################################################
 import sys
 import os
@@ -22,11 +20,8 @@ def _run_mmpose(config_path):
     if not os.path.exists(mmpose_test):
         raise FileNotFoundError(f"mmpose test.py not found at {mmpose_test}")
 
-    # Register custom local_lib modules (metric) before loading config
     import local_lib.models.symmetry_match.rtmpose_head  # noqa: F401
     import local_lib.models.symmetry_match.rtmpose_metric  # noqa: F401
-    import local_lib.visualization.custom_visualizer  # noqa: F401
-    import local_lib.data.mix_dataset.coco_merge  # noqa: F401
 
     _torch_load_orig = torch.load
     def _torch_load_patched(*args, **kwargs):

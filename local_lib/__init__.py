@@ -1,6 +1,6 @@
-"""yolo26-dev branch
+"""poserefine-dev branch
 it's functions:
-    1.train, validate or predict datasets for project tasks; 
+    1.train, validate or predict datasets for pose estimation tasks;
     2.add symmetry match function for pose estimation.
 
 """

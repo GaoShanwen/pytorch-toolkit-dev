@@ -1,4 +1,4 @@
-## YOLOv8 Pose Toolkit
+## Pose Estimation Toolkit
 
 ### Project Structure
 
@@ -47,7 +47,7 @@ data/pose-dataset/
 - `epochs`: Optional, number of epochs, default 100
 - `batch_size`: Optional, batch size, default 16
 - `img_size`: Optional, image size, default 640
-- `task`: Optional, task type, supports detect/segment/pose, default detect
+- `task`: Optional, task type, supports pose, default pose
 
 **Examples**:
 ```bash
@@ -55,13 +55,13 @@ data/pose-dataset/
 <pytorch-toolkit-dev> ~$ sh tools/train.sh BakingRefine '' 100 64 192 pretrain
 
 # Resume training from checkpoint
-<pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set runs/pose/ckpts/trainval_set/202607211944/weights/best.pt 50 16 640 pose
+<pytorch-toolkit-dev> ~$ sh tools/train.sh trainval_set ckpts/xxx/epoch_100.pth 50 16 640 pose
 ```
 
 ### Validation Commands
 
 ```bash
-<pytorch-toolkit-dev> ~$ file=annotations/val260817e.json;data_root=data/pose-dataset/BakingRefine;python3 tools/val.py ckpts/rtmpose/BakingRefine/202608172328/rtmpose-l_8xb64-100e_260817-192x192-sy.py ckpts/rtmpose/BakingRefine/202608172328/best_coco_AP_epoch_70.pth --show-dir vis --cfg-options default_hooks.visualization.enable=True visualizer.type=DynamicPoseVisualizer val_dataloader.dataset.data_root=$data_root val_dataloader.dataset.ann_file=$file \
+<pytorch-toolkit-dev> ~$ file=annotations/val260817e.json;data_root=data/pose-dataset/BakingRefine;python3 tools/val.py cfgs/rtmpose/pretrain_cspnext_udp/rtmpose-l_8xb64-100e_260817-192x192-sy.py ckpts/rtmpose/BakingRefine/202608172328/best_coco_AP_epoch_70.pth --show-dir vis --cfg-options default_hooks.visualization.enable=True visualizer.type=DynamicPoseVisualizer val_dataloader.dataset.data_root=$data_root val_dataloader.dataset.ann_file=$file \
     test_dataloader.dataset.data_root=$data_root test_dataloader.dataset.ann_file=$file \
     val_evaluator.ann_file=$data_root/$file test_evaluator.ann_file=$data_root/$file \
     test_dataloader.dataset.pipeline.2.input_size=192,192 visualizer.save_by_category=True
@@ -94,4 +94,3 @@ data/pose-dataset/
 <pytorch-toolkit-dev> ~$ # Evaluate ONNX model
 <pytorch-toolkit-dev> ~$ python tools/convert/eval_onnx.py --ann data/pose-dataset/BakingRefine/annotations/val260807.json --onnx ckpts/rtmpose/BakingRefine/202608091326/best_coco_AP_epoch_90.onnx --input-size 256 192
 ```
-

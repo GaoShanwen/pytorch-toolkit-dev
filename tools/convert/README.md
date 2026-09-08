@@ -1,18 +1,9 @@
-## convert2onnx
+## Model Export
 
 ```bash
-    ~$ for yolov8-detect
-    ~$ # add library
-    ~$ ln -s /root/anaconda3/envs/py39/lib/python3.9/site-packages/nvidia/cublas/lib/libcublas*.so.11 /usr/lib/
-    ~$ # convert2onnx
-    ~$ python tools/convert/export.py -t vehicle -f onnx
-    ~$ # convert2engine
-    ~$ python tools/convert/export.py -t vehicle -f engine
-```
+# Export model to ONNX format
+~$ python tools/convert/export.py cfgs/rtmpose/pretrain_cspnext_udp/rtmpose-m_udp.py ckpts/rtmpose/BakingRefine/202608081607/epoch_40.pth
 
-## convert2trt
-
-```bash
-    ~$ sh tools/convert/convert2trt.sh
-    ~$ tools/convert/main tools/convert/model/vehicle_202511062316.onnx
+# Evaluate ONNX model
+~$ python tools/convert/eval_onnx.py --ann data/pose-dataset/BakingRefine/annotations/val260807.json --onnx ckpts/rtmpose/BakingRefine/202608091326/best_coco_AP_epoch_90.onnx --input-size 256 192
 ```

@@ -26,8 +26,8 @@ def merge_from_dict(args, merge_key="options"):
 def parse_args():
     parser = argparse.ArgumentParser(description="Train/Validate a model")
     parser.add_argument("--data", type=str, help="train config file path")
-    parser.add_argument("--model", help="yolo(v8,v9,v11,26)(n,s,m,l,x).pt", default="yolov8s.pt", type=str)
-    parser.add_argument("--task", help="task, eg:detect,segment,pose", type=str, default="detect")
+    parser.add_argument("--model", help="pose model config file", type=str)
+    parser.add_argument("--task", help="task type, eg:pose", type=str, default="pose")
     parser.add_argument("--project", help="the project name when save result", type=str, default="runs/")
     parser.add_argument("--name", help="the config directory name when save result", type=str, default="")
     parser.add_argument("--epochs", help="train epochs", default=100, type=int)

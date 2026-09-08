@@ -2,10 +2,8 @@
 # author: gaowenjie
 # email: gaoshanwen@bupt.cn
 # date: 2026.07.29
-# filenaem: predict.py
-# function: predict dataset use yolo or mmpose.
-#   - mmpose mode: first arg is a .py config file, delegates to mmpose demo/image_demo.py
-#   - yolo mode:   uses ultralytics YOLO predictor
+# filename: predict.py
+# function: predict pose estimation using mmpose.
 ######################################################
 import sys
 import os
