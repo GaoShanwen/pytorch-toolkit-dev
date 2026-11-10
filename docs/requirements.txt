@@ -23,6 +23,10 @@ fast-histogram
 ruamel.yaml
 opencv-python-headless
 
+# Segmentation ---------------------------------
+segmentation-models-pytorch  # smp architectures / encoders / losses / metrics
+albumentations>=1.3.0        # train / val augmentation pipelines
+
 # Plotting ------------------------------------
 pandas
 plotly
@@ -62,6 +66,5 @@ py3nvml # GPU monitoring
 # py-cpuinfo  # display CPU info
 # thop>=0.1.1  # FLOPs computation
 # ipython  # interactive notebook
-# albumentations>=1.0.3  # training augmentations
 # pycocotools>=2.0.6  # COCO mAP
 # roboflow

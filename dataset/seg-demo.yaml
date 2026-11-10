@@ -1,0 +1,198 @@
+# ============================================================
+# Segmentation training template.
+#
+# Usage:
+#   # build the train.txt / val.txt lists of the dataset (once)
+#   python tools/create_lists.py --root dataset/seg-dataset
+#   # train
+#   python tools/train.py --config dataset/seg-template.yaml
+#   python tools/train.py --config dataset/seg-template.yaml \
+#       --options epochs=50 data.root=dataset/my-seg lr=1e-4
+#   # evaluate
+#   python tools/evaluate.py --config dataset/seg-template.yaml \
+#       --checkpoint output/ckpts/<exp>/best.pth
+# ============================================================
+
+# ---------- classes ----------
+# class index 0 is the background; the order must match the pixel values
+# stored in the mask png files (0, 1, 2 ...).
+classes:
+  - background
+  - road
+  - building
+  - car
+
+# ---------- data ----------
+# The data is described by a yolo-style txt list: one image path per line.
+# The mask path is derived by replacing the 'images' folder of the image
+# path by 'labels' (and the extension by `mask_ext`).
+#
+#   /data/seg-dataset/images/0001.jpg
+#   /data/seg-dataset/labels/0001.png
+#
+data:
+  # root of the dataset; the lists are looked up as <root>/<split>.txt
+  root: dataset/seg-dataset
+  # the name of the dataset; it is added to the output folder
+  # (<output>/<name>/<experiment>) so the runs of the different datasets are
+  # not mixed up.  empty takes it from the folder of 'root'.
+  name: ''
+  train_split: train
+  val_split: val
+  # explicit list files (optional, overrides `root`)
+  # train_list: dataset/seg-dataset/train.txt
+  # val_list: dataset/seg-dataset/val.txt
+  # the list of the test split; it is used by 'tools/inference.py' when
+  # 'inference.split' is set to 'test'
+  # test_list: dataset/seg-dataset/test.txt
+  # extension of the mask files (the image id is matched by stem)
+  mask_ext: .png
+  # folder names swapped to derive the mask path of an image
+  images_dir_name: images
+  labels_dir_name: labels
+  # set true when the raw mask uses 0 for "unlabelled" and there is no
+  # background class in the mask.
+  ignore_background: false
+  # augmentation probabilities
+  hflip: 0.5
+  vflip: 0.0
+  affine_p: 0.5
+  color_jitter: 0.2
+  gauss_noise: 0.2
+  # folder based layout (optional, used when no txt list is given)
+  # train_images_dir: dataset/seg-dataset/train/images
+  # train_masks_dir: dataset/seg-dataset/train/masks
+  # val_images_dir: dataset/seg-dataset/val/images
+  # val_masks_dir: dataset/seg-dataset/val/masks
+
+# ---------- model ----------
+# arch: Unet | UnetPlusPlus | MAnet | Linknet | FPN | PSPNet | PAN |
+#       DeepLabV3 | DeepLabV3Plus | UPerNet | Segformer | DPT
+model: UPerNet
+encoder_name: regnety_040.ra3_in1k #resnet34
+# imagenet | null | <url>
+encoder_weights: imagenet
+in_channels: 3
+# extra kwargs forwarded to the smp constructor
+model_kwargs: {}
+  # decoder_channels: 256
+  # attention_type: scse
+
+# ---------- loss ----------
+# dice | jaccard | focal | ce | bce
+loss: dice
+# multiclass | binary
+loss_mode: multiclass
+from_logits: true
+loss_smooth: 0.0
+# label id excluded from the loss and the metrics
+ignore_index: 255
+
+# ---------- optimization ----------
+optimizer: adamw
+lr: 0.0002
+weight_decay: 0.0001
+momentum: 0.9
+# cosine | step | onecycle | none
+scheduler: cosine
+min_lr: 0.0
+epochs: 100
+batch_size: 8
+workers: 4
+seed: 42
+deterministic: false
+# enable mixed precision training (requires a cuda device)
+amp: false
+
+# ---------- runtime ----------
+device: cuda
+# image size used by the augmentation pipeline, must be a multiple of 32
+img_size: 320
+# the checkpoints are written to <output>/<dataset name>/<experiment>
+output: output/ckpts
+experiment: ''
+resume: ''
+
+# ---------- logging ----------
+# the wandb logger is enabled by default; it is disabled with
+# 'log_wandb: false' here or with '--options log_wandb=false'.
+log_wandb: true
+wandb:
+  # the name of the project; 'branch' names it after the current git branch,
+  # a fixed name prefixes the branch ('<name>-<branch>'), an empty value
+  # uses the branch alone
+  project: branch
+  # the user / the team; empty uses the one of the api key
+  entity: ''
+  # the runs of the same experiment are grouped; empty creates no group
+  group: ''
+  job_type: seg-train
+  # online | offline | disabled
+  mode: online
+  # the api key; when empty the WANDB_API_KEY env var or 'wandb login' is used
+  api_key: ''
+  # the wandb server; the official one (https://api.wandb.ai) refuses the
+  # connections from china with a '403 Forbidden', this mirror forwards them
+  base_url: https://api.bandw.top
+  # the timeout of the http requests, in seconds; the wandb service uses 10
+  # seconds, which is too short for the mirror
+  http_timeout: 60
+  # send the system metrics (gpu / cpu); they are exported by an opentelemetry
+  # exporter that fails when the wandb api is not reachable
+  observability: false
+  # fall back to the offline mode when the wandb api cannot be reached
+  offline_fallback: true
+  # what is tracked by wandb.watch: gradients | parameters | all
+  watch: gradients
+  watch_freq: 1000
+# set to a folder to enable the tensorboard logger, e.g. logs
+tensorboard: ''
+
+# ---------- inference ----------
+# the settings of 'tools/inference.py'; they are used when the pictures of
+# the predictions are written.
+inference:
+  # the checkpoint to load; empty uses the one of --checkpoint
+  checkpoint: ''
+  # the pictures are written to this folder
+  out_dir: output/vis
+  # the source of the pictures, in this order:
+  #   'image'  -> a single image without a label
+  #   'source' -> a folder or a glob of images without a label
+  #   the split of the dataset -> every image with its label
+  image: ''
+  source: ''
+  # the split that is used when no image is given; empty uses the val split
+  split: ''
+  # the share of the colour of the mask in the picture: 0.7 -> 70% of the
+  # colour of the mask and 30% of the original pixels
+  ratio: 0.7
+  # the ids of the classes that are drawn; empty draws every class but the
+  # background.  e.g. '1' draws the hair only.
+  classes: ''
+  # the BGR colour of every class; empty uses the default one
+  # (0 = black, 1 = red, 2 = green, 3 = blue ...)
+  palette: []
+  # the size the images are resized to before the inference; empty uses the
+  # 'img_size' of the training, so the model sees the same kind of input as
+  # in the validation of the training.  it must be a multiple of 32.
+  img_size: ''
+  # the number of images that are inferred at once; empty uses the
+  # 'batch_size' of the training
+  batch_size: ''
+  # the number of workers that read the images; empty uses the 'workers' of
+  # the training
+  workers: ''
+  # the titles of the two halves of the picture; empty uses 'label'/'image'
+  # on the left and 'prediction' on the right
+  labels: []
+  # the width of the band between the two halves, in pixels
+  gap: 8
+  # a suffix added to the name of the written pictures
+  suffix: ''
+  # the quality of the written jpg (1-100)
+  quality: 95
+
+# ---------- evaluation ----------
+# where the evaluation json is written (empty disables it)
+results_file: ''

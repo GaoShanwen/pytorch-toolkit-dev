@@ -1,165 +1,136 @@
 ######################################################
 # author: gaowenjie
 # email: gaoshanwen@bupt.cn
-# date: 2023.12.11
+# date: 2026.11.09
 # filenaem: set_parse.py
-# function: load options parses to args.
+# function: load yaml config and merge cli overrides.
 ######################################################
-import argparse
 import os
+import copy
 import logging
+import argparse
 import yaml
 
 _logger = logging.getLogger("set_parse")
 
-def merge_from_dict(args, merge_key="options"):
-    args_dict = vars(args)
-    if merge_key not in args:
-        _logger.info(f"{merge_key} not in args")
-        return args_dict
-    merge_value = args_dict.pop(merge_key)
-    for add_key, add_v in merge_value.items():
-        args_dict[add_key] = add_v
-    return args_dict
+
+def load_config(config_path):
+    """Load a yaml config file and return it as a plain dict."""
+    if not config_path:
+        return {}
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"config file not found: {config_path}")
+    with open(config_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    if cfg is None:
+        return {}
+    if not isinstance(cfg, dict):
+        raise ValueError(f"config must be a mapping, got {type(cfg).__name__}")
+    return cfg
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Train/Validate a model")
-    parser.add_argument("--config", type=str, help="train config file path")
-    parser.add_argument("--resume", type=str, default="", help="resume from checkpoint path directory.")
+def deep_update(base, override):
+    """Recursively merge ``override`` into ``base`` and return ``base``."""
+    for key, value in (override or {}).items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            deep_update(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
+def apply_overrides(cfg, overrides):
+    """Apply ``key.subkey=value`` style overrides onto the config.
+
+    A value is parsed as int / float / bool when possible, otherwise kept as a
+    string.  Dotted keys address nested config sections, e.g.
+    ``data.root=dataset/seg``.
+    """
+    cfg = copy.deepcopy(cfg or {})
+    for item in overrides or []:
+        if "=" not in item:
+            raise ValueError(f"invalid override (expect key=value): {item}")
+        key, value = item.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        parsed = _parse_scalar(value)
+        node = cfg
+        parts = key.split(".")
+        for part in parts[:-1]:
+            if not isinstance(node.get(part), dict):
+                node[part] = {}
+            node = node[part]
+        node[parts[-1]] = parsed
+    return cfg
+
+
+def _parse_scalar(value):
+    """Convert a string into int / float / bool / None when it looks like one."""
+    low = value.lower()
+    if low in ("true", "false"):
+        return low == "true"
+    if low in ("none", "null"):
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    if "," in value:
+        return [_parse_scalar(v.strip()) for v in value.split(",") if v.strip()]
+    return value
+
+
+def parse_args(description="Train/Evaluate a segmentation model", argv=None):
+    """Parse ``--config`` + ``--options`` style arguments.
+
+    Args:
+        description: the text of the help of the tool.
+        argv: the arguments to parse; ``sys.argv`` is used when it is None.
+
+    Returns ``(cfg, args_namespace, args_text)`` where ``cfg`` is the merged
+    yaml config dict and ``args_namespace`` holds the cli-only options.
+    """
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--config", type=str, default="", help="path of the yaml config file")
     parser.add_argument(
         "--options",
         nargs="+",
-        action=DictAction,
-        help="override some settings in the used config, the key-value pair in xxx=yyy format will "
-        "be merged into config file. If the value to be overwritten is a list, it should be like "
-        'key="[a,b]" or key=a,b It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
-        "Note that the quotation marks are necessary and that no white space is allowed.",
+        default=[],
+        help="override config entries, e.g. --options epochs=10 data.root=dataset/seg",
     )
-    parser.add_argument("--local_rank", "--local-rank", type=int, default=0)
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default="",
+        help="checkpoint to load (evaluate / finetune)",
+    )
+    parser.add_argument(
+        "--wandb",
+        dest="log_wandb",
+        action="store_true",
+        default=None,
+        help="enable the wandb logger (overrides 'log_wandb' of the config)",
+    )
+    args = parser.parse_args(argv)
 
-    args = parser.parse_args()
-    if "LOCAL_RANK" not in os.environ:
-        os.environ["LOCAL_RANK"] = str(args.local_rank)
+    cfg = load_config(args.config)
+    cfg = apply_overrides(cfg, args.options)
 
-    # Do we have a config file to parse?
-    args_config, remaining = parser.parse_known_args()
-    if args_config.config:
-        with open(args_config.config, "r") as f:
-            cfg = yaml.safe_load(f)
-            parser.set_defaults(**cfg)
-    # use options to overwrite original cfgs!
-    if args_config.options:
-        cfg = merge_from_dict(args, merge_key="options")
-        parser.set_defaults(**cfg)
+    # the cli flag has the priority over the config
+    if args.log_wandb is not None:
+        cfg["log_wandb"] = args.log_wandb
 
-    # The main arg parser parses the rest of the args, the usual
-    # defaults will have been overridden if config file specified.
-    args = parser.parse_args(remaining)
-    # Cache the args as a text string to save them in the output dir later
-    args_text = yaml.safe_dump(args.__dict__, default_flow_style=False)
-    return args, args_text
-
-
-class DictAction(argparse.Action):
-    """
-    argparse action to split an argument into KEY=VALUE form
-    on the first = and append to a dictionary. List options can
-    be passed as comma separated values, i.e 'KEY=V1,V2,V3', or with explicit
-    brackets, i.e. 'KEY=[V1,V2,V3]'. It also support nested brackets to build
-    list/tuple values. e.g. 'KEY=[(V1,V2),(V3,V4)]'
-    """
-
-    def __init__(self, *args, **kwargs):
-        super(DictAction, self).__init__(*args, **kwargs)
-        self.nargs = "*"
-
-    @staticmethod
-    def _parse_int_float_bool(val):
-        try:
-            return int(val)
-        except ValueError:
-            pass
-        try:
-            return float(val)
-        except ValueError:
-            pass
-        if val.lower() in ["true", "false"]:
-            return True if val.lower() == "true" else False
-        if val == "None":
-            return None
-        return val
-
-    @staticmethod
-    def _parse_iterable(val):
-        """Parse iterable values in the string.
-
-        All elements inside '()' or '[]' are treated as iterable values.
-
-        Args:
-            val (str): Value string.
-
-        Returns:
-            list | tuple: The expanded list or tuple from the string.
-
-        Examples:
-            >>> DictAction._parse_iterable('1,2,3')
-            [1, 2, 3]
-            >>> DictAction._parse_iterable('[a, b, c]')
-            ['a', 'b', 'c']
-            >>> DictAction._parse_iterable('[(1, 2, 3), [a, b], c]')
-            [(1, 2, 3), ['a', 'b'], 'c']
-        """
-
-        def find_next_comma(string):
-            """Find the position of next comma in the string.
-
-            If no ',' is found in the string, return the string length. All
-            chars inside '()' and '[]' are treated as one element and thus ','
-            inside these brackets are ignored.
-            """
-            assert (string.count("(") == string.count(")")) and (
-                string.count("[") == string.count("]")
-            ), f"Imbalanced brackets exist in {string}"
-            end = len(string)
-            for idx, char in enumerate(string):
-                pre = string[:idx]
-                # The string before this ',' is balanced
-                if (char == ",") and (pre.count("(") == pre.count(")")) and (pre.count("[") == pre.count("]")):
-                    end = idx
-                    break
-            return end
-
-        # Strip ' and " characters and replace whitespace.
-        val = val.strip("'\"").replace(" ", "")
-        is_tuple = False
-        if val.startswith("(") and val.endswith(")"):
-            is_tuple = True
-            val = val[1:-1]
-        elif val.startswith("[") and val.endswith("]"):
-            val = val[1:-1]
-        elif "," not in val:
-            # val is a single value
-            return DictAction._parse_int_float_bool(val)
-
-        values = []
-        while len(val) > 0:
-            comma_idx = find_next_comma(val)
-            element = DictAction._parse_iterable(val[:comma_idx])
-            values.append(element)
-            val = val[comma_idx + 1 :]
-        if is_tuple:
-            values = tuple(values)
-        return values
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        options = {}
-        for kv in values:
-            key, val = kv.split("=", maxsplit=1)
-            options[key] = self._parse_iterable(val)
-        setattr(namespace, self.dest, options)
+    args_text = yaml.safe_dump(cfg, default_flow_style=False, sort_keys=False)
+    return cfg, args, args_text
 
 
-if __name__ == "__main__":
-    args, args_text = parse_args()
-    _logger.info(args_text)
+def save_config(cfg, path):
+    """Dump the resolved config next to the produced checkpoints."""
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(cfg, f, default_flow_style=False, sort_keys=False)
+    return path

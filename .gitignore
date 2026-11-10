@@ -29,7 +29,9 @@ MANIFEST
 *.DS_Store
 
 # input files
-dataset/
+dataset/*
+!dataset/README.md
+!dataset/seg-template.yaml
 assert/
 ncnn_toolkit/
 # nouse codes
