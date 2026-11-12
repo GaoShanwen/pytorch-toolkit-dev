@@ -32,20 +32,14 @@ from local_lib.models import (
     create_seg_loss,
     create_seg_optimizer,
     create_scheduler,
+    get_device,
     get_preprocessing_params,
     save_checkpoint,
+    setup_logging,
 )
 from local_lib.utils import SegLogger, SegMetricTracker, parse_args, save_config
 
 _logger = logging.getLogger("train")
-
-
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
 
 
 def set_seed(seed, deterministic=False):
@@ -58,14 +52,6 @@ def set_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
     else:
         torch.backends.cudnn.benchmark = True
-
-
-def get_device(cfg):
-    device = cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")
-    if device.startswith("cuda") and not torch.cuda.is_available():
-        _logger.warning("cuda is requested but not available, fallback to cpu.")
-        device = "cpu"
-    return torch.device(device)
 
 
 def run_epoch(model, loader, criterion, device, mean, std, optimizer=None, scheduler=None,
@@ -108,7 +94,7 @@ def run_epoch(model, loader, criterion, device, mean, std, optimizer=None, sched
 
 
 def main():
-    setup_logging()
+    setup_logging("train")
     cfg, args, args_text = parse_args("Train a segmentation model with smp")
 
     # the root of the repo; the git branch (used as the name of the wandb
