@@ -27,4 +27,4 @@ if __name__=="__main__":
     # Export the model to ONNX format for deployment
     model.eval()
     with torch.no_grad(): # 必须关闭梯度
-        path = model.export(format="onnx", imgsz=[384, 640])  # Returns the path to the exported model
+        path = model.export(format="onnx", imgsz=[640, 640])  # Returns the path to the exported model

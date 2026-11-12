@@ -70,10 +70,10 @@ def build_engine(onnx_file_path, engine_file_path, fp16_mode=True, max_workspace
 
 # 使用示例
 if __name__ == "__main__":
-    suffix = sys.argv[1] if len(sys.argv) > 1 else ''
-    assert suffix != '' and len(suffix) == 4, "suffix must be MMDD, e.g. 0811"
-    onnx_path = f"models/onnx/yolo26s-pose-c15k7v26{suffix}.onnx"
-    engine_path = onnx_path.replace("onnx", "engine")
+    # suffix = sys.argv[1] if len(sys.argv) > 1 else ''
+    # assert suffix != '' and len(suffix) == 4, "suffix must be MMDD, e.g. 0811"
+    onnx_path = sys.argv[1] if len(sys.argv) > 1 else "weights/yolo26m-pose.onnx"
+    engine_path = onnx_path.replace(".onnx", "-fp16.engine")
 
     build_engine(
         onnx_file_path=onnx_path,
