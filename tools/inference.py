@@ -96,8 +96,8 @@ def build_model_from_checkpoint(cfg, checkpoint_path, device, num_classes):
             if not cfg.get("classes") and saved_cfg.get("classes"):
                 model_cfg["classes"] = saved_cfg["classes"]
 
-    # the checkpoint already holds the trained weights, so there is no need to
-    # download the pretrained encoder again
+    # the checkpoint already holds the trained weights, so the pretrained
+    # weights of the encoder are not needed and nothing is downloaded
     model_cfg["encoder_weights"] = None
 
     model = create_seg_model(model_cfg, num_classes=num_classes)

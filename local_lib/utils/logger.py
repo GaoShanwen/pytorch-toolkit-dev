@@ -145,28 +145,21 @@ class SegLogger:
         The project is named after the current git branch, so the runs of the
         different branches do not get mixed up.  The name can be forced with
         'wandb.project' in the config; 'wandb.project: branch' keeps the
-        branch naming but allows to prefix it.
+        branch naming.
         """
         configured = (wandb_cfg.get("project") or "").strip()
         branch = get_git_branch(self.cfg.get("repo_root"))
 
+        if configured and configured.lower() != "branch":
+            # a name is configured: it is used as it is
+            return sanitize_project_name(configured, DEFAULT_PROJECT_NAME)
+
         if not branch:
-            # not a git repository: fall back to the configured name
-            if configured and configured.lower() != "branch":
-                return sanitize_project_name(configured, DEFAULT_PROJECT_NAME)
+            # not a git repository: fall back to the experiment name
             return self.cfg.get("experiment") or DEFAULT_PROJECT_NAME
 
-        if not configured or configured.lower() == "branch":
-            # the default: the branch name alone
-            return sanitize_project_name(branch, DEFAULT_PROJECT_NAME)
-
-        # a name is configured: the branch is appended to it, so the runs of
-        # the different branches stay separated
-        if configured.lower() == branch.lower():
-            # the name is already the branch; do not repeat it
-            return sanitize_project_name(branch, DEFAULT_PROJECT_NAME)
-
-        return sanitize_project_name(f"{configured}-{branch}", DEFAULT_PROJECT_NAME)
+        # the default: the branch name alone
+        return sanitize_project_name(branch, DEFAULT_PROJECT_NAME)
 
     def init_wandb(self):
         """Start a wandb run; returns None when wandb stays disabled.

@@ -272,8 +272,7 @@ The `wandb` section of the config holds the settings:
 
 **The name of the project.** It is the name of the current **git branch**, so
 the runs of the different branches do not get mixed up. `project: branch`
-(the default) uses the branch name alone, a fixed name prefixes it
-(`<name>-<branch>`) and an empty value uses the branch alone.
+(the default) uses the branch name alone; a fixed name is used as it is.
 
 ```bash
 <pytorch-toolkit-dev> ~$ git switch feature/unet

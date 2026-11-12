@@ -68,15 +68,24 @@ data:
 # ---------- model ----------
 # arch: Unet | UnetPlusPlus | MAnet | Linknet | FPN | PSPNet | PAN |
 #       DeepLabV3 | DeepLabV3Plus | UPerNet | Segformer | DPT
-model: UPerNet
-encoder_name: regnety_040.ra3_in1k #resnet34
-# imagenet | null | <url>
-encoder_weights: imagenet
+model: Segformer
+# the Segformer decoder needs a transformer encoder: mit_b0 ... mit_b5.
+# the other encoders (resnet34, resnet50 ...) do not work with it.
+encoder_name: mit_b0
+# where the pretrained weights of the encoder come from:
+#   'imagenet'  -> downloaded from the hub (needs an internet connection)
+#   'none'      -> no pretrained weights (random init)
+#   a file      -> a local .pth file, e.g. weights/mit_b0.pth
+#   a folder    -> the file named after the encoder, e.g. weights/mit_b0.pth
+encoder_weights: weights/mit_b0.pth
+# the 'config.json' of the encoder (the mean / std of the normalisation); it
+# is put into the cache of the hub, so the hub is not asked for it.
+encoder_config: weights/mit_b0.json
 in_channels: 3
 # extra kwargs forwarded to the smp constructor
 model_kwargs: {}
-  # decoder_channels: 256
-  # attention_type: scse
+  # the number of channels of the segmentation head of the decoder
+  # decoder_segmentation_channels: 256
 
 # ---------- loss ----------
 # dice | jaccard | focal | ce | bce
@@ -119,8 +128,7 @@ resume: ''
 log_wandb: true
 wandb:
   # the name of the project; 'branch' names it after the current git branch,
-  # a fixed name prefixes the branch ('<name>-<branch>'), an empty value
-  # uses the branch alone
+  # an empty value uses the branch alone, a fixed name is used as it is
   project: branch
   # the user / the team; empty uses the one of the api key
   entity: ''

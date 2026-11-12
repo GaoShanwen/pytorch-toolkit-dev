@@ -45,6 +45,12 @@ output
 *.npz
 nohup.out
 
+# the pretrained weights are downloaded or copied here; they are large files
+weights/*.pth
+weights/*.pt
+weights/*.ckpt
+weights/*.safetensors
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
